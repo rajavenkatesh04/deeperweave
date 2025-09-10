@@ -31,16 +31,27 @@ export default function LivyaProgressPage() {
     return (
         <main className="min-h-screen bg-slate-50 py-12 px-4 dark:bg-zinc-950">
             <div className="mx-auto max-w-3xl">
+                {/* === HEADER ADDED HERE === */}
+                <header className="mb-8 flex justify-end">
+                    <Link
+                        href="/auth/login"
+                        className="inline-flex items-center justify-center rounded-md bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:border dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700 dark:focus:ring-offset-zinc-950"
+                    >
+                        Log In
+                    </Link>
+                </header>
+                {/* === END HEADER === */}
+
                 <div className="rounded-lg border border-red-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 md:p-8">
                     <h1 className="mb-2 text-3xl font-bold text-gray-900 dark:text-zinc-100">
-                       Hi <span className="text-red-600 dark:text-red-500"> Livya,</span>
+                        Hi <span className="text-red-600 dark:text-red-500"> Livya,</span>
                     </h1>
                     <p className="mb-6 text-gray-600 dark:text-zinc-300">
                         Welcome to the dashboard for our curated social platform for movie blogs!
                     </p>
 
                     <p className="mb-8 text-sm text-gray-500 dark:text-zinc-400">
-                        Last Updated: September 9, 2025
+                        Last Updated: September 10, 2025
                     </p>
 
                     <div className="space-y-8 text-gray-700 dark:text-zinc-300">
@@ -111,9 +122,9 @@ export default function LivyaProgressPage() {
                                 </div>
                             </div>
                             {/*<p className="mt-4 text-sm">*/}
-                            {/*    To kick off Phase 2 and begin building the user authentication and blog creation systems,*/}
-                            {/*    the next milestone payment of <strong>₹3,000</strong> is now due.*/}
-                            {/*    Once settled, I will begin development immediately!*/}
+                            {/* To kick off Phase 2 and begin building the user authentication and blog creation systems,*/}
+                            {/* the next milestone payment of <strong>₹3,000</strong> is now due.*/}
+                            {/* Once settled, I will begin development immediately!*/}
                             {/*</p>*/}
                         </section>
 
