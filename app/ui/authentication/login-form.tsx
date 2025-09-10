@@ -4,6 +4,7 @@ import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
 import { login, type AuthState } from '@/lib/actions/authActions';
+import LoadingSpinner from "@/app/ui/loading-spinner";
 
 function LoginButton() {
     const { pending } = useFormStatus();
@@ -13,7 +14,7 @@ function LoginButton() {
             disabled={pending}
             className="flex w-full h-10 items-center justify-center rounded-lg bg-rose-600 px-6 text-sm font-medium text-white shadow-sm transition-colors hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-950 disabled:cursor-not-allowed disabled:bg-rose-400"
         >
-            {pending ? 'Signing In...' : 'Sign In'}
+            {pending ? <><LoadingSpinner className={`mr-2`}/>Signing In...</> : <span>Sign In</span>}
         </button>
     );
 }
