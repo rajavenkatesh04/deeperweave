@@ -21,6 +21,7 @@ export interface UserProfile {
     // For monetization and content filtering
     subscription_status: 'free' | 'premium'; // Managed via webhooks from a payment provider
     content_preference: 'sfw' | 'all'; // Default to 'sfw'. User must be 18+ to change to 'all'.
+    visibility: 'public' | 'private';
 }
 
 // =====================================================================
@@ -208,4 +209,13 @@ export interface Comment {
     postId: string; // Foreign key linking to the BlogPost
     authorName: string; // The name the commenter provides
     content: string;
+}
+
+
+export interface ProfileSearchResult {
+    id: string;
+    username: string;
+    display_name: string;
+    bio?: string | null;
+    profile_pic_url?: string | null;
 }

@@ -1,4 +1,4 @@
-// app/lib/actions/profileActions.ts
+// app/lib/actions/profile-actions.ts
 
 'use server';
 
@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
+import { UserProfile, ProfileSearchResult  } from '@/lib/definitions';
 
 export type OnboardingState = {
     message?: string | null;
@@ -214,4 +215,76 @@ export async function checkUsernameAvailability(username: string) {
     }
 
     return { available: true, message: 'Username is available!' };
+}
+
+
+export type SettingsState = {
+    message?: string | null;
+    errors?: {
+        visibility?: string[];
+        content_preference?: string[];
+    };
+};
+
+const SettingsSchema = z.object({
+    visibility: z.enum(['public', 'private']),
+    content_preference: z.enum(['sfw', 'all']),
+});
+
+export async function updateProfileSettings(prevState: SettingsState, formData: FormData): Promise<SettingsState> {
+    const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        return { message: 'Authentication error.' };
+    }
+
+    const validatedFields = SettingsSchema.safeParse(Object.fromEntries(formData.entries()));
+
+    if (!validatedFields.success) {
+        return {
+            errors: validatedFields.error.flatten().fieldErrors,
+            message: 'Invalid data provided.',
+        };
+    }
+
+    const { visibility, content_preference } = validatedFields.data;
+
+    const { error } = await supabase
+        .from('profiles')
+        .update({ visibility, content_preference })
+        .eq('id', user.id);
+
+    if (error) {
+        console.error('Settings update error:', error);
+        return { message: 'Database Error: Could not update settings.' };
+    }
+
+    revalidatePath('/profile/settings');
+    revalidatePath('/profile'); // Also revalidate the main profile page
+    redirect('/profile');
+    return { message: 'Your settings have been saved successfully!' };
+}
+
+
+
+export async function searchProfiles(query: string): Promise<ProfileSearchResult[]> {
+    if (query.length < 2) {
+        return [];
+    }
+    const supabase = await createClient();
+
+    const { data, error } = await supabase
+        .from('profiles')
+        .select('id, username, display_name, profile_pic_url, bio')
+        .or(`username.ilike.%${query}%,display_name.ilike.%${query}%`)
+        .limit(10);
+
+    if (error) {
+        console.error('Search error:', error);
+        return [];
+    }
+
+    // 3. The 'data' now perfectly matches the 'ProfileSearchResult[]' type
+    return data;
 }

@@ -55,10 +55,8 @@ export default async function ProfileEditPage() {
             />
 
             <div className="mt-6">
-                <ProfileHeader profile={userData.profile} />
 
                 <Suspense fallback={<ProfileFormSkeleton />}>
-                    {/* 7. Pass the fetched profile data into the form component as a prop */}
                     <ProfileEditForm profile={userData.profile} />
                 </Suspense>
             </div>

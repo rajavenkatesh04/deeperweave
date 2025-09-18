@@ -11,10 +11,10 @@ import {
     SparklesIcon,
     UserCircleIcon,
 } from '@heroicons/react/24/outline';
-import { LogoutButton } from './LogoutButton';
 import { ProfileHeaderSkeleton, ProfileFormSkeleton } from '@/app/ui/skeletons';
 import Image from "next/image";
 import { UserProfile } from '@/lib/definitions';
+import Breadcrumbs from "@/app/ui/Breadcrumbs";
 
 // Types for the component props
 interface User {
@@ -91,7 +91,6 @@ function ProfileHeader({ profile }: { profile: UserProfile }) {
                         <PencilSquareIcon className="h-5 w-5" />
                         Edit Profile
                     </Link>
-                    <LogoutButton />
                 </div>
             </div>
         </div>
@@ -133,6 +132,13 @@ export default async function ProfilePage() {
 
     return (
         <main>
+
+            <Breadcrumbs
+                breadcrumbs={[
+                    { label: 'Profile', href: '/profile' },
+                    { label: 'Home', href: '/profile/', active: true },
+                ]}
+            />
 
 
             <div className="space-y-8 mt-6">
