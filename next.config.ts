@@ -10,6 +10,30 @@ const nextConfig = {
                 port: '',
                 pathname: '/t/p/**', // Allows any image path from this source
             },
+            {
+                protocol: 'https',
+                hostname: 'lh3.googleusercontent.com',
+                port: '',
+                pathname: '/**',
+            },
+            {
+                protocol: 'https',
+                hostname: 'firebasestorage.googleapis.com',
+                port: '',
+                pathname: '**',
+            },
+            {
+                protocol: 'https',
+                hostname: 'i.pinimg.com',
+                port: '',
+                pathname: '**',
+            },
+            {
+                protocol: 'https',
+                hostname: 'jyjynjpznlvezjhnuwhi.supabase.co',
+                port: '',
+                pathname: '/storage/v1/object/public/profile_pics/**',
+            },
         ],
     },
 };

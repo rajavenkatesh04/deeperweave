@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
-import { completeProfile, OnboardingState } from '@/lib/actions/profileActions';
+import { completeProfile, OnboardingState } from '@/lib/actions/profile-actions';
 import { UserProfile } from '@/lib/definitions';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckIcon, ArrowLeftIcon, ArrowRightIcon } from '@heroicons/react/20/solid';

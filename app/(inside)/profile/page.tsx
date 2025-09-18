@@ -4,7 +4,6 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getUserProfile } from '@/lib/data';
-import Breadcrumbs from '@/app/ui/Breadcrumbs';
 import {
     PencilSquareIcon,
     EnvelopeIcon,
@@ -134,12 +133,7 @@ export default async function ProfilePage() {
 
     return (
         <main>
-            <Breadcrumbs
-                breadcrumbs={[
-                    { label: 'Dashboard', href: '/dashboard' },
-                    { label: 'Profile', href: '/profile', active: true },
-                ]}
-            />
+
 
             <div className="space-y-8 mt-6">
                 <Suspense fallback={<ProfileHeaderSkeleton />}>

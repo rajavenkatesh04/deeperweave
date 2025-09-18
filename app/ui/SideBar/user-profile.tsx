@@ -5,7 +5,7 @@ import { Fragment } from 'react';
 import Link from 'next/link';
 import { PowerIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
 import Image from 'next/image';
-import { logout } from '@/lib/actions/authActions';
+import { logout } from '@/lib/actions/auth-actions';
 import { UserProfile as Profile } from '@/lib/definitions';
 
 // Define the shape of the user prop this component expects

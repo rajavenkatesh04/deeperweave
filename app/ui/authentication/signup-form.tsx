@@ -3,7 +3,7 @@
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
-import { signup, type AuthState } from '@/lib/actions/authActions';
+import { signup, type AuthState } from '@/lib/actions/auth-actions';
 import LoadingSpinner from "@/app/ui/loading-spinner";
 
 function SignupButton() {
