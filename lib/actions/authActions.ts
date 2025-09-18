@@ -1,10 +1,21 @@
+// app/lib/actions/auth-actions.ts
+
 'use server';
 
+import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
-import { z } from 'zod';
+import { revalidatePath } from 'next/cache';
+import { checkProfileCompletion } from '@/lib/data';
 
-// Schemas are unchanged
+export type AuthState = {
+    message?: string | null;
+    errors?: {
+        email?: string[];
+        password?: string[];
+    };
+};
+
 const LoginSchema = z.object({
     email: z.string().email({ message: 'Please enter a valid email address.' }),
     password: z.string().min(1, { message: 'Password is required.' }),
@@ -15,17 +26,9 @@ const SignupSchema = z.object({
     password: z.string().min(8, { message: 'Password must be at least 8 characters long.' }),
 });
 
-export type AuthState = {
-    message?: string | null;
-    errors?: {
-        email?: string[];
-        password?: string[];
-    };
-};
-
-// --- LOGIN ACTION ---
+// --- LOGIN ACTION (MODIFIED) ---
 export async function login(prevState: AuthState, formData: FormData): Promise<AuthState> {
-    const supabase = await createClient(); // CORRECTED: No longer passing cookieStore
+    const supabase = await createClient();
 
     const validatedFields = LoginSchema.safeParse(Object.fromEntries(formData.entries()));
 
@@ -38,21 +41,30 @@ export async function login(prevState: AuthState, formData: FormData): Promise<A
 
     const { email, password } = validatedFields.data;
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
     });
 
-    if (error) {
-        return { message: error.message };
+    if (error || !data.user) {
+        return { message: error?.message || 'Authentication failed. Please check your credentials.' };
     }
 
-    redirect('/profile');
+    // --- THIS IS THE KEY ---
+    // After a successful login, we immediately check if the user's profile is complete.
+    const isProfileComplete = await checkProfileCompletion(data.user.id);
+
+    // Now, we redirect to the correct page based on the result.
+    if (isProfileComplete) {
+        redirect('/profile'); // User is fully set up, go to profile.
+    } else {
+        redirect('/onboarding'); // User is new, start the onboarding flow.
+    }
 }
 
 // --- SIGNUP ACTION ---
 export async function signup(prevState: AuthState, formData: FormData): Promise<AuthState> {
-    const supabase = await createClient(); // CORRECTED: No longer passing cookieStore
+    const supabase = await createClient();
 
     const validatedFields = SignupSchema.safeParse(Object.fromEntries(formData.entries()));
 
@@ -64,8 +76,6 @@ export async function signup(prevState: AuthState, formData: FormData): Promise<
     }
 
     const { email, password } = validatedFields.data;
-
-    // The origin is required for the PKCE flow to work on the server
     const origin = new URL(process.env.NEXT_PUBLIC_BASE_URL!).origin;
 
     const { error } = await supabase.auth.signUp({
@@ -77,10 +87,17 @@ export async function signup(prevState: AuthState, formData: FormData): Promise<
     });
 
     if (error) {
-        // You might want to return a more specific error message here
-        // For example, if the user already exists.
         return { message: error.message };
     }
 
     redirect('/auth/sign-up-success');
+}
+
+// --- LOGOUT ACTION ---
+export async function logout() {
+    const supabase = await createClient();
+    await supabase.auth.signOut();
+
+    revalidatePath('/', 'layout');
+    redirect('/'); // Redirect to the home page after logout is a better UX.
 }

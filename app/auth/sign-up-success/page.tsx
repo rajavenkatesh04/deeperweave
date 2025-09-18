@@ -1,5 +1,3 @@
-import { EnvelopeIcon } from '@heroicons/react/24/outline'; // Or use an inline SVG
-
 export default function Page() {
     return (
         // Added padding for spacing on small screens

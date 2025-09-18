@@ -172,3 +172,40 @@ export interface ReadReceipt {
     user_id: string; // The user who read the message
     read_at: string; // ISO timestamp
 }
+
+
+
+
+// migrate starting here
+// app/lib/definitions.ts
+
+/**
+ * Represents the structure of a single blog post,
+ * mirroring the 'posts' table in your Supabase database.
+ */
+// export interface BlogPost {
+//     id: string; // Or number, depending on your DB primary key
+//     createdAt: string; // ISO 8601 timestamp string
+//     title: string;
+//     slug: string; // URL-friendly version of the title (e.g., "my-first-post")
+//     content: any; // Can be string (Markdown) or JSON (for a rich text editor)
+//     bannerUrl: string;
+//
+//     // Movie-specific details fetched from TMDB API
+//     movieApiId?: number;
+//     movieTitle?: string;
+//     moviePosterUrl?: string;
+//     movieReleaseDate?: string;
+// }
+
+/**
+ * Represents a comment on a blog post.
+ * Designed for guests, so it only requires a name.
+ */
+export interface Comment {
+    id: string; // Or number
+    createdAt: string;
+    postId: string; // Foreign key linking to the BlogPost
+    authorName: string; // The name the commenter provides
+    content: string;
+}
