@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { getUserProfile } from '@/lib/data';
 import { ofetch } from 'ofetch';
+import {Movie} from "@/lib/definitions";
 
 // Helper to generate a URL-friendly and unique slug
 function createSlug(title: string) {
@@ -82,15 +83,18 @@ interface TMDBCredits {
 export async function getMovieDetails(movieId: number) {
     const TMDB_API_KEY = process.env.TMDB_API_KEY;
     if (!TMDB_API_KEY) throw new Error("TMDB API Key is not configured on the server.");
+
     try {
         const [movie, credits] = await Promise.all([
-            ofetch<TMDBMovie>(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${TMDB_API_KEY}`),
-            ofetch<TMDBCredits>(`https://api.themoviedb.org/3/movie/${movieId}/credits?api_key=${TMDB_API_KEY}`)
+            ofetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${TMDB_API_KEY}`),
+            ofetch(`https://api.themoviedb.org/3/movie/${movieId}/credits?api_key=${TMDB_API_KEY}`)
         ]);
-        const director = credits.crew.find((p) => p.job === 'Director')?.name || 'N/A';
-        return { overview: movie.overview, cast: credits.cast, director, genres: movie.genres };
-    } catch {
-        throw new Error("Could not fetch movie details.");
+        const director = credits.crew.find((p: TMDBMovie) => p.overview === 'Director')?.name || 'N/A';
+        return { poster:movie.poster ,overview: movie.overview, cast: credits.cast, director, genres: movie.genres };
+    } catch (error) {
+        // ✨ FIX: Log the actual error to your server terminal for debugging
+        console.error("TMDB Fetch Error:", error);
+        throw new Error("Could not fetch movie details. Check the server logs for more info.");
     }
 }
 
