@@ -52,10 +52,6 @@ export default function ProfileHeader({
                         ) : (
                             <FollowButton profileId={profile.id} isPrivate={isPrivate} initialFollowStatus={initialFollowStatus} />
                         )}
-                        <button className="flex h-11 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-6 text-sm font-semibold text-gray-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-zinc-600">
-                            <ShareIcon className="h-5 w-5" />
-                            <span>Share</span>
-                        </button>
                     </div>
                 </div>
             </div>
