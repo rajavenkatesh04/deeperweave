@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import NavLinks from '@/app/ui/SideBar/nav-links';
 import UserProfile from '@/app/ui/SideBar/user-profile';
-import { getUserProfile } from '@/lib/data';
+import { getUserProfile } from '@/lib/data/user-data';
 
 export default async function SideNav() {
     // Fetch the user and profile data on the server

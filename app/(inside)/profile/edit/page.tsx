@@ -1,7 +1,7 @@
 // app/(inside)/profile/edit/page.tsx
 
 import Breadcrumbs from "@/app/ui/Breadcrumbs";
-import { getUserProfile } from "@/lib/data"; // 1. Import the data fetching function
+import { getUserProfile } from "@/lib/data/user-data"; // 1. Import the data fetching function
 import { redirect } from "next/navigation";  // 2. Import redirect for handling non-logged-in users
 import ProfileEditForm from "./edit-form";   // 3. Import your new form component
 import { Suspense } from "react";

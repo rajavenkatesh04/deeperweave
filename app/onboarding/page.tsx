@@ -1,6 +1,6 @@
 // app/onboarding/page.tsx
 
-import { getUserProfile } from '@/lib/data';
+import { getUserProfile } from '@/lib/data/user-data';
 import { OnboardingForm } from './onboarding-form'; // We will create this client component below
 import { redirect } from 'next/navigation';
 

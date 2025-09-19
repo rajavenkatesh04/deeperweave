@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { checkProfileCompletion } from '@/lib/data';
+import { checkProfileCompletion } from '@/lib/data/user-data';
 
 export type AuthState = {
     message?: string | null;

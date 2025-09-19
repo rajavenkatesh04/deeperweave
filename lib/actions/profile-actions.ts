@@ -43,7 +43,7 @@ export async function completeProfile(prevState: OnboardingState, formData: Form
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-        return { message: 'Authentication error. Please log in again.' };
+        return { message: 'Authentication error. Please timeline in again.' };
     }
 
     const validatedFields = OnboardingSchema.safeParse(Object.fromEntries(formData.entries()));
@@ -105,7 +105,7 @@ export async function updateProfile(prevState: EditProfileState, formData: FormD
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-        return { message: 'Authentication error. Please log in again.' };
+        return { message: 'Authentication error. Please timeline in again.' };
     }
 
     const validatedFields = UpdateProfileSchema.safeParse(Object.fromEntries(formData.entries()));

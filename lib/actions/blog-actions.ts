@@ -4,9 +4,8 @@ import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { getUserProfile } from '@/lib/data';
+import { getUserProfile } from '@/lib/data/user-data';
 import { ofetch } from 'ofetch';
-import {Movie} from "@/lib/definitions";
 
 // Helper to generate a URL-friendly and unique slug
 function createSlug(title: string) {
@@ -145,3 +144,5 @@ export async function unlikePost(postId: string) {
     revalidatePath(`/blog/[slug]`, 'page');
     return { success: true };
 }
+
+

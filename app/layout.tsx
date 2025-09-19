@@ -26,6 +26,7 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
+        <meta name="apple-mobile-web-app-title" content="Liv" />
         <body className={`${calSans.className} antialiased bg-white text-gray-900 dark:bg-zinc-950 dark:text-zinc-100`}>
         <ThemeProvider
             attribute="class"

@@ -89,7 +89,16 @@ export default function CreateBlogPage() {
 
     return (
         <main>
-            <Breadcrumbs breadcrumbs={[{ label: 'Create Post', href: '/create', active: true }]} />
+            <Breadcrumbs
+                breadcrumbs={[
+                    { label: 'Blog', href: '/blog' },
+                    {
+                        label: 'Create Blog',
+                        href: '/blog/create',
+                        active: true,
+                    },
+                ]}
+            />
             <form ref={formRef} action={formAction} className="mt-6 space-y-8">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2 space-y-6">

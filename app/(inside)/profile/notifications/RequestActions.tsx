@@ -4,7 +4,7 @@
 
 import { useTransition } from 'react';
 import { approveFollowRequest, denyFollowRequest } from '@/lib/actions/social-actions'; // Make sure this path is correct
-import LoadingSpinner from '@/app/ui/loading-spinner'; // Corrected path to your spinner
+import LoadingSpinner from '@/app/ui/loading-spinner';
 
 export default function RequestActions({ requesterId }: { requesterId: string }) {
     const [isApproving, startApproveTransition] = useTransition();
@@ -27,7 +27,7 @@ export default function RequestActions({ requesterId }: { requesterId: string })
                     disabled={isApproving || isDenying}
                     className="flex h-9 w-24 items-center justify-center rounded-lg bg-indigo-600 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:opacity-60"
                 >
-                    {isApproving ? <LoadingSpinner /> : 'Approve'}
+                    {isApproving ? <LoadingSpinner /> : 'Accept'}
                 </button>
             </form>
             <form action={() => startDenyTransition(handleDeny)}>
@@ -36,7 +36,7 @@ export default function RequestActions({ requesterId }: { requesterId: string })
                     disabled={isApproving || isDenying}
                     className="flex h-9 w-24 items-center justify-center rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
                 >
-                    {isDenying ? <LoadingSpinner /> : 'Deny'}
+                    {isDenying ? <LoadingSpinner /> : 'Reject'}
                 </button>
             </form>
         </div>

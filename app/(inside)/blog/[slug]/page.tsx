@@ -1,7 +1,7 @@
 import { getPostBySlug } from "@/lib/data/blog-data";
-import { getUserProfile } from "@/lib/data";
+import { getUserProfile } from "@/lib/data/user-data";
 import { notFound } from "next/navigation";
-import { UserProfile, CommentWithAuthor, Post } from "@/lib/definitions";
+import { UserProfile } from "@/lib/definitions";
 import Image from "next/image";
 import Link from "next/link";
 import MovieInfoCard from "@/app/ui/blog/MovieInfoCard";

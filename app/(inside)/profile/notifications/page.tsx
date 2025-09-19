@@ -1,7 +1,7 @@
 // app/(inside)/profile/notifications/page.tsx
 
 import { redirect } from 'next/navigation';
-import { getUserProfile, getFollowRequests } from '@/lib/data';
+import { getUserProfile, getFollowRequests } from '@/lib/data/user-data';
 import Breadcrumbs from '@/app/ui/Breadcrumbs';
 import Image from 'next/image';
 import Link from 'next/link';

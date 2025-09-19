@@ -54,15 +54,17 @@ export async function checkProfileCompletion(userId: string): Promise<boolean> {
 export async function getProfileByUsername(username: string) {
     noStore();
     const supabase = await createClient();
-
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('username', username)
-        .single<UserProfile>(); // We expect only one result
-
+    const { data: profile } = await supabase.from('profiles').select('*').eq('username', username).single<UserProfile>();
     return profile;
 }
+
+// ✨ UPGRADED: This function now fetches follower/following counts as well
+type ProfileData = {
+    profile: UserProfile | null;
+    followStatus: 'not_following' | 'pending' | 'accepted';
+    followerCount: number;
+    followingCount: number;
+};
 
 export async function checkFollowStatus(viewerId: string, profileId: string): Promise<boolean> {
     noStore();
@@ -154,4 +156,34 @@ export async function getProfileAndFollowStatus(username: string): Promise<Profi
 
     // 3. The 'as' assertion helps ensure the value matches our defined type
     return { profile, followStatus: followStatus as 'pending' | 'accepted' | 'not_following' };
+}
+
+
+export async function getProfileData(username: string): Promise<ProfileData> {
+    noStore();
+    const supabase = await createClient();
+    const { data: { user: viewer } } = await supabase.auth.getUser();
+
+    // Fetch profile and follower/following counts in one go
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('*, follower_count:followers!following_id(count), following_count:followers!follower_id(count)')
+        .eq('username', username)
+        .single<UserProfile & { follower_count: [{ count: number }], following_count: [{ count: number }] }>();
+
+    if (!profile) {
+        return { profile: null, followStatus: 'not_following', followerCount: 0, followingCount: 0 };
+    }
+
+    const followerCount = profile.follower_count[0]?.count || 0;
+    const followingCount = profile.following_count[0]?.count || 0;
+
+    if (!viewer || viewer.id === profile.id) {
+        return { profile, followStatus: 'not_following', followerCount, followingCount };
+    }
+
+    const { data: follow } = await supabase.from('followers').select('status').eq('follower_id', viewer.id).eq('following_id', profile.id).single();
+    const followStatus = follow ? follow.status : 'not_following';
+
+    return { profile, followStatus: followStatus as 'not_following' | 'pending' | 'accepted', followerCount, followingCount };
 }

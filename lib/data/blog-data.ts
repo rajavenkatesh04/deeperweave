@@ -30,3 +30,23 @@ export async function getPosts() {
     }
     return posts;
 }
+
+// Add this function to your existing blog-user-data.ts file
+
+export async function getPostsByUserId(userId: string) {
+    noStore();
+    const supabase = await createClient(); // Use the user-context client to respect RLS
+
+    const { data: posts, error } = await supabase
+        .from('posts')
+        .select('*, author:profiles!posts_author_id_fkey(*)')
+        .eq('author_id', userId)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error("Error fetching user's posts:", error);
+        return [];
+    }
+
+    return posts;
+}

@@ -1,7 +1,6 @@
 import { getPosts } from "@/lib/data/blog-data";
 import Breadcrumbs from "@/app/ui/Breadcrumbs";
 import PostCard from "@/app/ui/blog/PostCard";
-import { Post } from "@/lib/definitions";
 
 export default async function BlogPage() {
     const posts = await getPosts();
@@ -10,7 +9,12 @@ export default async function BlogPage() {
         <main>
             <Breadcrumbs
                 breadcrumbs={[
-                    { label: 'Blogs', href: '/blog', active: true },
+                    { label: 'Home', href: '/' },
+                    {
+                        label: 'Blog',
+                        href: '/blog',
+                        active: true,
+                    },
                 ]}
             />
             <div className="mt-6">

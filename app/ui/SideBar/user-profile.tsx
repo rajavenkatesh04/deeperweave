@@ -3,7 +3,7 @@
 import { Menu, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import Link from 'next/link';
-import { PowerIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
+import { PowerIcon, Cog6ToothIcon, UserCircleIcon, BellAlertIcon } from '@heroicons/react/24/outline';
 import Image from 'next/image';
 import { logout } from '@/lib/actions/auth-actions';
 import { UserProfile as Profile } from '@/lib/definitions';
@@ -59,11 +59,42 @@ export default function UserProfile({ user }: { user: UserProps }) {
             >
                 <Menu.Items className="absolute bottom-full mb-2 w-56 origin-bottom-left rounded-md border border-gray-200 bg-white shadow-lg focus:outline-none dark:border-zinc-700 dark:bg-zinc-800">
                     <div className="p-1">
+
+                        {/* Notifications Link */}
+                        <Menu.Item>
+                            {({ active }) => (
+                                <Link
+                                    href="/profile/notifications"
+                                    className={`${
+                                        active ? 'bg-gray-100 dark:bg-zinc-700' : ''
+                                    } group flex w-full items-center gap-3 rounded-md p-2 text-sm text-gray-900 dark:text-zinc-200`}
+                                >
+                                    <BellAlertIcon className="h-5 w-5" />
+                                    Notifications
+                                </Link>
+                            )}
+                        </Menu.Item>
+
+                        {/* Profile Link */}
+                        <Menu.Item>
+                            {({ active }) => (
+                                <Link
+                                    href="/profile"
+                                    className={`${
+                                        active ? 'bg-gray-100 dark:bg-zinc-700' : ''
+                                    } group flex w-full items-center gap-3 rounded-md p-2 text-sm text-gray-900 dark:text-zinc-200`}
+                                >
+                                    <UserCircleIcon className="h-5 w-5" />
+                                    Profile
+                                </Link>
+                            )}
+                        </Menu.Item>
+
                         {/* Profile Settings Link */}
                         <Menu.Item>
                             {({ active }) => (
                                 <Link
-                                    href="/profile/edit"
+                                    href="/profile/settings"
                                     className={`${
                                         active ? 'bg-gray-100 dark:bg-zinc-700' : ''
                                     } group flex w-full items-center gap-3 rounded-md p-2 text-sm text-gray-900 dark:text-zinc-200`}
@@ -73,6 +104,8 @@ export default function UserProfile({ user }: { user: UserProps }) {
                                 </Link>
                             )}
                         </Menu.Item>
+
+
 
                         {/* Sign Out Button */}
                         <Menu.Item>

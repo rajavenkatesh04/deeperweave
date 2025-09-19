@@ -1,6 +1,6 @@
 // app/(inside)/profile/settings/page.tsx
 
-import { getUserProfile } from '@/lib/data';
+import { getUserProfile } from '@/lib/data/user-data';
 import { redirect } from 'next/navigation';
 import Breadcrumbs from '@/app/ui/Breadcrumbs';
 import SettingsForm from './settings-form';

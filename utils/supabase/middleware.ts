@@ -2,7 +2,7 @@
 
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { checkProfileCompletion } from '@/lib/data';
+import { checkProfileCompletion } from '@/lib/data/user-data';
 
 export async function updateSession(request: NextRequest) {
     let supabaseResponse = NextResponse.next({
