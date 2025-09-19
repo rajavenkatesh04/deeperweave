@@ -17,7 +17,6 @@ export interface UserProfile {
     gender?: 'male' | 'female' | 'non-binary' | 'prefer_not_to_say';
     bio?: string;
     profile_pic_url?: string;
-
     // For monetization and content filtering
     subscription_status: 'free' | 'premium'; // Managed via webhooks from a payment provider
     content_preference: 'sfw' | 'all'; // Default to 'sfw'. User must be 18+ to change to 'all'.
@@ -33,25 +32,32 @@ export interface UserProfile {
  * Stored in the 'posts' table.
  */
 export interface Post {
-    id: string; // Unique UUID for the post
-    author_id: string; // Foreign key to profiles.id
-
-    // A post can be a general blog or a specific movie review
+    id: string;
+    author_id: string;
+    slug: string; // Add this
     type: 'review' | 'general';
-    movie_id?: number; // Foreign key to movies.tmdb_id. NULL if type is 'general'.
-
+    movie_id?: number;
     title: string;
-    content_html: string; // The body of the blog, stored as HTML
-    rating?: number; // e.g., 8.5/10. NULL if type is 'general'.
-
-    is_premium: boolean; // Is this a paid-only article?
-    is_nsfw: boolean; // Flag for content moderation
-    created_at: string; // ISO timestamp
-
-    // Denormalized author data for faster feed loading
+    content_html: string;
+    banner_url?: string | null; // Add this
+    rating?: number;
+    is_premium: boolean;
+    is_nsfw: boolean;
+    created_at: string;
+    view_count: number; // Add this
     author_username: string;
     author_profile_pic_url?: string;
 }
+
+// Add this new type for comments that are joined with author profiles
+export type CommentWithAuthor = {
+    id: string;
+    post_id: string;
+    author_id: string;
+    content: string;
+    created_at: string;
+    author: Pick<UserProfile, 'username' | 'display_name' | 'profile_pic_url'>;
+};
 
 /**
  * Represents movie data from an external API like TMDB.
@@ -175,29 +181,6 @@ export interface ReadReceipt {
 }
 
 
-
-
-// migrate starting here
-// app/lib/definitions.ts
-
-/**
- * Represents the structure of a single blog post,
- * mirroring the 'posts' table in your Supabase database.
- */
-// export interface BlogPost {
-//     id: string; // Or number, depending on your DB primary key
-//     createdAt: string; // ISO 8601 timestamp string
-//     title: string;
-//     slug: string; // URL-friendly version of the title (e.g., "my-first-post")
-//     content: any; // Can be string (Markdown) or JSON (for a rich text editor)
-//     bannerUrl: string;
-//
-//     // Movie-specific details fetched from TMDB API
-//     movieApiId?: number;
-//     movieTitle?: string;
-//     moviePosterUrl?: string;
-//     movieReleaseDate?: string;
-// }
 
 /**
  * Represents a comment on a blog post.

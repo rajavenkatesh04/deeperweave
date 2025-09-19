@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { UserProfile, ProfileSearchResult  } from '@/lib/definitions';
+import { ProfileSearchResult  } from '@/lib/definitions';
 
 export type OnboardingState = {
     message?: string | null;

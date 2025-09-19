@@ -3,12 +3,13 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import clsx from 'clsx';
-import { BookOpenIcon, PlusCircleIcon, HomeIcon } from '@heroicons/react/24/outline';
+import { BookOpenIcon, PlusCircleIcon, HomeIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 
 const links = [
     { name: 'Home', href: '/', icon: HomeIcon },
     { name: 'Blogs', href: '/blog', icon: BookOpenIcon },
     { name: 'Create', href: '/blog/create', icon: PlusCircleIcon },
+    { name: 'Search', href: '/search', icon: MagnifyingGlassIcon},
 ];
 
 export default function NavLinks() {

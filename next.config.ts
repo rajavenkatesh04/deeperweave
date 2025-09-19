@@ -8,7 +8,7 @@ const nextConfig = {
                 protocol: 'https',
                 hostname: 'image.tmdb.org',
                 port: '',
-                pathname: '/t/p/**', // Allows any image path from this source
+                pathname: '/t/p/**',
             },
             {
                 protocol: 'https',
