@@ -18,24 +18,10 @@ import {
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
+import Navbar from "@/app/ui/Navbar";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const Navbar = () => (
-    <header className="absolute top-0 left-0 right-0 z-50 p-4">
-        <div className="container mx-auto flex justify-between items-center">
-            <Link href="/" className="text-3xl font-bold">
-                <span className="bg-gradient-to-r from-blue-500 to-teal-400 bg-clip-text text-transparent">Liv</span>
-            </Link>
-            <Link
-                href="/auth/sign-in"
-                className="rounded-md bg-white/10 dark:bg-zinc-800/50 px-4 py-2 text-sm font-semibold backdrop-blur-sm ring-1 ring-inset ring-gray-900/10 dark:ring-white/10 transition-colors hover:bg-white/20 dark:hover:bg-zinc-800"
-            >
-                Sign In
-            </Link>
-        </div>
-    </header>
-);
 
 export default function Home() {
     const main = useRef(null);

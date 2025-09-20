@@ -19,17 +19,16 @@ export default function Breadcrumbs({
                 {breadcrumbs.map((breadcrumb, index) => (
                     <li
                         key={breadcrumb.href}
-                        aria-current={breadcrumb.active}
+                        aria-current={breadcrumb.active ? 'page' : undefined} // Improved accessibility
                         className="flex items-center"
                     >
                         <Link
                             href={breadcrumb.href}
                             className={clsx(
-                                'transition-colors hover:text-gray-900 dark:hover:text-zinc-100',
+                                'transition-colors duration-200',
                                 breadcrumb.active
-                                    ? 'font-medium text-gray-800 dark:text-zinc-200'
-                                    // Make inactive links slightly more muted
-                                    : 'text-gray-500 dark:text-zinc-400',
+                                    ? 'font-semibold text-pink-600 dark:text-pink-400' // Active link in pink
+                                    : 'text-gray-600 hover:text-pink-600 dark:text-zinc-400 dark:hover:text-pink-400', // Inactive link, pink on hover
                             )}
                         >
                             {breadcrumb.label}

@@ -29,6 +29,7 @@ export default async function ProfileLayout({
 
     return (
         <main>
+
             <ProfileHeader
                 profile={profile}
                 isOwnProfile={isOwnProfile}
@@ -44,7 +45,7 @@ export default async function ProfileLayout({
                     <div className="py-8">{children}</div>
                 </div>
             ) : (
-                <PrivateProfileScreen profileId={profile.id} isPrivate={isPrivate} initialFollowStatus={followStatus} />
+                <PrivateProfileScreen />
             )}
         </main>
     );
