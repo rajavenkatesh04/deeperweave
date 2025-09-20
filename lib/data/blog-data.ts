@@ -83,7 +83,7 @@ export async function getPostBySlug(slug: string) {
         userHasLiked = !!like;
     }
 
-    const likeCount = post.likes[0]?.count || 0;
+    const likeCount = post.likes?.[0]?.count || 0;
 
     return { ...post, likeCount, userHasLiked };
 }
@@ -92,14 +92,21 @@ export async function getPostBySlug(slug: string) {
 /**
  * Fetches all posts created by a specific user.
  */
-export async function getPostsByUserId(userId: string) {
+// ✨ FIX: Updated the function to return the correct PostForFeed[] type
+export async function getPostsByUserId(userId: string): Promise<PostForFeed[]> {
     noStore();
     const supabase = await createClient();
 
     const { data, error } = await supabase
         .from('posts')
-        // ✨ FIX: Be specific about the foreign key relationship here as well
-        .select('*, author:profiles!posts_author_id_fkey(*)')
+        // ✨ FIX: The select statement now matches getPosts() to include all necessary data
+        .select(`
+            *,
+            author:profiles!posts_author_id_fkey(*),
+            movie:movies(title, poster_url),
+            likes(count),
+            comments(count)
+        `)
         .eq('author_id', userId)
         .order('created_at', { ascending: false });
 
@@ -108,6 +115,5 @@ export async function getPostsByUserId(userId: string) {
         return [];
     }
 
-    // This return variable was incorrect in your original code
-    return data;
+    return data as PostForFeed[];
 }
