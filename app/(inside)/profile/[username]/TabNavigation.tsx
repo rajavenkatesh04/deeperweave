@@ -11,6 +11,7 @@ export default function TabNavigation({ username, isOwnProfile }: { username: st
     // Base tabs visible to everyone
     const baseTabs = [
         { name: 'Posts', href: baseUrl },
+        { name: 'More', href: `${baseUrl}/more` },
     ];
 
     // Conditionally add the 'Home' tab for the profile owner

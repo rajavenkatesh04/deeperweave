@@ -81,8 +81,6 @@ export default async function ProfilePage() {
 
     return (
         <main>
-
-
             <div className="space-y-8 mt-6">
                 <Suspense fallback={<ProfileFormSkeleton />}>
                     <ProfileCard user={user} profile={profile} />

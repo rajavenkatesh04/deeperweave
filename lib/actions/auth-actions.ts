@@ -93,6 +93,49 @@ export async function signup(prevState: AuthState, formData: FormData): Promise<
     redirect('/auth/sign-up-success');
 }
 
+
+export type UpdatePasswordState = {
+    message?: string | null;
+    errors?: {
+        password?: string[];
+    };
+    success?: boolean;
+};
+
+const UpdatePasswordSchema = z.object({
+    password: z.string().min(8, 'Password must be at least 8 characters long.'),
+    confirmPassword: z.string()
+}).refine(data => data.password === data.confirmPassword, {
+    message: "Passwords do not match.",
+    path: ["confirmPassword"], // path of error
+});
+
+
+export async function updatePassword(prevState: UpdatePasswordState, formData: FormData): Promise<UpdatePasswordState> {
+    const supabase = await createClient();
+
+    const validatedFields = UpdatePasswordSchema.safeParse(Object.fromEntries(formData.entries()));
+
+    if (!validatedFields.success) {
+        return {
+            errors: validatedFields.error.flatten().fieldErrors,
+            message: 'Please check the form for errors.',
+        };
+    }
+
+    const { password } = validatedFields.data;
+
+    const { error } = await supabase.auth.updateUser({ password });
+
+    if (error) {
+        console.error('Update password error:', error);
+        return { message: 'Failed to update password. The link may have expired.' };
+    }
+
+    // Don't redirect here, just return a success state. Let the client handle the redirect.
+    return { success: true, message: 'Your password has been updated successfully!' };
+}
+
 // --- LOGOUT ACTION ---
 export async function logout() {
     const supabase = await createClient();

@@ -13,7 +13,7 @@ const navLinks = [
     { name: 'Contact', href: '/contact' },
 ];
 
-export default function Navbar() {
+export default function MobileBottomNav() {
     const [isOpen, setIsOpen] = useState(false);
 
     return (
