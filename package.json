@@ -15,6 +15,10 @@
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.57.4",
     "@tailwindcss/typography": "^0.5.16",
+    "@tiptap/extension-color": "^3.4.4",
+    "@tiptap/extension-horizontal-rule": "^3.4.4",
+    "@tiptap/extension-text-style": "^3.4.4",
+    "@tiptap/extension-underline": "^3.4.4",
     "@tiptap/react": "^3.4.4",
     "@tiptap/starter-kit": "^3.4.4",
     "@vercel/analytics": "^1.5.0",
@@ -23,6 +27,7 @@
     "firebase-admin": "^13.5.0",
     "framer-motion": "^12.23.15",
     "gsap": "^3.13.0",
+    "lucide-react": "^0.544.0",
     "next": "15.5.2",
     "next-themes": "^0.4.6",
     "ofetch": "^1.4.1",
@@ -30,6 +35,7 @@
     "react-dom": "19.1.0",
     "react-markdown": "^10.1.0",
     "supabase": "^2.40.7",
+    "uuid": "^13.0.0",
     "zod": "^4.1.5"
   },
   "devDependencies": {

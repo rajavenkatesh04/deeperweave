@@ -1,7 +1,8 @@
+// @/app/blog/[slug]/page.tsx
+
 import { getPostBySlug } from "@/lib/data/blog-data";
 import { getUserProfile } from "@/lib/data/user-data";
 import { notFound } from "next/navigation";
-import { UserProfile } from "@/lib/definitions";
 import Image from "next/image";
 import Link from "next/link";
 import MovieInfoCard from "@/app/ui/blog/MovieInfoCard";
@@ -9,10 +10,10 @@ import ViewTracker from "@/app/ui/blog/ViewTracker";
 import LikeButton from "@/app/ui/blog/LikeButton";
 import CommentsSection from "@/app/ui/blog/CommentsSection";
 
-// The params object needs to be awaited in newer versions of Next.js
 export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params;
 
+    // Fetch all data in one go with our new function
     const postData = await getPostBySlug(slug);
     const viewerData = await getUserProfile();
 
@@ -20,13 +21,10 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         notFound();
     }
 
-    const { likeCount, userHasLiked, comments, ...post } = postData;
-    // We cast the author object to the full UserProfile type for type safety
-    const author = post.author as UserProfile;
+    const { likeCount, userHasLiked, comments, author, movie, ...post } = postData;
 
     return (
         <article className="max-w-4xl mx-auto py-12 px-4">
-            {/* This client component calls the RPC to increment the view count */}
             <ViewTracker postSlug={post.slug} />
 
             <header className="mb-8 text-center">
@@ -58,12 +56,11 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                 </div>
             )}
 
-            {post.type === 'review' && post.movie_id && (
+            {/* ✨ FIX: Pass the movieApiId and the cached movie data from our database */}
+            {post.type === 'review' && post.movie_id && movie && (
                 <MovieInfoCard
                     movieApiId={post.movie_id}
-                    movieTitle={post.title} // Pass the title from the post as a fallback
-                    moviePosterUrl={post.banner_url || ''}
-                    movieReleaseDate={new Date(post.created_at).toLocaleDateString()}
+                    initialMovieData={movie}
                 />
             )}
 

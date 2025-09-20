@@ -3,13 +3,15 @@ import { Metadata } from 'next';
 import Navigation from "@/app/ui/SideBar/Navigation";
 
 export const metadata: Metadata = {
-    title: 'Profile | Liv',
+    title: 'Profile',
 };
 
 export default function Layout({ children }: { children: React.ReactNode }) {
 
     return (
         <div className="flex h-screen flex-col md:flex-row md:overflow-hidden">
+
+
             {/* This container holds the sidebar on desktop.
               On mobile, its content (the bottom bar) is fixed, so this div's width doesn't matter.
               The md:w-20 lg:w-64 classes match the widths set in our Navigation component.

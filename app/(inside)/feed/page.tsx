@@ -1,5 +1,4 @@
 import Breadcrumbs from "@/app/ui/Breadcrumbs";
-import Navbar from "@/app/ui/Navbar";
 
 export default function Page() {
     return (

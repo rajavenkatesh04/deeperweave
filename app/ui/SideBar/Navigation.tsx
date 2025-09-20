@@ -38,6 +38,7 @@ export default async function Navigation() {
             {/* ====== MOBILE BOTTOM BAR ====== */}
             {/* Hidden on md and larger screens */}
             <div className="fixed bottom-0 left-0 right-0 z-50 flex h-16 items-center justify-around border-t border-gray-200 bg-white/80 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/80 md:hidden">
+
                 <MobileNavLinks />
                 {/* For mobile, the profile is just another link icon */}
                 <Link href={profile ? "/profile" : "/auth/login"} className="flex flex-col items-center justify-center gap-1 text-xs text-gray-600 dark:text-zinc-400">
@@ -49,6 +50,7 @@ export default async function Navigation() {
                         height={28}
                     />
                 </Link>
+
             </div>
         </>
     );

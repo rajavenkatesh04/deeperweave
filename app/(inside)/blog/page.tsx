@@ -1,8 +1,11 @@
+// @/app/blog/page.tsx
+
 import { getPosts } from "@/lib/data/blog-data";
 import Breadcrumbs from "@/app/ui/Breadcrumbs";
 import PostCard from "@/app/ui/blog/PostCard";
 
 export default async function BlogPage() {
+    // Fetch posts with our new, efficient function
     const posts = await getPosts();
 
     return (
@@ -10,11 +13,7 @@ export default async function BlogPage() {
             <Breadcrumbs
                 breadcrumbs={[
                     { label: 'Home', href: '/' },
-                    {
-                        label: 'Blog',
-                        href: '/blog',
-                        active: true,
-                    },
+                    { label: 'Blog', href: '/blog', active: true },
                 ]}
             />
             <div className="mt-6">
@@ -23,7 +22,7 @@ export default async function BlogPage() {
             </div>
 
             <div className="mt-8">
-                {posts && posts.length > 0 ? (
+                {posts.length > 0 ? (
                     <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
                         {posts.map((post) => (
                             <PostCard key={post.id} post={post} />

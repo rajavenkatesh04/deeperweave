@@ -2,7 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { UserProfile } from '@/lib/definitions';
 import FollowButton from '@/app/ui/users/FollowButton';
-import { PencilSquareIcon, ShareIcon } from '@heroicons/react/24/solid';
+import { PencilSquareIcon } from '@heroicons/react/24/solid';
 
 export default function ProfileHeader({
                                           profile,

@@ -34,6 +34,14 @@ const nextConfig = {
                 port: '',
                 pathname: '/storage/v1/object/public/profile_pics/**',
             },
+            {
+                // ✨ UPDATED RULE: This now allows images from ANY public bucket
+                // in your Supabase storage, including profile_pics and post_banners.
+                protocol: 'https',
+                hostname: 'jyjynjpznlvezjhnuwhi.supabase.co',
+                port: '',
+                pathname: '/storage/v1/object/public/**',
+            },
         ],
     },
 };

@@ -1,15 +1,19 @@
+// @/app/ui/blog/CreateBlogPage.tsx
+
 'use client';
 
 import { useState, useEffect, useActionState, useRef } from 'react';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
 import Image from 'next/image';
-import { createPost, CreatePostState } from '@/lib/actions/blog-actions';
+import { createPost, uploadBanner, CreatePostState } from '@/lib/actions/blog-actions';
 import { ofetch } from 'ofetch';
 import Breadcrumbs from '@/app/ui/Breadcrumbs';
-import { XCircleIcon, FilmIcon } from '@heroicons/react/24/outline';
+import { XCircleIcon, FilmIcon, StarIcon } from '@heroicons/react/24/solid';
+import { CloudArrowUpIcon } from '@heroicons/react/24/outline';
 import LoadingSpinner from '@/app/ui/loading-spinner';
 import dynamic from 'next/dynamic';
+import { clsx } from 'clsx';
 
 const TiptapEditor = dynamic(() => import('@/app/ui/blog/TiptapEditor'), {
     ssr: false,
@@ -33,9 +37,57 @@ function MovieSearchResults({ results, onSelectMovie, isLoading }: { results: Mo
     );
 }
 
+function StarRatingInput({ rating, setRating }: { rating: number; setRating: (rating: number) => void }) {
+    const [hover, setHover] = useState(0);
+    return (
+        <div className="flex items-center">
+            {[...Array(5)].map((_, index) => {
+                const ratingValue = index + 1;
+                return (
+                    <label key={ratingValue}>
+                        <input
+                            type="radio"
+                            name="rating"
+                            value={ratingValue}
+                            onClick={() => setRating(ratingValue)}
+                            className="hidden"
+                        />
+                        <StarIcon
+                            className="h-6 w-6 cursor-pointer transition-colors"
+                            color={ratingValue <= (hover || rating) ? '#f59e0b' : '#e5e7eb'}
+                            onMouseEnter={() => setHover(ratingValue)}
+                            onMouseLeave={() => setHover(0)}
+                        />
+                    </label>
+                );
+            })}
+        </div>
+    );
+}
+
+function ToggleSwitch({ label, isEnabled, setIsEnabled, name }: { label: string; isEnabled: boolean; setIsEnabled: (enabled: boolean) => void; name: string }) {
+    return (
+        <label htmlFor={name} className="flex items-center justify-between cursor-pointer">
+            <span className="text-sm font-medium text-gray-900 dark:text-zinc-200">{label}</span>
+            <div className="relative">
+                <input
+                    id={name}
+                    name={name}
+                    type="checkbox"
+                    className="sr-only"
+                    checked={isEnabled}
+                    onChange={() => setIsEnabled(!isEnabled)}
+                />
+                <div className={clsx("block h-6 w-10 rounded-full", isEnabled ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-zinc-700')}></div>
+                <div className={clsx("dot absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform", isEnabled && 'translate-x-full')}></div>
+            </div>
+        </label>
+    );
+}
+
 function SubmitButton() {
     const { pending } = useFormStatus();
-    return <button type="submit" disabled={pending} className="flex h-10 items-center justify-center rounded-lg bg-gray-900 px-6 text-sm font-medium text-white shadow-sm transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-500 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200">{pending ? <><LoadingSpinner className="mr-2"/> Publishing...</> : 'Publish Post'}</button>;
+    return <button type="submit" disabled={pending} className="flex h-10 items-center justify-center rounded-lg bg-indigo-600 px-6 text-sm font-medium text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-400">{pending ? <><LoadingSpinner className="mr-2"/> Publishing...</> : 'Publish Post'}</button>;
 }
 
 export default function CreateBlogPage() {
@@ -43,28 +95,47 @@ export default function CreateBlogPage() {
     const [state, formAction] = useActionState(createPost, initialState);
     const formRef = useRef<HTMLFormElement>(null);
     const bannerInputRef = useRef<HTMLInputElement>(null);
+    const justSelectedMovie = useRef(false);
 
     const [content, setContent] = useState('');
     const [movieSearchQuery, setMovieSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<MovieSearchResult[]>([]);
     const [selectedMovie, setSelectedMovie] = useState<MovieSearchResult | null>(null);
     const [isSearching, setIsSearching] = useState(false);
-    const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+    const [rating, setRating] = useState(0);
+    const [isPremium, setIsPremium] = useState(false);
+    const [isNsfw, setIsNsfw] = useState(false);
+
+    const [bannerUrl, setBannerUrl] = useState<string | null>(null);
+    const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+    const [bannerError, setBannerError] = useState<string | null>(null);
+
 
     useEffect(() => {
-        if (!state.errors && !state.message) {
+        if (state.message === null && !state.errors) {
             formRef.current?.reset();
             setContent('');
             setSelectedMovie(null);
             setMovieSearchQuery('');
-            setBannerPreview(null);
+            setBannerUrl(null);
+            setBannerError(null);
+            if (bannerInputRef.current) bannerInputRef.current.value = '';
+            setRating(0);
+            setIsPremium(false);
+            setIsNsfw(false);
         }
     }, [state]);
 
     useEffect(() => {
+        if (justSelectedMovie.current) {
+            justSelectedMovie.current = false;
+            return;
+        }
+
         const handler = setTimeout(() => {
             if (movieSearchQuery.trim().length < 3) {
-                setSearchResults([]); return;
+                setSearchResults([]);
+                return;
             }
             setIsSearching(true);
             const TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
@@ -77,31 +148,63 @@ export default function CreateBlogPage() {
     }, [movieSearchQuery]);
 
     const handleSelectMovie = (movie: MovieSearchResult) => {
+        justSelectedMovie.current = true;
         setSelectedMovie(movie);
         setMovieSearchQuery(movie.title);
         setSearchResults([]);
     };
 
-    const handleBannerChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleBannerChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
-        setBannerPreview(file ? URL.createObjectURL(file) : null);
+        if (!file) return;
+
+        setIsUploadingBanner(true);
+        setBannerError(null);
+
+        const formData = new FormData();
+        formData.append('banner', file);
+
+        const result = await uploadBanner(formData);
+
+        if (result.success && result.url) {
+            setBannerUrl(result.url);
+        } else {
+            setBannerError(result.error || 'Upload failed. Please try again.');
+            if (bannerInputRef.current) {
+                bannerInputRef.current.value = '';
+            }
+        }
+        setIsUploadingBanner(false);
+    };
+
+    const clearSelectedMovie = () => {
+        setSelectedMovie(null);
+        setMovieSearchQuery('');
     };
 
     return (
         <main>
-            <Breadcrumbs
-                breadcrumbs={[
-                    { label: 'Blog', href: '/blog' },
-                    {
-                        label: 'Create Blog',
-                        href: '/blog/create',
-                        active: true,
-                    },
-                ]}
-            />
+            <Breadcrumbs breadcrumbs={[{ label: 'Blog', href: '/blog' }, { label: 'Create Post', href: '/blog/create', active: true, }]} />
             <form ref={formRef} action={formAction} className="mt-6 space-y-8">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2 space-y-6">
+                        <div className="rounded-lg border bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                            <h2 className="text-base font-semibold">Link a Movie (Optional)</h2>
+                            <div className="relative mt-4">
+                                <input id="movieSearch" type="text" value={movieSearchQuery} onChange={(e) => setMovieSearchQuery(e.target.value)} placeholder="Search for a movie..." autoComplete="off" className="block w-full rounded-md border-gray-300 bg-gray-50 py-2 px-3 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800"/>
+                                <MovieSearchResults results={searchResults} onSelectMovie={handleSelectMovie} isLoading={isSearching} />
+                            </div>
+                            {selectedMovie && (
+                                <div className="mt-4 p-3 rounded-md border border-indigo-200 bg-indigo-50 dark:border-indigo-900 dark:bg-indigo-950/50">
+                                    <div className="flex items-start gap-3">
+                                        {selectedMovie.poster_path && <Image src={`https://image.tmdb.org/t/p/w92${selectedMovie.poster_path}`} alt={selectedMovie.title} width={50} height={75} className="rounded object-cover" />}
+                                        <div className="flex-1"><p className="font-semibold text-sm leading-tight">{selectedMovie.title}</p><p className="text-xs text-gray-500 dark:text-zinc-400">{selectedMovie.release_date?.split('-')[0]}</p></div>
+                                        <button type="button" onClick={clearSelectedMovie} className="p-1 text-gray-400 hover:text-red-500"><XCircleIcon className="h-5 w-5"/></button>
+                                    </div>
+                                    <input type="hidden" name="movieApiId" value={selectedMovie.id} />
+                                </div>
+                            )}
+                        </div>
                         <div>
                             <label htmlFor="title" className="mb-2 block text-sm font-medium">Post Title</label>
                             <input id="title" name="title" type="text" placeholder="e.g., An Analysis of Interstellar's Cinematography" className="block w-full rounded-md border-gray-300 bg-gray-50 py-2 px-3 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800" required />
@@ -114,41 +217,66 @@ export default function CreateBlogPage() {
                             {state.errors?.content_html && <p className="mt-2 text-xs text-red-500">{state.errors.content_html[0]}</p>}
                         </div>
                     </div>
+
                     <div className="lg:col-span-1 space-y-6">
                         <div className="rounded-lg border bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                            <h2 className="text-base font-semibold">Link a Movie (Optional)</h2>
-                            <div className="relative mt-4">
-                                <input id="movieSearch" type="text" value={movieSearchQuery} onChange={(e) => setMovieSearchQuery(e.target.value)} placeholder="Search for a movie..." autoComplete="off" className="block w-full rounded-md border-gray-300 bg-gray-50 py-2 px-3 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800"/>
-                                <MovieSearchResults results={searchResults} onSelectMovie={handleSelectMovie} isLoading={isSearching} />
-                            </div>
-                            {selectedMovie && (
-                                <div className="mt-4 p-3 rounded-md border border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/50">
-                                    <div className="flex items-start gap-3">
-                                        {selectedMovie.poster_path && <Image src={`https://image.tmdb.org/t/p/w92${selectedMovie.poster_path}`} alt={selectedMovie.title} width={50} height={75} className="rounded" />}
-                                        <div className="flex-1"><p className="font-semibold text-sm leading-tight">{selectedMovie.title}</p><p className="text-xs text-gray-500">{selectedMovie.release_date?.split('-')[0]}</p></div>
-                                        <button type="button" onClick={() => setSelectedMovie(null)} className="p-1 text-gray-400 hover:text-red-500"><XCircleIcon className="h-5 w-5"/></button>
-                                    </div>
-                                    <input type="hidden" name="movieApiId" value={selectedMovie.id} />
-                                    <input type="hidden" name="movieTitle" value={selectedMovie.title} />
-                                    <input type="hidden" name="moviePosterUrl" value={selectedMovie.poster_path ? `https://image.tmdb.org/t/p/w500${selectedMovie.poster_path}` : ''} />
-                                    <input type="hidden" name="movieReleaseDate" value={selectedMovie.release_date} />
-                                </div>
-                            )}
-                        </div>
-                        <div className="rounded-lg border bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                             <h2 className="text-base font-semibold">Banner Image (Optional)</h2>
-                            {bannerPreview ? (
-                                <div className="mt-4 relative"><Image src={bannerPreview} alt="Banner preview" width={300} height={150} className="w-full h-auto rounded-md object-cover" /><button type="button" onClick={() => { setBannerPreview(null); if (bannerInputRef.current) bannerInputRef.current.value = ''; }} className="absolute top-2 right-2 p-1 rounded-full bg-black/50 text-white hover:bg-black/75"><XCircleIcon className="h-5 w-5"/></button></div>
-                            ) : (
-                                <div className="mt-4"><input ref={bannerInputRef} id="banner" name="banner" type="file" accept="image/*" onChange={handleBannerChange} className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 dark:file:bg-zinc-700 dark:file:text-zinc-200 dark:hover:file:bg-zinc-600"/></div>
-                            )}
-                            {state.errors?.banner && <p className="mt-2 text-xs text-red-500">{state.errors.banner[0]}</p>}
+                            <div className="mt-4">
+                                {bannerUrl ? (
+                                    <div className="relative aspect-video w-full">
+                                        <Image src={bannerUrl} alt="Banner preview" fill className="rounded-md object-cover" />
+                                        <button type="button" onClick={() => { setBannerUrl(null); if (bannerInputRef.current) bannerInputRef.current.value = ''; }} className="absolute top-2 right-2 p-1 rounded-full bg-black/60 text-white transition-colors hover:bg-black/80"><XCircleIcon className="h-5 w-5"/></button>
+                                    </div>
+                                ) : (
+                                    <label htmlFor="banner-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 dark:border-zinc-700 dark:bg-zinc-800/50 dark:hover:bg-zinc-800">
+                                        {isUploadingBanner ? (
+                                            <LoadingSpinner />
+                                        ) : (
+                                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                                <CloudArrowUpIcon className="w-8 h-8 mb-2 text-gray-500 dark:text-zinc-400" />
+                                                <p className="mb-2 text-sm text-gray-500 dark:text-zinc-400"><span className="font-semibold">Click to upload</span></p>
+                                                <p className="text-xs text-gray-500 dark:text-zinc-400">PNG, JPG (MAX. 4MB)</p>
+                                            </div>
+                                        )}
+                                        <input
+                                            ref={bannerInputRef}
+                                            id="banner-upload"
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleBannerChange}
+                                            className="hidden"
+                                            disabled={isUploadingBanner}
+                                        />
+                                    </label>
+                                )}
+                            </div>
+                            {bannerError && <p className="mt-2 text-xs text-red-500">{bannerError}</p>}
+                            {state.errors?.banner_url && <p className="mt-2 text-xs text-red-500">{state.errors.banner_url[0]}</p>}
+                        </div>
+
+                        <div className="rounded-lg border bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 space-y-4">
+                            <div>
+                                <h2 className="text-base font-semibold mb-2">Rating (Optional)</h2>
+                                <StarRatingInput rating={rating} setRating={setRating}/>
+                                <input type="hidden" name="rating" value={rating} />
+                            </div>
+                            <div className="border-t border-gray-200 dark:border-zinc-800"></div>
+                            <div>
+                                <h2 className="text-base font-semibold mb-3">Options</h2>
+                                <div className="space-y-3">
+                                    <ToggleSwitch label="Premium Content" isEnabled={isPremium} setIsEnabled={setIsPremium} name="is_premium" />
+                                    <ToggleSwitch label="NSFW (18+)" isEnabled={isNsfw} setIsEnabled={setIsNsfw} name="is_nsfw" />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
+
+                <input type="hidden" name="banner_url" value={bannerUrl || ''} />
+
                 <div className="mt-8 flex items-center justify-end gap-4 border-t border-gray-200 pt-6 dark:border-zinc-800">
-                    {state.message && <p className={`mr-auto text-sm text-red-600`}>{state.message}</p>}
-                    <Link href="/" className="flex h-10 items-center rounded-lg bg-gray-100 px-4 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700">Cancel</Link>
+                    {state.message && <p className="mr-auto text-sm text-red-600">{state.message}</p>}
+                    <Link href="/blog" className="flex h-10 items-center rounded-lg bg-gray-100 px-4 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700">Cancel</Link>
                     <SubmitButton />
                 </div>
             </form>

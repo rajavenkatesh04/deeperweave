@@ -1,43 +1,42 @@
+// app/ui/blog/TiptapEditor.tsx
+
 'use client';
 
-import { useEditor, EditorContent, Editor } from '@tiptap/react';
+import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import {TextStyle} from '@tiptap/extension-text-style';
+import { Color } from '@tiptap/extension-color';
+import Underline from '@tiptap/extension-underline';
+import HorizontalRule from '@tiptap/extension-horizontal-rule';
+import TiptapToolbar from './TiptapToolbar';
 
-// A basic toolbar for the editor
-const TiptapToolbar = ({ editor }: { editor: Editor | null }) => {
-    if (!editor) return null;
-    return (
-        <div className="flex flex-wrap items-center gap-2 rounded-t-md border-b border-gray-300 bg-white p-2 dark:border-zinc-700 dark:bg-zinc-900">
-            <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={editor.isActive('bold') ? 'is-active px-2 py-1 rounded bg-gray-200 dark:bg-zinc-700' : 'px-2 py-1'}>Bold</button>
-            <button type="button" onClick={() => editor.chain().focus().toggleItalic().run()} className={editor.isActive('italic') ? 'is-active px-2 py-1 rounded bg-gray-200 dark:bg-zinc-700' : 'px-2 py-1'}>Italic</button>
-            <button type="button" onClick={() => editor.chain().focus().toggleStrike().run()} className={editor.isActive('strike') ? 'is-active px-2 py-1 rounded bg-gray-200 dark:bg-zinc-700' : 'px-2 py-1'}>Strike</button>
-            {/* Add more buttons for other features as needed */}
-        </div>
-    );
-};
-
-const TiptapEditor = ({ content, onChange }: { content: string; onChange: (richText: string) => void; }) => {
+export default function TiptapEditor({ content, onChange }: { content: string; onChange: (richText: string) => void; }) {
     const editor = useEditor({
-        extensions: [StarterKit],
+        extensions: [
+            StarterKit.configure({
+                // disable codeBlock and blockquote if you want
+            }),
+            TextStyle,
+            Color,
+            Underline,
+            HorizontalRule,
+        ],
         content: content,
-        // ✨ FIX: Add this line to solve the SSR error
         immediatelyRender: false,
         editorProps: {
             attributes: {
-                class: 'prose dark:prose-invert prose-sm sm:prose-base focus:outline-none p-4 min-h-[300px] w-full',
+                class: 'prose dark:prose-invert prose-sm sm:prose-base lg:prose-lg xl:prose-2xl m-5 focus:outline-none min-h-[300px] w-full rounded-b-md border border-t-0 border-gray-300 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900',
             },
         },
-        onUpdate: ({ editor }) => {
+        onUpdate({ editor }) {
             onChange(editor.getHTML());
         },
     });
 
     return (
-        <div className="rounded-md border border-gray-300 bg-gray-50 dark:border-zinc-700 dark:bg-zinc-800">
+        <div className="flex flex-col">
             <TiptapToolbar editor={editor} />
             <EditorContent editor={editor} />
         </div>
     );
-};
-
-export default TiptapEditor;
+}
