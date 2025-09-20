@@ -166,7 +166,7 @@ export async function updateProfile(prevState: EditProfileState, formData: FormD
             .from('profile_pics')
             .getPublicUrl(filePath);
 
-        dataToUpdate.profile_pic_url = publicUrl;
+        dataToUpdate.profile_pic_url = `${publicUrl}?updated_at=${Date.now()}`;
     }
 
     // --- Update the profiles table ---
