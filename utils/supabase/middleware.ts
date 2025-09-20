@@ -35,10 +35,11 @@ export async function updateSession(request: NextRequest) {
 
     // --- MODIFIED LOGIC ---
 
-    // Define protected routes that require a *complete* profile
-    const protectedAppRoutes = ['/profile', '/blog', '/create', '/settings'];
+    // ✨ FIX: Removed '/blog' from the list of protected routes.
+    // These routes now require a *complete* profile to access.
+    const protectedAppRoutes = ['/profile', '/create', '/settings'];
 
-    // Define all routes that require a user to be logged in (app routes + onboarding)
+    // All routes that require a user to be logged in at all.
     const allProtectedRoutes = [...protectedAppRoutes, '/onboarding'];
 
     if (user) {
@@ -63,7 +64,7 @@ export async function updateSession(request: NextRequest) {
         }
 
     } else {
-        // If user is not logged in, protect all defined routes
+        // If user is not logged in, protect only the defined routes
         if (allProtectedRoutes.some(route => pathname.startsWith(route))) {
             return NextResponse.redirect(new URL('/auth/login', request.url));
         }
