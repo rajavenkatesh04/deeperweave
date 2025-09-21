@@ -181,7 +181,7 @@ export default function CreateBlogPage() {
     }
 
     return (
-        <main className="max-w-5xl mx-auto px-4">
+        <main className="max-w-5xl mx-auto px-4 ">
             <Breadcrumbs breadcrumbs={[{ label: 'Blog', href: '/blog' }, { label: 'Create Post', href: '/blog/create', active: true, }]} />
 
             <form ref={formRef} action={formAction} className="mt-6 space-y-8">
