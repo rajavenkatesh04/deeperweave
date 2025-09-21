@@ -1,96 +1,119 @@
+// @/app/ui/blog/PostCard.tsx
+
+'use client'; // Required for using React hooks (useRef, useEffect) and event handlers
+
+import { useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { PostForFeed } from '@/lib/data/blog-data';
+import { EyeIcon, HeartIcon, ChatBubbleOvalLeftEllipsisIcon } from '@heroicons/react/24/solid';
+import { gsap } from 'gsap';
 
 export default function PostCard({ post }: { post: PostForFeed }) {
+    const cardRef = useRef<HTMLAnchorElement>(null);
+    const bannerRef = useRef<HTMLDivElement>(null);
+    const authorInfoRef = useRef<HTMLDivElement>(null);
+    const statsInfoRef = useRef<HTMLDivElement>(null);
+    const timeline = useRef<gsap.core.Timeline | null>(null);
+
     // Extract counts, providing a fallback of 0
     const likeCount = post.likes[0]?.count || 0;
     const commentCount = post.comments[0]?.count || 0;
 
     // Safely strip HTML from content for the preview
     const plainTextContent = post.content_html?.replace(/<[^>]+>/g, '') || '';
-    const previewText = plainTextContent.length > 150
-        ? `${plainTextContent.substring(0, 150)}...`
-        : plainTextContent;
+
+    useEffect(() => {
+        // Set initial states
+        gsap.set(statsInfoRef.current, { opacity: 0, y: 10 }); // Start stats hidden and slightly down
+
+        // Create the GSAP timeline
+        timeline.current = gsap.timeline({ paused: true })
+            .to(authorInfoRef.current, {
+                opacity: 0,
+                y: -10, // Move author info up and out
+                duration: 0.25,
+                ease: 'power2.inOut',
+            })
+            .to(statsInfoRef.current, {
+                opacity: 1,
+                y: 0,      // Move stats info up and in
+                duration: 0.25,
+                ease: 'power2.inOut',
+            }, "-=0.2"); // Overlap animations slightly for a smoother transition
+
+        // Cleanup function
+        return () => {
+            timeline.current?.kill();
+        };
+    }, []);
+
+    const handleMouseEnter = () => {
+        timeline.current?.play();
+        gsap.to(bannerRef.current, { scale: 1.05, duration: 0.4, ease: 'power2.out' });
+    };
+
+    const handleMouseLeave = () => {
+        timeline.current?.reverse();
+        gsap.to(bannerRef.current, { scale: 1, duration: 0.4, ease: 'power2.out' });
+    };
 
     return (
-        <div className="group relative overflow-hidden rounded-2xl bg-white/70 backdrop-blur-lg shadow-lg transition-all duration-500 hover:shadow-xl hover:-translate-y-1 dark:bg-zinc-900/70 border border-white/30 dark:border-zinc-700/30">
-            {/* Header with author info */}
-            <div className="flex items-center p-3">
-                <div className="relative h-10 w-10 mr-3">
+        <Link
+            href={`/blog/${post.slug}`}
+            ref={cardRef}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            className="group flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-shadow duration-300 hover:shadow-lg dark:border-zinc-800 dark:bg-zinc-900"
+        >
+            {post.banner_url && (
+                <div ref={bannerRef} className="relative h-48 w-full overflow-hidden">
                     <Image
-                        src={post.author.profile_pic_url || '/placeholder-user.jpg'}
-                        alt={post.author.display_name}
+                        src={post.banner_url}
+                        alt={`Banner for ${post.title}`}
                         fill
-                        sizes="40px"
-                        className="rounded-full object-cover ring-2 ring-white/50 dark:ring-zinc-600/50"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        className="object-cover" // Removed transform classes, GSAP will handle it
                     />
                 </div>
-                <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-800 dark:text-zinc-200 truncate">{post.author.display_name}</p>
-                    <p className="text-xs text-gray-500 dark:text-zinc-400 truncate">@{post.author.username}</p>
-                </div>
-
-            </div>
-
-            {/* Banner image with fade effect */}
-            {post.banner_url && (
-                <Link href={`/blog/${post.slug}`} className="block relative w-full aspect-[4/3] overflow-hidden">
-                    <div className="relative w-full h-full overflow-hidden">
-                        <Image
-                            src={post.banner_url}
-                            alt={`Banner for ${post.title}`}
-                            fill
-                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                            className="object-cover transition-transform duration-700 group-hover:scale-105"
-                        />
-                        {/* Gradient overlay for text visibility */}
-                        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60 z-1"></div>
-                        {/* Bottom fade effect */}
-                        <div className="absolute bottom-0 left-0 w-full h-1/3 bg-gradient-to-t from-white dark:from-black to-transparent z-2"></div>
-                    </div>
-
-                    {/* Title positioned at bottom with fade effect */}
-                    <div className="absolute text-center bottom-0 left-0 z-10 w-full p-4">
-                        <h2 className="text-lg font-bold text-white mb-1 line-clamp-2 drop-shadow-md">
-                            {post.title}
-                        </h2>
-                    </div>
-                </Link>
             )}
-
-            {/* Post content preview */}
-            <Link href={`/blog/${post.slug}`} className="block p-3 pt-0">
-                {!post.banner_url && (
-                    <h2 className="text-lg font-bold text-gray-900 dark:text-zinc-100 mb-2 line-clamp-1 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                        {post.title}
-                    </h2>
-                )}
-            </Link>
-
-            {/* Metrics with icons */}
-            <div className="px-3 pb-2 flex items-center gap-4 text-sm">
-                <div className="flex items-center gap-1 text-gray-600 dark:text-zinc-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
-                    <span className="font-semibold text-gray-800 dark:text-zinc-200">{likeCount}</span>
+            <div className="flex flex-1 flex-col p-6">
+                <div className="flex-1">
+                    <h2 className="text-xl font-bold tracking-tight text-gray-900 transition-colors group-hover:text-indigo-600 dark:text-zinc-100 dark:group-hover:text-indigo-400">{post.title}</h2>
+                    <p className="mt-3 text-base text-gray-600 dark:text-zinc-400 line-clamp-3">
+                        {plainTextContent}
+                    </p>
                 </div>
-                <div className="flex items-center gap-1 text-gray-600 dark:text-zinc-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                    </svg>
-                    <span className="font-semibold text-gray-800 dark:text-zinc-200">{commentCount}</span>
-                </div>
-                <div className="flex items-center gap-1 text-gray-600 dark:text-zinc-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                    <span className="font-semibold text-gray-800 dark:text-zinc-200">{post.view_count}</span>
+
+                {/* Redesigned Author/Stats Section */}
+                <div className="relative mt-6 h-12 border-t border-gray-200 pt-4 dark:border-zinc-800">
+
+                    {/* Author Info (Visible by default) */}
+                    <div ref={authorInfoRef} className="absolute inset-0 flex items-center gap-3 pt-4">
+                        <Image
+                            src={post.author.profile_pic_url || '/placeholder-user.jpg'}
+                            alt={post.author.display_name}
+                            width={40} height={40}
+                            className="h-10 w-10 shrink-0 rounded-full object-cover"
+                        />
+                        <div>
+                            <p className="font-semibold text-gray-800 dark:text-zinc-200">{post.author.display_name}</p>
+                            <p className="text-xs text-gray-500 dark:text-zinc-500">@{post.author.username}</p>
+                        </div>
+                    </div>
+
+                    {/* Stats Info (Revealed on hover) */}
+                    <div ref={statsInfoRef} className="absolute inset-0 flex items-center justify-between pt-4 text-sm text-gray-500 dark:text-zinc-400">
+                        <p className="font-semibold text-gray-800 dark:text-zinc-200">Post Stats</p>
+                        <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-1.5" title={`${likeCount} likes`}><HeartIcon className="h-4 w-4 text-red-500/80" /><span>{likeCount}</span></div>
+                            <div className="flex items-center gap-1.5" title={`${commentCount} comments`}><ChatBubbleOvalLeftEllipsisIcon className="h-4 w-4 text-sky-500/80" /><span>{commentCount}</span></div>
+                            <div className="flex items-center gap-1.5" title={`${post.view_count} views`}><EyeIcon className="h-4 w-4 text-gray-500/80" /><span>{post.view_count}</span></div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
-            
-        </div>
+        </Link>
     );
 }
