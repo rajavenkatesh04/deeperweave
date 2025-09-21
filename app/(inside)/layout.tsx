@@ -1,9 +1,10 @@
 import { Metadata } from 'next';
 // 1. Import the new unified Navigation component
 import Navigation from "@/app/ui/SideBar/Navigation";
+import '@/components/tiptap-templates/simple/simple-editor.scss';
 
 export const metadata: Metadata = {
-    title: 'Profile',
+    title: 'Liv',
 };
 
 export default function Layout({ children }: { children: React.ReactNode }) {

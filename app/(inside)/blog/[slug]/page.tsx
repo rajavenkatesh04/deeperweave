@@ -8,7 +8,8 @@ import Link from "next/link";
 import MovieInfoCard from "@/app/ui/blog/MovieInfoCard";
 import ViewTracker from "@/app/ui/blog/ViewTracker";
 import LikeButton from "@/app/ui/blog/LikeButton";
-import CommentsSection from "@/app/ui/blog/CommentsSection";
+import CommentsSection from "@/app/ui/blog/CommentsSection"
+import parse from 'html-react-parser';
 
 export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params;

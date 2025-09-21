@@ -17,7 +17,6 @@
     "@radix-ui/react-popover": "^1.1.15",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.57.4",
-    "@tailwindcss/typography": "^0.5.16",
     "@tiptap/core": "^3.4.4",
     "@tiptap/extension-color": "^3.4.4",
     "@tiptap/extension-highlight": "^3.4.4",
@@ -40,6 +39,7 @@
     "firebase-admin": "^13.5.0",
     "framer-motion": "^12.23.15",
     "gsap": "^3.13.0",
+    "html-react-parser": "^5.2.6",
     "lodash.throttle": "^4.1.1",
     "lucide-react": "^0.544.0",
     "next": "15.5.2",
@@ -56,6 +56,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@tailwindcss/typography": "^0.5.16",
     "@types/lodash.throttle": "^4.1.9",
     "@types/node": "^20",
     "@types/react": "^19.1.12",
