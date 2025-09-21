@@ -41,22 +41,23 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                             />
                         </div>
                         {/* Gradient overlay for better text visibility */}
-                        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-black/70 z-1"></div>
-                        {/* Bottom fade effect - now to black in dark mode */}
-                        <div className="absolute bottom-0 left-0 w-full h-1/3 bg-gradient-to-t from-black to-transparent z-2"></div>
+                        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/60 z-1"></div>
+                        {/* Bottom fade effect - different for light and dark mode */}
+                        <div className="absolute bottom-0 left-0 w-full h-1/3 bg-gradient-to-t from-white dark:from-black to-transparent z-2"></div>
                     </>
                 ) : (
                     <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-zinc-800 dark:to-zinc-700 z-0"></div>
                 )}
 
-                {/* Title and author moved to bottom left */}
+                {/* Title and author moved to bottom left with acrylic pill */}
                 <header className="absolute bottom-0 left-0 z-10 w-full p-6 md:p-8">
                     <div className="max-w-4xl mx-auto">
                         <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 leading-tight">
                             {post.title}
                         </h1>
 
-                        <div className="flex items-center gap-4">
+                        {/* Restored translucent acrylic pill shape */}
+                        <div className="flex items-center gap-4 bg-black/20 backdrop-blur-sm rounded-full py-2 px-4 w-fit">
                             <Link href={`/profile/${author.username}`}>
                                 <Image
                                     src={author.profile_pic_url || '/placeholder-user.jpg'}
@@ -93,14 +94,6 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                     dangerouslySetInnerHTML={{ __html: post.content_html }}
                 />
 
-                {/* Engagement metrics */}
-                <div className="mt-8 pt-6 border-t border-gray-200 dark:border-zinc-800 flex items-center justify-between">
-                    <LikeButton postId={post.id} initialLikes={likeCount} userHasLiked={userHasLiked} />
-                    <p className="text-sm font-medium text-gray-500 dark:text-zinc-400">
-                        {post.view_count.toLocaleString()} views
-                    </p>
-                </div>
-
                 {/* Movie Info Card at the bottom */}
                 {post.type === 'review' && post.movie_id && movie && (
                     <div className="mt-8">
@@ -110,6 +103,15 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                         />
                     </div>
                 )}
+
+                {/* Engagement metrics */}
+                <div className="mt-8 pt-6 p-6 border rounded-md  border-gray-200 dark:border-zinc-800 flex items-center justify-between">
+                    <LikeButton postId={post.id} initialLikes={likeCount} userHasLiked={userHasLiked} />
+                    <p className="text-sm font-medium text-gray-500 dark:text-zinc-400">
+                        {post.view_count.toLocaleString()} views
+                    </p>
+                </div>
+
 
                 {/* Comments Section */}
                 <CommentsSection

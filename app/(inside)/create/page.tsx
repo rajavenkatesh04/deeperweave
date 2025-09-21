@@ -31,14 +31,6 @@ const creationOptions: CreationOption[] = [
         iconBgColor: 'bg-purple-100 dark:bg-purple-900/50',
         iconTextColor: 'text-purple-600 dark:text-purple-400',
     },
-    {
-        title: 'New Project',
-        description: 'Showcase a project you\'ve been working on with a gallery and details.',
-        href: '/projects/create',
-        icon: RectangleStackIcon,
-        iconBgColor: 'bg-emerald-100 dark:bg-emerald-900/50',
-        iconTextColor: 'text-emerald-600 dark:text-emerald-400',
-    },
 ];
 
 function CreateCard({

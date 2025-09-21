@@ -20,7 +20,7 @@ export default async function ProfileEditPage() {
     }
 
     return (
-        <main>
+        <main className={`p-6`}>
             <Breadcrumbs
                 breadcrumbs={[
                     { label: 'Profile', href: '/profile' },

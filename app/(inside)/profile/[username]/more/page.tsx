@@ -16,10 +16,7 @@ export default function MoreOptionsPage() {
 
     return (
         <div className="flex items-center justify-cente ">
-            <div className="w-full max-w-md rounded-2xl bg-zinc-900 p-6 shadow-2xl ring-1 ring-white/10">
-                <h1 className="mb-6 text-2xl font-bold text-white">
-                    More Options
-                </h1>
+            <div className="w-full  rounded-md bg-zinc-900 p-2 shadow-2xl ring-1 ring-white/10">
 
                 <nav className="flex flex-col space-y-2">
                     {navLinks.map((link) => {
