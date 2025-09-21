@@ -9,14 +9,14 @@ export default async function BlogPage() {
     const posts = await getPosts();
 
     return (
-        <main>
+        <main className={`p-6`}>
             <Breadcrumbs
                 breadcrumbs={[
                     { label: 'Home', href: '/' },
                     { label: 'Blog', href: '/blog', active: true },
                 ]}
             />
-            <div className="mt-6">
+            <div className="mt-6 ">
                 <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-zinc-100">The Blog</h1>
                 <p className="mt-2 text-gray-600 dark:text-zinc-400">Read the latest reviews and articles from our community.</p>
             </div>

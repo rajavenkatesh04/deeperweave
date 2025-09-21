@@ -26,7 +26,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               This prevents the fixed bottom navigation bar from hiding the content.
               On desktop screens (`md:`), the `md:p-12` overrides this, so there's no extra padding.
             */}
-            <div className="flex-grow p-6 pb-20 md:overflow-y-auto md:p-12">
+            <div className="flex-grow  pb-20 md:overflow-y-auto md:p-12">
                 {children}
             </div>
         </div>
