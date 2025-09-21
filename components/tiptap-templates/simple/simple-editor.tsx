@@ -13,6 +13,8 @@ import { Highlight } from "@tiptap/extension-highlight"
 import { Subscript } from "@tiptap/extension-subscript"
 import { Superscript } from "@tiptap/extension-superscript"
 import { Selection } from "@tiptap/extensions"
+import { Placeholder } from "@tiptap/extension-placeholder"
+
 
 // --- UI Primitives ---
 import { Button } from "@/components/tiptap-ui-primitive/button"
@@ -221,6 +223,9 @@ export function SimpleEditor({
                     openOnClick: false,
                     enableClickSelection: true,
                 },
+            }),
+            Placeholder.configure({
+                placeholder, // Pass the placeholder prop here
             }),
             HorizontalRule,
             TextAlign.configure({ types: ["heading", "paragraph"] }),

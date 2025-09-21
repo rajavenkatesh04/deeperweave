@@ -297,12 +297,12 @@ export default function CreateBlogPage() {
                     <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
                         Content
                     </label>
-                    <div className="rounded-lg border border-gray-300 dark:border-zinc-700 overflow-hidden">
+                    <div className="rounded-lg border border-gray-300 dark:border-zinc-700 ">
                         <SimpleEditor
                             value={content}                    // Current content flows down
                             onChange={handleEditorChange}     // Changes flow back up
                             placeholder="Start writing your blog post..."
-                            className="min-h-[400px]"
+
                         />
                     </div>
                     <input type="hidden" name="content_html" value={content} />

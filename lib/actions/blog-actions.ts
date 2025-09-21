@@ -10,6 +10,60 @@ import { getUserProfile } from '@/lib/data/user-data';
 import { ofetch } from 'ofetch';
 import { v4 as uuidv4 } from 'uuid';
 
+
+// =====================================================================
+// == NEW ACTION: For Tiptap content image upload
+// =====================================================================
+const ContentImageSchema = z.object({
+    image: z
+        .instanceof(File, { message: 'A file is required.' })
+        .refine((file) => file.size > 0, 'File cannot be empty.')
+        .refine((file) => file.type.startsWith('image/'), 'File must be an image.')
+        // Using the 5MB limit from your tiptap-utils.ts
+        .refine((file) => file.size < 5 * 1024 * 1024, 'Image must be less than 5MB.'),
+});
+
+export async function uploadContentImage(formData: FormData) {
+    const supabase = await createClient();
+    const userData = await getUserProfile();
+
+    if (!userData?.user) {
+        // Return a JSON error, don't throw
+        return { success: false, error: 'You must be logged in to upload images.' };
+    }
+
+    const validatedFields = ContentImageSchema.safeParse({
+        image: formData.get('image'),
+    });
+
+    if (!validatedFields.success) {
+        const fieldErrors = validatedFields.error.flatten().fieldErrors;
+        const firstError = fieldErrors.image?.[0];
+        return { success: false, error: firstError || 'Invalid file.' };
+    }
+
+    const { image } = validatedFields.data;
+    const fileExtension = image.name.split('.').pop();
+    const fileName = `${uuidv4()}.${fileExtension}`;
+
+    // Suggestion: Use a different folder or bucket for content images
+    const filePath = `${userData.user.id}/content_images/${fileName}`;
+
+    // Suggestion: Create a new bucket named 'post_images' for organization
+    const { error: uploadError } = await supabase.storage
+        .from('post_images') // Using a new bucket for content images
+        .upload(filePath, image);
+
+    if (uploadError) {
+        console.error('Content Image Upload Error:', uploadError);
+        return { success: false, error: 'Could not upload the image.' };
+    }
+
+    const { data } = supabase.storage.from('post_images').getPublicUrl(filePath);
+
+    return { success: true, url: data.publicUrl };
+}
+
 // =====================================================================
 // == NEW ACTION: For immediate banner upload
 // =====================================================================

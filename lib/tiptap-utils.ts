@@ -1,6 +1,7 @@
 import type { Node as TiptapNode } from "@tiptap/pm/model"
 import { NodeSelection, Selection, TextSelection } from "@tiptap/pm/state"
 import type { Editor } from "@tiptap/react"
+import {uploadContentImage} from "@/lib/actions/blog-actions";
 
 export const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 
@@ -280,40 +281,37 @@ export function isNodeTypeSelected(
 }
 
 /**
- * Handles image upload with progress tracking and abort capability
+ * Handles image upload by calling a Next.js Server Action
  * @param file The file to upload
- * @param onProgress Optional callback for tracking upload progress
- * @param abortSignal Optional AbortSignal for cancelling the upload
  * @returns Promise resolving to the URL of the uploaded image
  */
-export const handleImageUpload = async (
-  file: File,
-  onProgress?: (event: { progress: number }) => void,
-  abortSignal?: AbortSignal
-): Promise<string> => {
-  // Validate file
+export const handleImageUpload = async (file: File): Promise<string> => {
+  // Validate file client-side first (optional, but good practice)
   if (!file) {
-    throw new Error("No file provided")
+    throw new Error("No file provided");
   }
 
   if (file.size > MAX_FILE_SIZE) {
     throw new Error(
-      `File size exceeds maximum allowed (${MAX_FILE_SIZE / (1024 * 1024)}MB)`
-    )
+        `File size exceeds maximum allowed (${MAX_FILE_SIZE / (1024 * 1024)}MB)`
+    );
   }
 
-  // For demo/testing: Simulate upload progress. In production, replace the following code
-  // with your own upload implementation.
-  for (let progress = 0; progress <= 100; progress += 10) {
-    if (abortSignal?.aborted) {
-      throw new Error("Upload cancelled")
-    }
-    await new Promise((resolve) => setTimeout(resolve, 500))
-    onProgress?.({ progress })
+  // 2. Create FormData and call the server action
+  const formData = new FormData();
+  formData.append("image", file);
+
+  const result = await uploadContentImage(formData);
+
+  // 3. Handle the response from the server action
+  if (!result.success || !result.url) {
+    // If the upload fails, throw an error. Tiptap will catch it.
+    throw new Error(result.error || "Image upload failed.");
   }
 
-  return "/images/tiptap-ui-placeholder-image.jpg"
-}
+  // 4. On success, return the public URL
+  return result.url;
+};
 
 type ProtocolOptions = {
   /**

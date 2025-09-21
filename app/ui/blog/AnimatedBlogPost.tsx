@@ -1,17 +1,19 @@
 // @/app/ui/blog/AnimatedBlogPost.tsx
 'use client';
 
-import { motion, Variants } from "framer-motion"; // ✨ 1. Import the Variants type
-import { Eye, Calendar, ArrowUp } from "lucide-react";
+import { motion, Variants, AnimatePresence } from "framer-motion";
+import { Eye, Calendar, ArrowUp, Crown, Star, AlertTriangle, Lock } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import MovieInfoCard from "@/app/ui/blog/MovieInfoCard";
 import LikeButton from "@/app/ui/blog/LikeButton";
 import CommentsSection from "@/app/ui/blog/CommentsSection";
 import { Post, Movie, CommentWithAuthor, UserProfile } from "@/lib/definitions";
+import DOMPurify from 'isomorphic-dompurify';
+import { useState } from 'react';
 
-// Animation variants
-const pageVariants: Variants = { // ✨ 2. Apply the Variants type
+// Animation variants (keeping existing ones + new ones)
+const pageVariants: Variants = {
     initial: { opacity: 0 },
     animate: {
         opacity: 1,
@@ -22,7 +24,7 @@ const pageVariants: Variants = { // ✨ 2. Apply the Variants type
     }
 };
 
-const heroVariants: Variants = { // ✨ 2. Apply the Variants type
+const heroVariants: Variants = {
     initial: {
         opacity: 0,
         scale: 1.1
@@ -32,12 +34,12 @@ const heroVariants: Variants = { // ✨ 2. Apply the Variants type
         scale: 1,
         transition: {
             duration: 1.2,
-            ease: [0.25, 0.46, 0.45, 0.94] // ✨ 3. Revert to the numeric array
+            ease: [0.25, 0.46, 0.45, 0.94]
         }
     }
 };
 
-const titleVariants: Variants = { // ✨ 2. Apply the Variants type
+const titleVariants: Variants = {
     initial: {
         opacity: 0,
         y: 50
@@ -48,12 +50,12 @@ const titleVariants: Variants = { // ✨ 2. Apply the Variants type
         transition: {
             duration: 0.8,
             delay: 0.3,
-            ease: [0.25, 0.46, 0.45, 0.94] // ✨ 3. Revert to the numeric array
+            ease: [0.25, 0.46, 0.45, 0.94]
         }
     }
 };
 
-const pillVariants: Variants = { // ✨ 2. Apply the Variants type
+const pillVariants: Variants = {
     initial: {
         opacity: 0,
         y: 30,
@@ -76,7 +78,7 @@ const pillVariants: Variants = { // ✨ 2. Apply the Variants type
     }
 };
 
-const contentVariants: Variants = { // ✨ 2. Apply the Variants type
+const contentVariants: Variants = {
     initial: {
         opacity: 0,
         y: 60
@@ -87,12 +89,12 @@ const contentVariants: Variants = { // ✨ 2. Apply the Variants type
         transition: {
             duration: 0.8,
             delay: 0.4,
-            ease: [0.25, 0.46, 0.45, 0.94] // ✨ 3. Revert to the numeric array
+            ease: [0.25, 0.46, 0.45, 0.94]
         }
     }
 };
 
-const separatorVariants: Variants = { // ✨ 2. Apply the Variants type
+const separatorVariants: Variants = {
     initial: {
         width: 0,
         opacity: 0
@@ -108,13 +110,198 @@ const separatorVariants: Variants = { // ✨ 2. Apply the Variants type
     }
 };
 
-// ... a large portion of the component is omitted for brevity ...
-// No other changes are needed in the rest of the file.
-// The component's return statement and prop definitions remain the same.
+// 🔥 NEW: NSFW Warning Screen Variants
+const nsfwOverlayVariants: Variants = {
+    initial: { opacity: 0 },
+    animate: { opacity: 1 },
+    exit: {
+        opacity: 0,
+        scale: 0.95,
+        transition: { duration: 0.5, ease: "easeInOut" }
+    }
+};
 
-// The rest of your component code...
-// ...
-// ...
+const nsfwContentVariants: Variants = {
+    initial: { scale: 0.8, opacity: 0 },
+    animate: {
+        scale: 1,
+        opacity: 1,
+        transition: {
+            delay: 0.2,
+            duration: 0.6,
+            ease: "backOut"
+        }
+    }
+};
+
+// 🔥 NEW: Rating Component
+const StarRating = ({ rating }: { rating: number }) => {
+    return (
+        <motion.div
+            className="flex items-center gap-1"
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.8, duration: 0.5 }}
+        >
+            {[1, 2, 3, 4, 5].map((star) => (
+                <motion.div
+                    key={star}
+                    initial={{ opacity: 0, rotate: -180 }}
+                    animate={{ opacity: 1, rotate: 0 }}
+                    transition={{
+                        delay: 0.8 + (star * 0.1),
+                        duration: 0.5,
+                        ease: "backOut"
+                    }}
+                    whileHover={{ scale: 1.2, rotate: 15 }}
+                >
+                    <Star
+                        size={16}
+                        className={`${
+                            star <= rating
+                                ? 'text-yellow-400 fill-yellow-400'
+                                : 'text-gray-300 dark:text-gray-600'
+                        } transition-colors duration-200`}
+                    />
+                </motion.div>
+            ))}
+            <span className="ml-2 text-sm font-medium text-white/90">
+                {rating}/5
+            </span>
+        </motion.div>
+    );
+};
+
+// 🔥 NEW: Premium Badge Component
+const PremiumBadge = () => {
+    return (
+        <motion.div
+            className="flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-amber-500 text-white px-3 py-1 rounded-full text-sm font-semibold shadow-lg"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.9, duration: 0.6, ease: "backOut" }}
+            whileHover={{
+                scale: 1.05,
+                boxShadow: "0 8px 25px -8px rgba(245, 158, 11, 0.5)"
+            }}
+        >
+            <motion.div
+                animate={{ rotate: [0, 15, -15, 0] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            >
+                <Crown size={16} />
+            </motion.div>
+            PREMIUM
+        </motion.div>
+    );
+};
+
+// 🔥 NEW: NSFW Warning Screen Component
+const NSFWWarning = ({ onAccept, onReject }: { onAccept: () => void, onReject: () => void }) => {
+    return (
+        <AnimatePresence>
+            <motion.div
+                className="fixed inset-0 bg-black/95 backdrop-blur-sm flex items-center justify-center z-[100]"
+                variants={nsfwOverlayVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+            >
+                {/* Sexy background effects */}
+                <div className="absolute inset-0 overflow-hidden">
+                    <motion.div
+                        className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-br from-red-500/20 to-pink-500/20 rounded-full"
+                        animate={{
+                            rotate: [0, 360],
+                            scale: [1, 1.2, 1],
+                        }}
+                        transition={{
+                            duration: 20,
+                            repeat: Infinity,
+                            ease: "linear"
+                        }}
+                    />
+                    <motion.div
+                        className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-gradient-to-tr from-orange-500/20 to-red-500/20 rounded-full"
+                        animate={{
+                            rotate: [360, 0],
+                            scale: [1.2, 1, 1.2],
+                        }}
+                        transition={{
+                            duration: 25,
+                            repeat: Infinity,
+                            ease: "linear"
+                        }}
+                    />
+                </div>
+
+                <motion.div
+                    className="relative max-w-md mx-auto p-8 bg-white/10 backdrop-blur-md rounded-3xl border border-white/20 text-center text-white shadow-2xl"
+                    variants={nsfwContentVariants}
+                >
+                    {/* Warning Icon */}
+                    <motion.div
+                        className="flex justify-center mb-6"
+                        initial={{ scale: 0, rotate: -180 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        transition={{ delay: 0.4, duration: 0.8, ease: "backOut" }}
+                    >
+                        <div className="p-4 bg-red-500/20 rounded-full">
+                            <AlertTriangle size={48} className="text-red-400" />
+                        </div>
+                    </motion.div>
+
+                    {/* Title */}
+                    <motion.h2
+                        className="text-3xl font-bold mb-4 bg-gradient-to-r from-red-400 to-pink-400 bg-clip-text text-transparent"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.6 }}
+                    >
+                        Adult Content Warning
+                    </motion.h2>
+
+                    {/* Description */}
+                    <motion.p
+                        className="text-gray-300 mb-8 text-lg leading-relaxed"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.7 }}
+                    >
+                        This content is intended for mature audiences only.
+                        You must be 18 or older to proceed.
+                    </motion.p>
+
+                    {/* Buttons */}
+                    <motion.div
+                        className="flex gap-4 justify-center"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.8 }}
+                    >
+                        <motion.button
+                            onClick={onAccept}
+                            className="px-8 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white font-semibold rounded-full hover:from-red-600 hover:to-pink-600 transition-all duration-200 shadow-lg"
+                            whileHover={{ scale: 1.05, boxShadow: "0 10px 25px -3px rgba(239, 68, 68, 0.4)" }}
+                            whileTap={{ scale: 0.95 }}
+                        >
+                            I&apos;m 18+ - Continue
+                        </motion.button>
+
+                        <motion.button
+                            onClick={onReject}
+                            className="px-8 py-3 bg-gray-600 text-white font-semibold rounded-full hover:bg-gray-700 transition-all duration-200"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                        >
+                            Go Back
+                        </motion.button>
+                    </motion.div>
+                </motion.div>
+            </motion.div>
+        </AnimatePresence>
+    );
+};
 
 const ScrollToTop = () => {
     return (
@@ -163,6 +350,9 @@ interface AnimatedBlogPostProps {
     userHasLiked: boolean;
     comments: CommentWithAuthor[];
     viewerData: { profile: UserProfile | null } | null;
+    nsfw: boolean;
+    premium: boolean;
+    rating?: number;
 }
 
 export default function AnimatedBlogPost({
@@ -172,8 +362,29 @@ export default function AnimatedBlogPost({
                                              likeCount,
                                              userHasLiked,
                                              comments,
-                                             viewerData
+                                             viewerData,
+                                             nsfw,
+                                             premium,
+                                             rating
                                          }: AnimatedBlogPostProps) {
+
+    const [nsfwAccepted, setNsfwAccepted] = useState(!nsfw);
+    const sanitizedHtml = DOMPurify.sanitize(post.content_html);
+
+    // 🔥 NSFW handlers
+    const handleNsfwAccept = () => {
+        setNsfwAccepted(true);
+    };
+
+    const handleNsfwReject = () => {
+        window.history.back();
+    };
+
+    // 🔥 Show NSFW warning if not accepted
+    if (nsfw && !nsfwAccepted) {
+        return <NSFWWarning onAccept={handleNsfwAccept} onReject={handleNsfwReject} />;
+    }
+
     return (
         <motion.article
             className="min-h-screen bg-white dark:bg-black relative overflow-hidden"
@@ -208,6 +419,13 @@ export default function AnimatedBlogPost({
                     }}
                 />
             </div>
+
+            {/* 🔥 Premium Badge - Top Left */}
+            {premium && (
+                <div className="fixed top-8 left-8 z-50">
+                    <PremiumBadge />
+                </div>
+            )}
 
             {/* Hero Banner Section */}
             <motion.div
@@ -253,14 +471,21 @@ export default function AnimatedBlogPost({
                     />
                 )}
 
-                <motion.div
-                    className="absolute top-8 right-8 z-10"
-                    initial={{ opacity: 0, x: 50 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 1, duration: 0.6 }}
-                >
-                    <FloatingStats viewCount={post.view_count} />
-                </motion.div>
+                {/* 🔥 Enhanced floating stats with rating */}
+                <div className="absolute top-8 right-8 z-10 flex flex-col gap-4 items-end">
+                    <motion.div
+                        initial={{ opacity: 0, x: 50 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 1, duration: 0.6 }}
+                    >
+                        <FloatingStats viewCount={post.view_count} />
+                    </motion.div>
+
+                    {/* Rating Display */}
+                    {rating && rating > 0 && (
+                        <StarRating rating={rating} />
+                    )}
+                </div>
 
                 <header className="absolute bottom-0 left-0 z-10 w-full p-6 md:p-8">
                     <div className="max-w-4xl mx-auto">
@@ -333,7 +558,7 @@ export default function AnimatedBlogPost({
                     initial={{ opacity: 0, y: 40 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, delay: 0.8 }}
-                    dangerouslySetInnerHTML={{ __html: post.content_html }}
+                    dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
                 />
 
                 {post.type === 'review' && post.movie_id && movie && (
