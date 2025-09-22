@@ -3,6 +3,7 @@ import { Cal_Sans } from "next/font/google";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next"
 import {ThemeProvider} from "next-themes";
+import {Toaster} from "sonner";
 
 const calSans = Cal_Sans({
     weight: ['400'],
@@ -35,6 +36,7 @@ export default function RootLayout({
             disableTransitionOnChange
         >
             {children}
+            <Toaster richColors position="top-right" />
             <Analytics />
         </ThemeProvider>
         </body>
