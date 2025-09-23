@@ -15,7 +15,7 @@ export default async function ProfileSettingsPage() {
     }
 
     return (
-        <main>
+        <main className={`p-6`}>
             <Breadcrumbs
                 breadcrumbs={[
                     { label: 'Profile', href: '/profile' },

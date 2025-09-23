@@ -1,22 +1,17 @@
-// app/(inside)/profile/edit/page.tsx
-
 import Breadcrumbs from "@/app/ui/Breadcrumbs";
-import { getUserProfile } from "@/lib/data/user-data"; // 1. Import the data fetching function
-import { redirect } from "next/navigation";  // 2. Import redirect for handling non-logged-in users
-import ProfileEditForm from "./edit-form";   // 3. Import your new form component
+// ✨ 1. Use the new data fetching function
+import { getProfileForEdit } from "@/lib/data/user-data";
+import { redirect } from "next/navigation";
+import ProfileEditForm from "./edit-form";
 import { Suspense } from "react";
 import { ProfileFormSkeleton } from "@/app/ui/skeletons";
 
-
-
-// 4. Make the page an async Server Component
 export default async function ProfileEditPage() {
-    // 5. Fetch user data on the server
-    const userData = await getUserProfile();
+    // ✨ 2. Fetch all data needed for the edit page, including favorite films
+    const userData = await getProfileForEdit();
 
-    // 6. Redirect if the user isn't logged in or has no profile
     if (!userData || !userData.profile) {
-        redirect("/auth/login");
+        redirect("/login");
     }
 
     return (
@@ -27,11 +22,13 @@ export default async function ProfileEditPage() {
                     { label: 'Edit', href: '/profile/edit', active: true },
                 ]}
             />
-
             <div className="mt-6">
-
                 <Suspense fallback={<ProfileFormSkeleton />}>
-                    <ProfileEditForm profile={userData.profile} />
+                    {/* ✨ 3. Pass the favorite films down to the form component */}
+                    <ProfileEditForm
+                        profile={userData.profile}
+                        favoriteFilms={userData.favoriteFilms || []}
+                    />
                 </Suspense>
             </div>
         </main>

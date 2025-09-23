@@ -1,33 +1,13 @@
-import { notFound } from 'next/navigation';
-import { getProfileByUsername } from '@/lib/data/user-data';
-import { getPostsByUserId } from '@/lib/data/blog-data';
-import PostCard from '@/app/ui/blog/PostCard';
+// app/(inside)/profile/[username]/page.tsx
+import { redirect } from 'next/navigation';
 
-export default async function ProfilePostsPage({
-                                                   params
-                                               }: {
-    params: Promise<{ username: string }> // Updated type to reflect Promise
+export default async function ProfilePage({
+                                              params
+                                          }: {
+    params: Promise<{ username: string }>
 }) {
-    // Await params before accessing its properties
     const { username } = await params;
 
-    const profile = await getProfileByUsername(username);
-    if (!profile) notFound();
-
-    const posts = await getPostsByUserId(profile.id);
-
-    return (
-        <div>
-            {posts && posts.length > 0 ? (
-                <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-                    {posts.map((post) => ( <PostCard key={post.id} post={post} /> ))}
-                </div>
-            ) : (
-                <div className="text-center p-8 rounded-lg border-2 border-dashed border-gray-200 dark:border-zinc-800">
-                    <h3 className="font-semibold text-gray-900 dark:text-zinc-100">No Posts Yet</h3>
-                    <p className="mt-1 text-sm text-gray-500 dark:text-zinc-400">This user hasn&apos;t posted anything yet.</p>
-                </div>
-            )}
-        </div>
-    );
+    // Redirect to the home tab as the default
+    redirect(`/profile/${username}/home`);
 }

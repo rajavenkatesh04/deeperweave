@@ -1,6 +1,6 @@
 import { createClient } from '@/utils/supabase/server';
 import { unstable_noStore as noStore } from 'next/cache';
-import {UserProfile} from "@/lib/definitions";
+import {Movie, UserProfile} from "@/lib/definitions";
 
 
 export async function getUserProfile() {
@@ -186,4 +186,60 @@ export async function getProfileData(username: string): Promise<ProfileData> {
     const followStatus = follow ? follow.status : 'not_following';
 
     return { profile, followStatus: followStatus as 'not_following' | 'pending' | 'accepted', followerCount, followingCount };
+}
+
+
+
+/**
+ * =================================================================
+ * ✨ CORE FIX: REVISED DATA FETCHING FOR THE EDIT PAGE
+ * =================================================================
+ * This function now robustly fetches the user's profile and correctly
+ * handles the shape of the joined 'favorite_films' data from Supabase.
+ */
+export async function getProfileForEdit() {
+    noStore();
+    const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        // If there's no user, we can't fetch anything.
+        return null;
+    }
+
+    // 1. Fetch the user's main profile details.
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single<UserProfile>();
+
+    // If the user is authenticated but has no profile row yet, return that info.
+    if (!profile) {
+        return { user, profile: null, favoriteFilms: [] };
+    }
+
+    // 2. Fetch the user's favorite films and join the related movie data.
+    const { data: filmData, error } = await supabase
+        .from('favorite_films')
+        .select('rank, movies(*)') // This joins the ENTIRE movie object
+        .eq('user_id', user.id)
+        .order('rank', { ascending: true });
+
+    if (error) {
+        console.error("Error fetching favorite films for edit page:", error);
+        // Return the profile data even if films fail to load.
+        return { user, profile, favoriteFilms: [] };
+    }
+
+    // 3. ✨ IMPORTANT: Safely transform the film data.
+    // This now handles cases where `fav.movies` is an object OR an array.
+    const favoriteFilms = filmData
+        .map(fav => ({
+            rank: fav.rank,
+            movies: (Array.isArray(fav.movies) ? fav.movies[0] : fav.movies) as Movie | null,
+        }))
+        .filter(fav => fav.movies); // Ensure we don't pass any null movie records
+
+    return { user, profile, favoriteFilms: favoriteFilms as { rank: number; movies: Movie }[] };
 }

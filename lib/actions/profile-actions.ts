@@ -7,6 +7,7 @@ import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { ProfileSearchResult  } from '@/lib/definitions';
+import { getMovieDetails } from './blog-actions';
 
 export type OnboardingState = {
     message?: string | null;
@@ -93,11 +94,20 @@ export type EditProfileState = {
     };
 };
 
-// Schema for updating the profile. Most fields are optional.
+// Define a specific type for the data being inserted
+type FavoriteFilmInsert = {
+    user_id: string;
+    movie_tmdb_id: number;
+    rank: number;
+};
+
 const UpdateProfileSchema = z.object({
     username: z.string().min(3, 'Username must be at least 3 characters.').regex(/^[a-z0-9_]+$/, 'Username can only contain lowercase letters, numbers, and underscores.'),
     display_name: z.string().min(1, 'Display name is required.'),
     bio: z.string().max(160, 'Bio cannot be longer than 160 characters.').optional(),
+    fav_movie_1: z.coerce.number().optional(),
+    fav_movie_2: z.coerce.number().optional(),
+    fav_movie_3: z.coerce.number().optional(),
 });
 
 export async function updateProfile(prevState: EditProfileState, formData: FormData): Promise<EditProfileState> {
@@ -105,7 +115,7 @@ export async function updateProfile(prevState: EditProfileState, formData: FormD
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-        return { message: 'Authentication error. Please timeline in again.' };
+        return { message: 'Authentication error. Please log in again.' };
     }
 
     const validatedFields = UpdateProfileSchema.safeParse(Object.fromEntries(formData.entries()));
@@ -117,9 +127,8 @@ export async function updateProfile(prevState: EditProfileState, formData: FormD
         };
     }
 
-    const { username, display_name, bio } = validatedFields.data;
+    const { username, display_name, bio, fav_movie_1, fav_movie_2, fav_movie_3 } = validatedFields.data;
 
-    // Check if the new username is already taken by another user
     const { data: existingProfile } = await supabase
         .from('profiles').select('username').eq('username', username).neq('id', user.id).maybeSingle();
 
@@ -141,18 +150,16 @@ export async function updateProfile(prevState: EditProfileState, formData: FormD
         bio: bio,
     };
 
-    // --- Handle File Upload ---
     const profilePicFile = formData.get('profile_pic') as File;
 
     if (profilePicFile && profilePicFile.size > 0) {
-        // Create a unique path for the file.
         const fileExtension = profilePicFile.name.split('.').pop();
         const filePath = `${user.id}/profile.${fileExtension}`;
 
         const { error: uploadError } = await supabase.storage
-            .from('profile_pics') // Your bucket name
+            .from('profile_pics')
             .upload(filePath, profilePicFile, {
-                upsert: true, // Overwrite existing file if any
+                upsert: true,
                 cacheControl: '3600',
             });
 
@@ -161,7 +168,6 @@ export async function updateProfile(prevState: EditProfileState, formData: FormD
             return { message: 'Database error: Could not upload profile picture.' };
         }
 
-        // Get the public URL of the uploaded file
         const { data: { publicUrl } } = supabase.storage
             .from('profile_pics')
             .getPublicUrl(filePath);
@@ -169,18 +175,57 @@ export async function updateProfile(prevState: EditProfileState, formData: FormD
         dataToUpdate.profile_pic_url = `${publicUrl}?updated_at=${Date.now()}`;
     }
 
-    // --- Update the profiles table ---
     const { error: updateError } = await supabase
         .from('profiles')
         .update(dataToUpdate)
         .eq('id', user.id);
+
 
     if (updateError) {
         console.error('Profile update error:', updateError);
         return { message: 'Database error: Could not update profile.' };
     }
 
-    // Revalidate paths and redirect
+    // Upsert movie details before adding them as favorites
+    const favoriteMovieIds = [fav_movie_1, fav_movie_2, fav_movie_3].filter(Boolean);
+    if (favoriteMovieIds.length > 0) {
+        try {
+            for (const movieId of favoriteMovieIds) {
+                const movieDetails = await getMovieDetails(movieId as number);
+                await supabase.from('movies').upsert({
+                    tmdb_id: movieId,
+                    title: movieDetails.title,
+                    poster_url: movieDetails.poster_path ? `https://image.tmdb.org/t/p/w500${movieDetails.poster_path}` : null,
+                    release_date: movieDetails.release_date,
+                    director: movieDetails.director,
+                });
+            }
+        } catch (error) {
+            console.error("Favorite movie upsert error:", error);
+            return { message: "Server Error: Could not save favorite movie details." };
+        }
+    }
+
+    const { error: deleteError } = await supabase.from('favorite_films').delete().eq('user_id', user.id);
+    if (deleteError) {
+        console.error('Error clearing old favorites:', deleteError);
+        return { message: 'Database error: Could not update favorite films.' };
+    }
+
+    const newFavorites = [
+        fav_movie_1 && { user_id: user.id, movie_tmdb_id: fav_movie_1, rank: 1 },
+        fav_movie_2 && { user_id: user.id, movie_tmdb_id: fav_movie_2, rank: 2 },
+        fav_movie_3 && { user_id: user.id, movie_tmdb_id: fav_movie_3, rank: 3 },
+    ].filter(Boolean);
+
+    if (newFavorites.length > 0) {
+        const { error: insertError } = await supabase.from('favorite_films').insert(newFavorites as FavoriteFilmInsert[]);
+        if (insertError) {
+            console.error('Error inserting new favorites:', insertError);
+            return { message: 'Database error: Could not save favorite films.' };
+        }
+    }
+
     revalidatePath('/profile/edit');
     revalidatePath('/profile');
     redirect('/profile');

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRightIcon, DocumentPlusIcon, CalendarDaysIcon, RectangleStackIcon } from '@heroicons/react/24/outline';
+import { ArrowRightIcon, DocumentPlusIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
 
 // Type for the creation options and CreateCard props
 interface CreationOption {

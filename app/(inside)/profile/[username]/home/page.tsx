@@ -1,91 +1,55 @@
-// app/dashboard/profile/page.tsx
+import FavoriteFilmsDisplay from '@/app/ui/profile/FavoriteFilmsDisplay';
+import { getProfileByUsername } from '@/lib/data/user-data';
+import { createClient } from '@/utils/supabase/server';
+import { notFound } from 'next/navigation';
+import { Movie } from '@/lib/definitions';
 
-import { Suspense } from "react";
-import { redirect } from "next/navigation";
-import { getUserProfile } from '@/lib/data/user-data';
-import {
-    EnvelopeIcon,
-    CakeIcon,
-    SparklesIcon,
-    UserCircleIcon,
-} from '@heroicons/react/24/outline';
-import { ProfileFormSkeleton } from '@/app/ui/skeletons';
-import { UserProfile } from '@/lib/definitions';
+// Helper function to robustly fetch and format favorite films data
+async function getFavoriteFilms(userId: string): Promise<{ rank: number; movies: Movie }[]> {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+        .from('favorite_films')
+        .select('rank, movies(*)') // This join fetches the full movie object
+        .eq('user_id', userId)
+        .order('rank');
 
-// Types for the component props
-interface User {
-    id: string;
-    email: string;
-}
-
-interface UserProfileData {
-    user: User;
-    profile: UserProfile;
-}
-
-// --- Reusable Component for Profile Details ---
-function ProfileDetailItem({
-                               icon: Icon,
-                               label,
-                               value
-                           }: {
-    icon: React.ElementType;
-    label: string;
-    value: string | null | undefined;
-}) {
-    return (
-        <div className="flex items-center p-4 sm:p-5">
-            <div className="flex-shrink-0">
-                <Icon className="h-6 w-6 text-gray-500 dark:text-zinc-500" />
-            </div>
-            <div className="ml-4 flex-grow">
-                <p className="text-sm font-medium text-gray-500 dark:text-zinc-400">{label}</p>
-                <p className="wrap-anywhere text-base text-gray-900 dark:text-zinc-200">{value || 'Not specified'}</p>
-            </div>
-        </div>
-    );
-}
-
-// --- PROFILE CARD  ---
-function ProfileCard({ user, profile }: { user: User; profile: UserProfile }) {
-    const formattedBirthday = profile?.date_of_birth
-        ? new Date(profile.date_of_birth).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-        })
-        : null;
-
-    return (
-        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 md:p-6">
-            <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-zinc-100">Account Information</h3>
-            <div className="divide-y divide-gray-200 border-t border-gray-200 pt-4 dark:divide-zinc-800 dark:border-zinc-800">
-                <ProfileDetailItem icon={EnvelopeIcon} label="Email Address" value={user.email} />
-                <ProfileDetailItem icon={UserCircleIcon} label="Gender" value={profile?.gender} />
-                <ProfileDetailItem icon={CakeIcon} label="Birthday" value={formattedBirthday} />
-                <ProfileDetailItem icon={SparklesIcon} label="Subscription Plan" value={profile?.subscription_status || 'Free'} />
-            </div>
-        </div>
-    );
-}
-
-// --- MAIN PAGE (Server Component) ---
-export default async function ProfilePage() {
-    const userData = await getUserProfile();
-
-    if (!userData) {
-        redirect("/auth/login");
+    if (error || !data) {
+        console.error("Error fetching favorite films:", error);
+        return [];
     }
 
-    const { user, profile } = userData as UserProfileData;
+    // This correctly handles cases where Supabase returns a single object OR an array for the join.
+    const formattedData = data
+        .map(fav => ({
+            rank: fav.rank,
+            movies: Array.isArray(fav.movies) ? fav.movies[0] : fav.movies,
+        }))
+        .filter(fav => fav.movies); // Ensure no records are passed if the movie data is null
+
+    return formattedData as { rank: number; movies: Movie; }[];
+}
+
+/**
+ * The Page component for a user's "Home" tab.
+ * In Next.js 15, params is now a Promise that needs to be awaited.
+ */
+export default async function ProfileHomePage({ params }: { params: Promise<{ username: string }> }) {
+    // Await the params Promise
+    const { username } = await params;
+
+    const profile = await getProfileByUsername(username);
+    if (!profile) {
+        // If no profile is found for the given username, render a 404 page.
+        notFound();
+    }
+
+    // Fetch the user's top films to display on their home feed.
+    const favoriteFilms = await getFavoriteFilms(profile.id);
 
     return (
-        <main>
-            <div className="space-y-8 mt-6">
-                <Suspense fallback={<ProfileFormSkeleton />}>
-                    <ProfileCard user={user} profile={profile} />
-                </Suspense>
-            </div>
-        </main>
+        <div className="space-y-8">
+            <FavoriteFilmsDisplay favoriteFilms={favoriteFilms} />
+            {/* You can add other home-feed components here, like recent activity, etc. */}
+        </div>
     );
 }

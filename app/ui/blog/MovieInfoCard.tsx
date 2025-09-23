@@ -5,7 +5,7 @@
 import { useState, useTransition } from 'react';
 import Image from 'next/image';
 import { getMovieDetails } from '@/lib/actions/blog-actions';
-import { UserGroupIcon, XMarkIcon, FilmIcon, BookOpenIcon } from '@heroicons/react/24/solid';
+import { UserGroupIcon, XMarkIcon, FilmIcon } from '@heroicons/react/24/solid';
 import LoadingSpinner from '@/app/ui/loading-spinner';
 import { Movie } from '@/lib/definitions';
 

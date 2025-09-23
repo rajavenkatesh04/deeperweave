@@ -1,3 +1,4 @@
+// app/(inside)/profile/[username]/posts/page.tsx
 import { notFound } from 'next/navigation';
 import { getProfileByUsername } from '@/lib/data/user-data';
 import { getPostsByUserId } from '@/lib/data/blog-data';
