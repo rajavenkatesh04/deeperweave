@@ -1,6 +1,7 @@
 // @/app/ui/blog/badges.tsx
 
-import { StarIcon, EyeSlashIcon } from '@heroicons/react/24/solid';
+// ✨ 1. Added ExclamationTriangleIcon for the new badge
+import { StarIcon, EyeSlashIcon, ExclamationTriangleIcon } from '@heroicons/react/24/solid';
 import { clsx } from 'clsx';
 
 /**
@@ -41,6 +42,27 @@ export function NsfwBadge() {
         >
             <EyeSlashIcon className="h-3.5 w-3.5" />
             <span>NSFW</span>
+        </div>
+    );
+}
+
+/**
+ * ✨ 2. New badge for spoiler warnings.
+ */
+export function SpoilerBadge() {
+    return (
+        <div
+            className={clsx(
+                "flex h-6 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium",
+                // Using a neutral gray color scheme for the spoiler warning
+                "bg-gray-100 text-gray-800 dark:bg-zinc-800/80 dark:text-zinc-300",
+                // Subtle border
+                "border border-gray-200/80 dark:border-zinc-700/50"
+            )}
+            title="Warning: This post contains spoilers"
+        >
+            <ExclamationTriangleIcon className="h-3.5 w-3.5" />
+            <span>Spoilers</span>
         </div>
     );
 }

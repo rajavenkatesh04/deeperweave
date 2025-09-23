@@ -119,15 +119,15 @@ export async function uploadBanner(formData: FormData) {
 // =====================================================================
 export type CreatePostState = { message?: string | null; errors?: { title?: string[]; content_html?: string[]; banner_url?: string[]; }; };
 
-// The schema now expects a banner_url string, not a File object
 const PostSchema = z.object({
     title: z.string().min(3, { message: 'Title must be at least 3 characters.' }),
     content_html: z.string().min(50, { message: 'Content must be at least 50 characters.' }),
     movieApiId: z.coerce.number().optional(),
-    banner_url: z.string().url({ message: "Invalid banner URL." }).optional().or(z.literal('')), // Accept URL, empty string, or undefined
-    rating: z.coerce.number().min(0).max(5).optional(),
+    banner_url: z.string().url({ message: "Invalid banner URL." }).optional().or(z.literal('')),
+    rating: z.coerce.number().min(0).max(5).step(0.5).optional(),
     is_premium: z.string().optional().transform(value => value === 'on'),
     is_nsfw: z.string().optional().transform(value => value === 'on'),
+    has_spoilers: z.string().optional().transform(value => value === 'on'),
 });
 
 // Helper to generate a URL-friendly and unique slug
@@ -147,11 +147,8 @@ export async function createPost(prevState: CreatePostState, formData: FormData)
         return { errors: validatedFields.error.flatten().fieldErrors };
     }
 
-    // De-structure the validated data, which now includes banner_url
-    const { title, content_html, banner_url, movieApiId, rating, is_premium, is_nsfw } = validatedFields.data;
+    const { title, content_html, banner_url, movieApiId, rating, is_premium, is_nsfw, has_spoilers } = validatedFields.data;
     const slug = createSlug(title);
-
-    // The entire file upload block is now GONE from this action.
 
     if (movieApiId) {
         try {
@@ -177,12 +174,13 @@ export async function createPost(prevState: CreatePostState, formData: FormData)
         title,
         content_html,
         slug,
-        banner_url: banner_url || null, // Use the URL from the form, or null if it's empty
+        banner_url: banner_url || null,
         type: movieApiId ? 'review' as const : 'general' as const,
         movie_id: movieApiId,
-        rating: rating || null,
+        rating: rating,
         is_premium: is_premium,
         is_nsfw: is_nsfw,
+        has_spoilers: has_spoilers,
         author_username: userData.profile.username,
         author_profile_pic_url: userData.profile.profile_pic_url,
     };

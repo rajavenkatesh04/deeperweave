@@ -43,6 +43,7 @@ export interface Post {
     rating?: number;
     is_premium: boolean;
     is_nsfw: boolean;
+    has_spoilers: boolean;
     created_at: string;
     view_count: number; // Add this
     author_username: string;

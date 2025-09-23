@@ -1,15 +1,13 @@
-// @/app/ui/blog/PostCard.tsx
-
 'use client';
 
-// ✨ 1. Import useState
 import { useRef, useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { PostForFeed } from '@/lib/data/blog-data';
 import { EyeIcon, HeartIcon, ChatBubbleOvalLeftEllipsisIcon } from '@heroicons/react/24/solid';
 import { gsap } from 'gsap';
-import { PremiumBadge, NsfwBadge } from '@/app/ui/blog/badges';
+// ✨ 1. Import the new SpoilerBadge component
+import { PremiumBadge, NsfwBadge, SpoilerBadge } from '@/app/ui/blog/badges';
 
 export default function PostCard({ post }: { post: PostForFeed }) {
     const cardRef = useRef<HTMLAnchorElement>(null);
@@ -18,32 +16,24 @@ export default function PostCard({ post }: { post: PostForFeed }) {
     const statsInfoRef = useRef<HTMLDivElement>(null);
     const timeline = useRef<gsap.core.Timeline | null>(null);
 
-    // ✨ 2. Add state to track if the view is mobile
     const [isMobile, setIsMobile] = useState(false);
 
     const likeCount = post.likes[0]?.count || 0;
     const commentCount = post.comments[0]?.count || 0;
     const plainTextContent = post.content_html?.replace(/<[^>]+>/g, '') || '';
 
-    // ✨ 3. This effect now checks for screen size and sets up the correct animation
     useEffect(() => {
         const checkDevice = () => {
             setIsMobile(window.innerWidth < 768); // Tailwind's `md` breakpoint
         };
-        // Check on initial load
         checkDevice();
-        // Add listener for window resize
         window.addEventListener('resize', checkDevice);
 
-        // Initial GSAP setup
         gsap.set(statsInfoRef.current, { opacity: 0, y: 10 });
 
-        // Kill any existing animations before creating a new one
         timeline.current?.kill();
 
         if (window.innerWidth < 768) {
-            // --- MOBILE ANIMATION ---
-            // Infinitely loops back and forth with a 3-second pause between cycles
             timeline.current = gsap.timeline({ repeat: -1, yoyo: true, repeatDelay: 3 })
                 .to(authorInfoRef.current, {
                     opacity: 0,
@@ -58,8 +48,6 @@ export default function PostCard({ post }: { post: PostForFeed }) {
                     ease: 'power2.inOut',
                 }, "-=0.3");
         } else {
-            // --- DESKTOP ANIMATION ---
-            // Paused timeline controlled by hover events
             timeline.current = gsap.timeline({ paused: true })
                 .to(authorInfoRef.current, {
                     opacity: 0,
@@ -75,14 +63,12 @@ export default function PostCard({ post }: { post: PostForFeed }) {
                 }, "-=0.3");
         }
 
-        // Cleanup function to remove listener and kill animation
         return () => {
             window.removeEventListener('resize', checkDevice);
             timeline.current?.kill();
         };
-    }, [isMobile]); // Rerun this effect if isMobile changes
+    }, [isMobile]);
 
-    // ✨ 4. Handlers now check if it's not mobile before running
     const handleMouseEnter = () => {
         if (!isMobile) {
             timeline.current?.play();
@@ -126,9 +112,11 @@ export default function PostCard({ post }: { post: PostForFeed }) {
                         {plainTextContent}
                     </p>
 
-                    <div className="mt-4 flex items-center gap-2">
+                    <div className="mt-4 flex flex-wrap items-center gap-2">
                         {post.is_premium && <PremiumBadge />}
                         {post.is_nsfw && <NsfwBadge />}
+                        {/* ✨ 2. Conditionally render the SpoilerBadge */}
+                        {post.has_spoilers && <SpoilerBadge />}
                     </div>
                 </div>
 

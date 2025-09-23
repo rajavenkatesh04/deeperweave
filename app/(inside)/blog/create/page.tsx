@@ -1,5 +1,3 @@
-// @/app/ui/blog/CreateBlogPage.tsx
-
 'use client';
 
 import { useState, useEffect, useActionState, useRef } from 'react';
@@ -34,28 +32,54 @@ function MovieSearchResults({ results, onSelectMovie, isLoading }: { results: Mo
 
 function StarRatingInput({ rating, setRating }: { rating: number; setRating: (rating: number) => void }) {
     const [hover, setHover] = useState(0);
+
     return (
-        <div className="flex items-center">
-            {[...Array(5)].map((_, index) => {
-                const ratingValue = index + 1;
-                return (
-                    <label key={ratingValue}>
-                        <input
-                            type="radio"
-                            name="rating"
-                            value={ratingValue}
-                            onClick={() => setRating(ratingValue)}
-                            className="hidden"
-                        />
-                        <StarIcon
-                            className="h-6 w-6 cursor-pointer transition-colors"
-                            color={ratingValue <= (hover || rating) ? '#f59e0b' : '#e5e7eb'}
-                            onMouseEnter={() => setHover(ratingValue)}
-                            onMouseLeave={() => setHover(0)}
-                        />
-                    </label>
-                );
-            })}
+        <div>
+            <div className="flex items-center gap-4">
+                <div className="flex">
+                    {[...Array(5)].map((_, index) => {
+                        const ratingValue = index + 1;
+                        return (
+                            <label key={ratingValue} className="cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="rating"
+                                    value={ratingValue}
+                                    onClick={() => {
+                                        if (rating === ratingValue) setRating(ratingValue - 0.5);
+                                        else if (rating === ratingValue - 0.5) setRating(0);
+                                        else setRating(ratingValue);
+                                    }}
+                                    className="hidden"
+                                />
+                                <StarIcon
+                                    className="h-7 w-7 transition-all duration-150"
+                                    style={{
+                                        clipPath: (hover || rating) >= ratingValue ? 'none' : (hover || rating) >= ratingValue - 0.5 ? 'inset(0 50% 0 0)' : 'none'
+                                    }}
+                                    color={(hover || rating) >= ratingValue - 0.5 ? '#f59e0b' : '#e5e7eb'}
+                                    onMouseEnter={() => setHover(ratingValue)}
+                                    onMouseLeave={() => setHover(0)}
+                                />
+                            </label>
+                        );
+                    })}
+                </div>
+                {rating > 0 && (
+                    <button
+                        type="button"
+                        onClick={() => setRating(0)}
+                        className="text-xs text-gray-500 hover:text-red-500"
+                        title="Clear rating"
+                    >
+                        Clear
+                    </button>
+                )}
+            </div>
+            {/* ✨ ADDED: Hint text for discoverability */}
+            <p className="mt-2 text-xs text-gray-500 dark:text-zinc-400">
+                Tip: Click a selected star again for a half-rating.
+            </p>
         </div>
     );
 }
@@ -73,8 +97,8 @@ function ToggleSwitch({ label, isEnabled, setIsEnabled, name }: { label: string;
                     checked={isEnabled}
                     onChange={() => setIsEnabled(!isEnabled)}
                 />
-                <div className={clsx("block h-6 w-10 rounded-full", isEnabled ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-zinc-700')}></div>
-                <div className={clsx("dot absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform", isEnabled && 'translate-x-full')}></div>
+                <div className={clsx("block h-6 w-10 rounded-full transition-colors duration-300 ease-in-out", isEnabled ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-zinc-700')}></div>
+                <div className={clsx("dot absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform duration-300 ease-in-out", isEnabled && 'translate-x-full')}></div>
             </div>
         </label>
     );
@@ -100,6 +124,7 @@ export default function CreateBlogPage() {
     const [rating, setRating] = useState(0);
     const [isPremium, setIsPremium] = useState(false);
     const [isNsfw, setIsNsfw] = useState(false);
+    const [hasSpoilers, setHasSpoilers] = useState(false);
 
     const [bannerUrl, setBannerUrl] = useState<string | null>(null);
     const [isUploadingBanner, setIsUploadingBanner] = useState(false);
@@ -117,6 +142,7 @@ export default function CreateBlogPage() {
             setRating(0);
             setIsPremium(false);
             setIsNsfw(false);
+            setHasSpoilers(false);
         }
     }, [state]);
 
@@ -177,7 +203,7 @@ export default function CreateBlogPage() {
     };
 
     const handleEditorChange = (html: string) => {
-        setContent(html) // Update your state when editor changes
+        setContent(html)
     }
 
     return (
@@ -185,9 +211,7 @@ export default function CreateBlogPage() {
             <Breadcrumbs breadcrumbs={[{ label: 'Blog', href: '/blog' }, { label: 'Create Post', href: '/blog/create', active: true, }]} />
 
             <form ref={formRef} action={formAction} className="mt-6 space-y-8">
-                {/* Top Section - Metadata Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {/* Movie Search Card */}
                     <div className="rounded-lg border bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                         <h2 className="text-lg font-semibold mb-4">Link a Movie</h2>
                         <div className="relative">
@@ -219,7 +243,6 @@ export default function CreateBlogPage() {
                         )}
                     </div>
 
-                    {/* Banner Upload Card */}
                     <div className="rounded-lg border bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                         <h2 className="text-lg font-semibold mb-4">Banner Image</h2>
                         {bannerUrl ? (
@@ -257,7 +280,6 @@ export default function CreateBlogPage() {
                         {state.errors?.banner_url && <p className="mt-2 text-xs text-red-500">{state.errors.banner_url[0]}</p>}
                     </div>
 
-                    {/* Rating & Options Card */}
                     <div className="rounded-lg border bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 md:col-span-2 xl:col-span-1">
                         <div className="space-y-6">
                             <div>
@@ -267,16 +289,16 @@ export default function CreateBlogPage() {
                             </div>
                             <div className="border-t border-gray-200 dark:border-zinc-700 pt-4">
                                 <h3 className="text-lg font-semibold mb-3">Options</h3>
-                                <div className="space-y-3">
+                                <div className="space-y-4">
                                     <ToggleSwitch label="Premium Content" isEnabled={isPremium} setIsEnabled={setIsPremium} name="is_premium" />
                                     <ToggleSwitch label="NSFW (18+)" isEnabled={isNsfw} setIsEnabled={setIsNsfw} name="is_nsfw" />
+                                    <ToggleSwitch label="Contains Spoilers" isEnabled={hasSpoilers} setIsEnabled={setHasSpoilers} name="has_spoilers" />
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Post Title */}
                 <div className="space-y-2">
                     <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
                         Post Title
@@ -292,15 +314,14 @@ export default function CreateBlogPage() {
                     {state.errors?.title && <p className="text-sm text-red-500">{state.errors.title[0]}</p>}
                 </div>
 
-                {/* Content Editor - Full Width */}
                 <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
                         Content
                     </label>
                     <div className="rounded-lg border border-gray-300 dark:border-zinc-700 ">
                         <SimpleEditor
-                            value={content}                    // Current content flows down
-                            onChange={handleEditorChange}     // Changes flow back up
+                            value={content}
+                            onChange={handleEditorChange}
                             placeholder="Start writing your blog post..."
 
                         />
@@ -311,7 +332,6 @@ export default function CreateBlogPage() {
 
                 <input type="hidden" name="banner_url" value={bannerUrl || ''} />
 
-                {/* Action Buttons */}
                 <div className="flex items-center justify-between pt-6 border-t border-gray-200 dark:border-zinc-700">
                     {state.message && <p className="text-sm text-red-600">{state.message}</p>}
                     <div className="flex items-center gap-4 ml-auto">

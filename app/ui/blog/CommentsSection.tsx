@@ -81,7 +81,7 @@ export default function CommentsSection({
                             <SubmitButton />
                         ) : (
                             <p className="text-sm text-gray-600 dark:text-zinc-400">
-                                Please <Link href="/login" className="font-semibold text-gray-800 underline hover:text-gray-900 dark:text-zinc-200 dark:hover:text-white">log in</Link> to comment.
+                                Please <Link href="/auth/login" className="font-semibold text-gray-800 underline hover:text-gray-900 dark:text-zinc-200 dark:hover:text-white">log in</Link> to comment.
                             </p>
                         )}
                     </div>

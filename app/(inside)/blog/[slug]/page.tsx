@@ -31,7 +31,6 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                 comments={comments}
                 viewerData={viewerData}
                 nsfw={postData.is_nsfw}
-                premium={postData.is_premium}
                 rating={postData.rating}
             />
         </>
