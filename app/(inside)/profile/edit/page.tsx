@@ -4,7 +4,6 @@ import { getProfileForEdit } from "@/lib/data/user-data";
 import { redirect } from "next/navigation";
 import ProfileEditForm from "./edit-form";
 import { Suspense } from "react";
-import { ProfileFormSkeleton } from "@/app/ui/skeletons";
 
 export default async function ProfileEditPage() {
     // ✨ 2. Fetch all data needed for the edit page, including favorite films
@@ -23,7 +22,7 @@ export default async function ProfileEditPage() {
                 ]}
             />
             <div className="mt-6">
-                <Suspense fallback={<ProfileFormSkeleton />}>
+                <Suspense fallback={`loading...`}>
                     {/* ✨ 3. Pass the favorite films down to the form component */}
                     <ProfileEditForm
                         profile={userData.profile}

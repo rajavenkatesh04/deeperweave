@@ -5,7 +5,6 @@ import { redirect } from 'next/navigation';
 import Breadcrumbs from '@/app/ui/Breadcrumbs';
 import SettingsForm from './settings-form';
 import { Suspense } from 'react';
-import { ProfileFormSkeleton } from '@/app/ui/skeletons';
 
 export default async function ProfileSettingsPage() {
     const userData = await getUserProfile();
@@ -23,7 +22,7 @@ export default async function ProfileSettingsPage() {
                 ]}
             />
             <div className="mt-6">
-                <Suspense fallback={<ProfileFormSkeleton />}>
+                <Suspense fallback="loading...">
                     <SettingsForm profile={userData.profile} />
                 </Suspense>
             </div>

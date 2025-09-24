@@ -49,7 +49,6 @@ export default async function ProfileHomePage({ params }: { params: Promise<{ us
     return (
         <div className="space-y-8">
             <FavoriteFilmsDisplay favoriteFilms={favoriteFilms} />
-            {/* You can add other home-feed components here, like recent activity, etc. */}
         </div>
     );
 }

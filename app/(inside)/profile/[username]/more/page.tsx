@@ -13,7 +13,6 @@ import {
     PowerIcon,
     TrashIcon,
 } from '@heroicons/react/24/outline';
-import { ProfileFormSkeleton } from '@/app/ui/skeletons';
 import { UserProfile } from '@/lib/definitions';
 
 // --- TYPE DEFINITIONS ---
@@ -145,7 +144,7 @@ export default async function ProfileAndSettingsPage() {
                 <OptionsCard />
 
                 {/* The AccountInfoCard depends on fetched data, so it's wrapped in Suspense. */}
-                <Suspense fallback={<ProfileFormSkeleton />}>
+                <Suspense fallback="loading...">
                     <AccountInfoCard user={user} profile={profile} />
                 </Suspense>
 
