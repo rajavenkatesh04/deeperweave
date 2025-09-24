@@ -243,3 +243,50 @@ export async function getProfileForEdit() {
 
     return { user, profile, favoriteFilms: favoriteFilms as { rank: number; movies: Movie }[] };
 }
+
+
+
+// FILE: lib/data/user-data.ts
+
+// ... (keep all your other functions as they are)
+
+// ✨ CORRECTED FUNCTION TO GET A USER'S FOLLOWERS
+export async function getFollowers(userId: string): Promise<UserProfile[]> {
+    noStore();
+    const supabase = await createClient();
+
+    const { data, error } = await supabase
+        .from('followers')
+        .select('profiles:follower_id(*)')
+        .eq('following_id', userId)
+        .eq('status', 'accepted');
+
+    if (error) {
+        console.error("Error fetching followers:", error);
+        return [];
+    }
+
+    // 👇 The Fix is here: access the first element of the nested array
+    return data.map(item => item.profiles[0]) as UserProfile[];
+}
+
+
+// ✨ CORRECTED FUNCTION TO GET WHO A USER IS FOLLOWING
+export async function getFollowing(userId: string): Promise<UserProfile[]> {
+    noStore();
+    const supabase = await createClient();
+
+    const { data, error } = await supabase
+        .from('followers')
+        .select('profiles:following_id(*)')
+        .eq('follower_id', userId)
+        .eq('status', 'accepted');
+
+    if (error) {
+        console.error("Error fetching following list:", error);
+        return [];
+    }
+
+    // 👇 The Fix is here: access the first element of the nested array
+    return data.map(item => item.profiles[0]) as UserProfile[];
+}

@@ -44,7 +44,6 @@ export default function CommentsSection({
     // Reset form on successful submission
     if (state?.error && formRef.current) {
         formRef.current.reset();
-        // ✨ FIX: The problematic line that tried to change the state has been removed.
     }
 
     const reversedComments = [...comments].reverse();

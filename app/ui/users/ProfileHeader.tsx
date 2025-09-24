@@ -37,8 +37,18 @@ export default function ProfileHeader({
                         <div className="hidden pt-3 lg:block"><span className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 ring-1 ring-gray-200 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-700"><span className="h-2 w-2 rounded-full bg-gray-400 dark:bg-zinc-500"></span>@{profile.username}</span></div>
                         {profile.bio && <p className="mt-4 text-lg text-gray-600 dark:text-zinc-400 md:text-xl">{profile.bio}</p>}
                         <div className="mt-4 flex items-center justify-center sm:justify-start gap-6 text-sm">
-                            <div><span className="font-bold text-gray-800 dark:text-zinc-200">{followerCount}</span> <span className="text-gray-500 dark:text-zinc-400">Followers</span></div>
-                            <div><span className="font-bold text-gray-800 dark:text-zinc-200">{followingCount}</span> <span className="text-gray-500 dark:text-zinc-400">Following</span></div>
+                            <Link href={`/profile/followers`} className="transition-opacity hover:opacity-80">
+                                <div>
+                                    <span className="font-bold text-gray-800 dark:text-zinc-200">{followerCount}</span>
+                                    <span className="text-gray-500 dark:text-zinc-400"> Followers</span>
+                                </div>
+                            </Link>
+                            <Link href={`/profile/following`} className="transition-opacity hover:opacity-80">
+                                <div>
+                                    <span className="font-bold text-gray-800 dark:text-zinc-200">{followingCount}</span>
+                                    <span className="text-gray-500 dark:text-zinc-400"> Following</span>
+                                </div>
+                            </Link>
                         </div>
                     </div>
 
