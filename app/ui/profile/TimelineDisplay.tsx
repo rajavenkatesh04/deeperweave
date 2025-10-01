@@ -127,7 +127,7 @@ export default function TimelineDisplay({ timelineEntries }: { timelineEntries: 
                             No films logged yet
                         </p>
                         <p className="text-sm text-gray-500 dark:text-zinc-500 mt-2">
-                            Start building your movie diary by logging films you've watched
+                            Start building your movie diary by logging films you&apos;ve watched
                         </p>
                     </div>
                 </div>
