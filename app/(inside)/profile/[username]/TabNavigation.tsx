@@ -10,15 +10,17 @@ export default function TabNavigation({ username, isOwnProfile }: { username: st
     const pathname = usePathname();
     const baseUrl = `/profile/${username}`;
 
-    // ✨ NEW LOGIC: Define the entire set of tabs based on isOwnProfile.
+    // Define the entire set of tabs based on isOwnProfile
     const tabs = isOwnProfile
         ? [
             { name: 'Home', href: `${baseUrl}/home` },
+            { name: 'Timeline', href: `${baseUrl}/timeline` },
             { name: 'Posts', href: `${baseUrl}/posts` },
             { name: 'More', href: `${baseUrl}/more` },
         ]
         : [
             { name: 'Home', href: `${baseUrl}/home` },
+            { name: 'Timeline', href: `${baseUrl}/timeline` },
             { name: 'Posts', href: `${baseUrl}/posts` },
         ];
 
@@ -26,7 +28,7 @@ export default function TabNavigation({ username, isOwnProfile }: { username: st
         <div className="border-b border-gray-200 dark:border-zinc-800 mt-6">
             <nav className="-mb-px flex space-x-8" aria-label="Tabs">
                 {tabs.map((tab) => {
-                    // A simple, exact path match determines the active tab.
+                    // A simple, exact path match determines the active tab
                     const isActive = pathname === tab.href;
                     return (
                         <Link
@@ -35,7 +37,7 @@ export default function TabNavigation({ username, isOwnProfile }: { username: st
                             className={clsx(
                                 'whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition-colors',
                                 isActive
-                                    ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                                    ? 'border-rose-500 text-rose-600 dark:border-rose-600 dark:text-rose-500'
                                     : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:text-zinc-300'
                             )}
                         >

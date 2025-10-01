@@ -1,10 +1,11 @@
 import {ProfileHeaderSkeleton, TabNavigationSkeleton} from "@/app/ui/skeletons";
+import LoadingSpinner from "@/app/ui/loading-spinner";
 
 
 export default function Loading() {
     return (
         <main className="p-6">
-            Loading...
+            <LoadingSpinner />
         </main>
     );
 }

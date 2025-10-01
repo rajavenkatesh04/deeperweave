@@ -123,3 +123,68 @@ export function PostCardSkeleton() {
 }
 
 
+// =================================================================================
+// --- TIMELINE SKELETON ---
+// =================================================================================
+
+function TimelineEntryCardSkeleton() {
+    return (
+        <div className="relative pl-8 pb-8">
+            {/* Timeline line */}
+            <div className="absolute left-[11px] top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-zinc-800" />
+
+            {/* Timeline dot */}
+            <div className="absolute left-0 top-2 w-6 h-6 rounded-full bg-gray-200 dark:bg-zinc-800 border-4 border-white dark:border-zinc-900" />
+
+            {/* Date badge skeleton */}
+            <div className="mb-3 inline-flex h-7 w-32 rounded-full bg-gray-200 dark:bg-zinc-800" />
+
+            {/* Content card skeleton */}
+            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-gray-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+                <div className="flex flex-col sm:flex-row gap-4 p-4">
+                    {/* Poster skeleton */}
+                    <div className="shrink-0 mx-auto sm:mx-0">
+                        <div className="w-[100px] h-[150px] rounded-lg bg-gray-200 dark:bg-zinc-800" />
+                    </div>
+
+                    {/* Content skeleton */}
+                    <div className="flex-1 min-w-0 space-y-3">
+                        {/* Title */}
+                        <div className="h-6 w-3/4 rounded-md bg-gray-200 dark:bg-zinc-800" />
+
+                        {/* Year */}
+                        <div className="h-4 w-16 rounded-md bg-gray-200 dark:bg-zinc-800" />
+
+                        {/* Rating stars */}
+                        <div className="flex items-center gap-1">
+                            {[...Array(5)].map((_, i) => (
+                                <div key={i} className="w-5 h-5 rounded-sm bg-gray-200 dark:bg-zinc-800" />
+                            ))}
+                        </div>
+
+                        {/* Notes skeleton */}
+                        <div className="bg-gray-50 dark:bg-zinc-800/50 p-3 rounded-lg border-l-2 border-gray-200 dark:border-zinc-700 space-y-2">
+                            <div className="h-3 w-full rounded-md bg-gray-200 dark:bg-zinc-800" />
+                            <div className="h-3 w-5/6 rounded-md bg-gray-200 dark:bg-zinc-800" />
+                        </div>
+
+                        {/* Review link skeleton */}
+                        <div className="h-5 w-32 rounded-md bg-gray-200 dark:bg-zinc-800" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+export function TimelineDisplaySkeleton() {
+    return (
+        <section className={`${shimmer} relative overflow-hidden max-w-4xl`}>
+            <TimelineEntryCardSkeleton />
+            <TimelineEntryCardSkeleton />
+            <TimelineEntryCardSkeleton />
+        </section>
+    );
+}
+
+
