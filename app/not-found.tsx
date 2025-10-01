@@ -1,35 +1,66 @@
+// app/not-found.tsx (Updated)
+
 import Link from 'next/link';
-import { ArrowLeftIcon, FaceFrownIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { getRandomMovie } from '@/lib/data/movies-data'; // ✨ Import our new function
 
-export default function NotFound() {
+// A few fun, movie-themed quotes for the 404 page
+const notFoundQuotes = [
+    "This is not the page you are looking for.",
+    "Looks like you've taken a wrong turn at Albuquerque.",
+    "Houston, we have a problem.",
+    "Where we're going, we don't need roads... or this page.",
+    "I have a bad feeling about this.",
+];
+
+export default async function NotFound() {
+    // ✨ Fetch a random movie on the server
+    const randomMovie = await getRandomMovie();
+
+    // ✨ Get a random quote from our array
+    const quote = notFoundQuotes[Math.floor(Math.random() * notFoundQuotes.length)];
+
+    // ✨ Set a fallback background color in case the movie fetch fails
+    const backgroundStyle = randomMovie?.backdrop_url
+        ? { backgroundImage: `url(${randomMovie.backdrop_url})` }
+        : { backgroundColor: '#111827' }; // A dark gray fallback
+
     return (
-        <main className="flex min-h-screen items-center justify-center bg-gray-50 p-8 dark:bg-zinc-950">
-            <div className="w-full max-w-lg text-center">
+        // The main container will have the movie backdrop
+        <main
+            className="flex min-h-screen items-center justify-center bg-cover bg-center bg-no-repeat"
+            style={backgroundStyle}
+        >
+            {/* This div provides a dark overlay for text readability */}
+            <div className="flex min-h-screen w-full items-center justify-center bg-black/75 p-8">
+                <div className="w-full max-w-lg text-center">
+                    <h1 className="text-6xl font-bold tracking-tight text-white sm:text-8xl">
+                        404
+                    </h1>
 
-                <FaceFrownIcon className="mx-auto h-24 w-24 text-gray-400 dark:text-zinc-600" aria-hidden="true" />
+                    <h2 className="mt-4 text-2xl font-semibold text-zinc-200">
+                        Lost in Space?
+                    </h2>
 
-                <h1 className="mt-6 text-5xl font-bold tracking-tight text-gray-900 dark:text-zinc-100 sm:text-6xl">
-                    404
-                </h1>
+                    {/* ✨ Display our random movie quote */}
+                    <p className="mt-4 text-lg italic text-zinc-400">
+                        &ldquo;{quote}&rdquo;
+                    </p>
 
-                <h2 className="mt-4 text-2xl font-semibold text-gray-800 dark:text-zinc-200">
-                    Page Not Found
-                </h2>
+                    <p className="mt-8 text-base text-zinc-300">
+                        It seems you&apos;ve ventured into uncharted territory. The page you were looking for doesn&apos;t exist.
+                    </p>
 
-                <p className="mt-4 text-base text-gray-600 dark:text-zinc-400">
-                    Oops! It seems you&apos;ve ventured into uncharted territory. The page you&apos;re looking for doesn&apos;t exist or has been moved.
-                </p>
-
-                <div className="mt-10">
-                    <Link
-                        href="/"
-                        className="group inline-flex items-center justify-center gap-2 rounded-xl bg-gray-900 px-6 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 dark:bg-white dark:text-gray-900 dark:focus:ring-white"
-                    >
-                        <ArrowLeftIcon className="h-5 w-5 transition-transform duration-200 group-hover:-translate-x-1" />
-                        <span>Go Back Home</span>
-                    </Link>
+                    <div className="mt-10">
+                        <Link
+                            href="/"
+                            className="group inline-flex items-center justify-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-semibold text-gray-900 shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-900"
+                        >
+                            <ArrowLeftIcon className="h-5 w-5 transition-transform duration-200 group-hover:-translate-x-1" />
+                            <span>Go Back Home</span>
+                        </Link>
+                    </div>
                 </div>
-
             </div>
         </main>
     );

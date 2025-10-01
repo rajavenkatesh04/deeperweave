@@ -508,11 +508,10 @@ export default function AnimatedBlogPost({
 
                 {post.type === 'review' && post.movie_id && movie && (
                     <motion.div
-                        className="mt-8"
+                        className="mt-8 relative z-20"
                         initial={{ opacity: 0, y: 60 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, delay: 1 }}
-                        whileHover={{ y: -4 }}
                     >
                         <MovieInfoCard
                             movieApiId={post.movie_id}
@@ -522,7 +521,7 @@ export default function AnimatedBlogPost({
                 )}
 
                 <motion.div
-                    className="mt-8 pt-6 p-6 border rounded-xl border-gray-200 dark:border-zinc-800 flex items-center justify-between bg-gradient-to-r from-gray-50/50 to-blue-50/50 dark:from-zinc-900/50 dark:to-zinc-800/50 backdrop-blur-sm"
+                    className="mt-8 pt-6 p-6 border rounded-xl border-gray-200 dark:border-zinc-800 flex items-center justify-between bg-gradient-to-r from-gray-50/50 to-blue-50/50 dark:from-zinc-900/50 dark:to-zinc-800/50 backdrop-blur-sm relative z-10" // Added relative z-10 here
                     initial={{ opacity: 0, y: 40 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 1.1 }}

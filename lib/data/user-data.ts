@@ -245,12 +245,6 @@ export async function getProfileForEdit() {
 }
 
 
-
-// FILE: lib/data/user-data.ts
-
-// ... (keep all your other functions as they are)
-
-// ✨ CORRECTED FUNCTION TO GET A USER'S FOLLOWERS
 export async function getFollowers(userId: string): Promise<UserProfile[]> {
     noStore();
     const supabase = await createClient();
@@ -266,12 +260,17 @@ export async function getFollowers(userId: string): Promise<UserProfile[]> {
         return [];
     }
 
-    // 👇 The Fix is here: access the first element of the nested array
-    return data.map(item => item.profiles[0]) as UserProfile[];
+    if (!data) {
+        return [];
+    }
+
+    // 👇 The fix is to add `as unknown` before the final type assertion
+    return data
+        .map(item => item.profiles)
+        .filter(Boolean) as unknown as UserProfile[];
 }
 
-
-// ✨ CORRECTED FUNCTION TO GET WHO A USER IS FOLLOWING
+// ✅ CORRECTED FUNCTION TO GET WHO A USER IS FOLLOWING
 export async function getFollowing(userId: string): Promise<UserProfile[]> {
     noStore();
     const supabase = await createClient();
@@ -287,6 +286,12 @@ export async function getFollowing(userId: string): Promise<UserProfile[]> {
         return [];
     }
 
-    // 👇 The Fix is here: access the first element of the nested array
-    return data.map(item => item.profiles[0]) as UserProfile[];
+    if (!data) {
+        return [];
+    }
+
+    // 👇 Apply the same fix here
+    return data
+        .map(item => item.profiles)
+        .filter(Boolean) as unknown as UserProfile[];
 }

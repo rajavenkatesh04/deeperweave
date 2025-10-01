@@ -104,7 +104,7 @@ export default function PostCard({ post }: { post: PostForFeed }) {
             )}
             <div className="flex flex-1 flex-col p-6">
                 <div className="flex-1">
-                    <h2 className="text-xl font-bold tracking-tight text-gray-900 dark:text-zinc-100 transition-colors group-hover:bg-gradient-to-r group-hover:from-purple-500 group-hover:to-sky-400 group-hover:bg-clip-text group-hover:text-transparent">
+                    <h2 className="text-xl font-bold tracking-tight text-gray-900 dark:text-zinc-100 transition-colors duration-300 group-hover:bg-gradient-to-r group-hover:from-purple-500 group-hover:to-sky-400 group-hover:bg-clip-text group-hover:text-transparent">
                         {post.title}
                     </h2>
 

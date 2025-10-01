@@ -8,9 +8,7 @@ import { clsx } from 'clsx';
 // You can customize these navigation links
 const navLinks = [
     { name: 'Home', href: '/' },
-    { name: 'About', href: '/about' },
     { name: 'Blog', href: '/blog' },
-    { name: 'Contact', href: '/contact' },
 ];
 
 export default function MobileBottomNav() {
@@ -45,7 +43,7 @@ export default function MobileBottomNav() {
                     <div className="flex items-center">
                         <div className="hidden md:block">
                             <Link href="/auth/login" className="rounded-md bg-pink-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-pink-700">
-                                Sign In
+                                Login
                             </Link>
                         </div>
                         <div className="flex md:hidden">

@@ -29,7 +29,7 @@ export default function Error({
                 </h1>
 
                 <p className="mt-4 text-base text-gray-600 dark:text-zinc-400">
-                    We encountered an unexpected issue. This has been logged and our team will look into it. Please try again.
+                    We encountered an unexpected issue. Our team will look into it. Please try again.
                 </p>
 
                 <div className="mt-10 flex items-center justify-center gap-4">
