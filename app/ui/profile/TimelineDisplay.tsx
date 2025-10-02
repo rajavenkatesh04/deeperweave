@@ -2,135 +2,243 @@
 
 'use client';
 
+import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { type TimelineEntry } from '@/lib/data/timeline-data';
 import { StarIcon } from '@heroicons/react/24/solid';
-import { CalendarDaysIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
+import { CalendarDaysIcon, PencilSquareIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import { motion, AnimatePresence } from 'framer-motion';
+import MovieInfoCard from '@/app/ui/blog/MovieInfoCard';
+
+// Animation variants
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.08
+        }
+    }
+};
+
+const itemVariants = {
+    hidden: { opacity: 0, x: -20 },
+    visible: {
+        opacity: 1,
+        x: 0,
+        transition: {
+            type: "spring" as const,
+            stiffness: 80,
+            damping: 12
+        }
+    }
+};
 
 // Card for a single timeline entry
-function TimelineEntryCard({ entry }: { entry: TimelineEntry }) {
+function TimelineEntryCard({ entry, index }: { entry: TimelineEntry; index: number }) {
+    const [selectedMovie, setSelectedMovie] = useState<{ tmdb_id: number; title: string } | null>(null);
+
     const watchedDate = new Date(entry.watched_on);
-    const formattedDate = watchedDate.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        timeZone: 'UTC'
-    });
+    const day = watchedDate.getDate();
+    const month = watchedDate.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
+    const year = watchedDate.getFullYear();
 
     return (
-        <div className="relative pl-8 pb-8 group">
-            {/* Timeline line */}
-            <div className="absolute left-[11px] top-0 bottom-0 w-0.5 bg-gradient-to-b from-rose-500 to-rose-300 dark:from-rose-600 dark:to-rose-800 group-last:bg-gradient-to-b group-last:from-rose-500 group-last:to-transparent" />
-
-            {/* Timeline dot */}
-            <div className="absolute left-0 top-2 w-6 h-6 rounded-full bg-rose-500 dark:bg-rose-600 border-4 border-white dark:border-zinc-900 shadow-lg group-hover:scale-110 transition-transform" />
-
-            {/* Date badge */}
-            <div className="mb-3 inline-flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-zinc-400 bg-gray-100 dark:bg-zinc-800 px-3 py-1.5 rounded-full">
-                <CalendarDaysIcon className="w-3.5 h-3.5" />
-                {formattedDate}
-            </div>
-
-            {/* Content card */}
-            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-gray-200 dark:border-zinc-800 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-                <div className="flex flex-col sm:flex-row gap-4 p-4">
-                    {/* Poster */}
-                    <Link
-                        href={`/movie/${entry.movies.tmdb_id}`}
-                        className="shrink-0 mx-auto sm:mx-0"
-                    >
-                        <div className="relative group/poster">
-                            <Image
-                                src={entry.movies.poster_url || '/placeholder-poster.png'}
-                                alt={`Poster for ${entry.movies.title}`}
-                                width={100}
-                                height={150}
-                                className="rounded-lg object-cover shadow-md transition-all duration-300 group-hover/poster:shadow-xl group-hover/poster:scale-[1.02]"
-                            />
-                            <div className="absolute inset-0 bg-black/0 group-hover/poster:bg-black/10 rounded-lg transition-colors" />
+        <>
+            <motion.div
+                variants={itemVariants}
+                className="group"
+            >
+                <div className="flex gap-4 md:gap-6 hover:bg-gray-50/50 dark:hover:bg-zinc-800/30 -mx-2 md:-mx-4 px-2 md:px-4 py-3 md:py-4 rounded-xl transition-colors">
+                    {/* Date Section - Prominent */}
+                    <div className="flex-shrink-0 w-16 md:w-20 text-center pt-1">
+                        <div className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white leading-none">
+                            {day}
                         </div>
-                    </Link>
+                        <div className="text-xs md:text-sm font-bold text-rose-600 dark:text-rose-500 uppercase tracking-wider mt-1">
+                            {month}
+                        </div>
+                        <div className="text-xs md:text-sm text-gray-500 dark:text-zinc-400 font-medium mt-0.5">
+                            {year}
+                        </div>
+                    </div>
+
+                    {/* Poster */}
+                    <motion.div
+                        className="flex-shrink-0 cursor-pointer"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setSelectedMovie({
+                            tmdb_id: entry.movies.tmdb_id,
+                            title: entry.movies.title
+                        })}
+                    >
+                        <Image
+                            src={entry.movies.poster_url || '/placeholder-poster.png'}
+                            alt={`Poster for ${entry.movies.title}`}
+                            width={80}
+                            height={120}
+                            className="rounded-lg object-cover shadow-md md:w-[90px] md:h-[135px]"
+                        />
+                    </motion.div>
 
                     {/* Content */}
-                    <div className="flex-1 min-w-0">
-                        <Link
-                            href={`/movie/${entry.movies.tmdb_id}`}
-                            className="group/title"
+                    <div className="flex-1 min-w-0 pt-1">
+                        {/* Movie Title - Large and Bold */}
+                        <h3
+                            className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-1 cursor-pointer hover:text-rose-600 dark:hover:text-rose-500 transition-colors leading-tight"
+                            onClick={() => setSelectedMovie({
+                                tmdb_id: entry.movies.tmdb_id,
+                                title: entry.movies.title
+                            })}
                         >
-                            <h3 className="text-xl font-bold text-gray-900 dark:text-white group-hover/title:text-rose-600 dark:group-hover/title:text-rose-500 transition-colors line-clamp-2">
-                                {entry.movies.title}
-                            </h3>
-                        </Link>
+                            {entry.movies.title}
+                        </h3>
 
-                        <p className="text-sm text-gray-500 dark:text-zinc-400 mt-0.5">
+                        {/* Year */}
+                        <p className="text-sm md:text-base text-gray-500 dark:text-zinc-400 font-medium mb-2">
                             {entry.movies.release_date?.split('-')[0]}
                         </p>
 
                         {/* Rating */}
                         {entry.rating && (
-                            <div className="flex items-center gap-1 mt-3">
+                            <div className="flex items-center gap-1 mb-2">
                                 {[...Array(5)].map((_, i) => (
                                     <StarIcon
                                         key={i}
-                                        className={`w-5 h-5 transition-colors ${
+                                        className={`w-4 h-4 md:w-5 md:h-5 ${
                                             i < entry.rating!
                                                 ? 'text-amber-400 dark:text-amber-500'
                                                 : 'text-gray-300 dark:text-zinc-700'
                                         }`}
                                     />
                                 ))}
+                                <span className="ml-1 text-sm font-semibold text-gray-700 dark:text-zinc-300">
+                                    {entry.rating}/5
+                                </span>
                             </div>
                         )}
 
                         {/* Notes */}
                         {entry.notes && (
-                            <div className="mt-3 text-sm text-gray-700 dark:text-zinc-300 bg-gray-50 dark:bg-zinc-800/50 p-3 rounded-lg border-l-2 border-rose-500 dark:border-rose-600">
-                                <p className="italic line-clamp-3">&ldquo;{entry.notes}&rdquo;</p>
-                            </div>
+                            <p className="text-sm md:text-base text-gray-600 dark:text-zinc-400 italic mb-2 line-clamp-2">
+                                &ldquo;{entry.notes}&rdquo;
+                            </p>
                         )}
 
-                        {/* Review link */}
+                        {/* Review Link */}
                         {entry.posts?.slug && (
                             <Link
                                 href={`/blog/${entry.posts.slug}`}
-                                className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-rose-600 hover:text-rose-700 dark:text-rose-500 dark:hover:text-rose-400 transition-colors group/link"
+                                className="inline-flex items-center gap-1.5 text-sm font-semibold text-rose-600 hover:text-rose-700 dark:text-rose-500 dark:hover:text-rose-400 transition-colors"
                             >
-                                <PencilSquareIcon className="w-4 h-4 group-hover/link:translate-x-0.5 transition-transform" />
-                                Read Full Review
+                                <PencilSquareIcon className="w-4 h-4" />
+                                Read Review
                             </Link>
                         )}
                     </div>
                 </div>
-            </div>
-        </div>
+
+                {/* Divider */}
+                {index < 9 && (
+                    <div className="border-b border-gray-200 dark:border-zinc-800 ml-20 md:ml-24 my-2 md:my-3" />
+                )}
+            </motion.div>
+
+            {/* Movie Info Modal */}
+            {selectedMovie && (
+                <MovieInfoCard
+                    movieApiId={selectedMovie.tmdb_id}
+                    initialMovieData={entry.movies}
+                    isOpen={true}
+                    onClose={() => setSelectedMovie(null)}
+                />
+            )}
+        </>
     );
 }
 
-// Main display component
+// Main display component with pagination
 export default function TimelineDisplay({ timelineEntries }: { timelineEntries: TimelineEntry[] }) {
+    const INITIAL_ITEMS = 10;
+    const ITEMS_PER_PAGE = 10;
+    const [visibleCount, setVisibleCount] = useState(INITIAL_ITEMS);
+
+    const visibleEntries = timelineEntries.slice(0, visibleCount);
+    const hasMore = visibleCount < timelineEntries.length;
+
+    const loadMore = () => {
+        setVisibleCount(prev => Math.min(prev + ITEMS_PER_PAGE, timelineEntries.length));
+    };
+
     return (
-        <section>
+        <section className="max-w-4xl">
             {timelineEntries.length > 0 ? (
-                <div className="relative max-w-4xl">
-                    {timelineEntries.map(entry => (
-                        <TimelineEntryCard key={entry.id} entry={entry} />
-                    ))}
-                </div>
-            ) : (
-                <div className="text-center py-16 px-4">
-                    <div className="max-w-sm mx-auto">
-                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
-                            <CalendarDaysIcon className="w-8 h-8 text-gray-400 dark:text-zinc-600" />
-                        </div>
-                        <p className="text-gray-600 dark:text-zinc-400 font-medium">
-                            No films logged yet
-                        </p>
-                        <p className="text-sm text-gray-500 dark:text-zinc-500 mt-2">
-                            Start building your movie diary by logging films you&apos;ve watched
+                <>
+                    {/* Header */}
+                    <div className="mb-6 md:mb-8">
+                        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                            Watch History
+                        </h2>
+                        <p className="text-sm md:text-base text-gray-600 dark:text-zinc-400">
+                            {timelineEntries.length} {timelineEntries.length === 1 ? 'film' : 'films'} watched
                         </p>
                     </div>
-                </div>
+
+                    <motion.div
+                        variants={containerVariants}
+                        initial="hidden"
+                        animate="visible"
+                    >
+                        <AnimatePresence>
+                            {visibleEntries.map((entry, index) => (
+                                <TimelineEntryCard key={entry.id} entry={entry} index={index} />
+                            ))}
+                        </AnimatePresence>
+                    </motion.div>
+
+                    {/* Load More Button */}
+                    {hasMore && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="flex justify-center mt-8 md:mt-12"
+                        >
+                            <motion.button
+                                onClick={loadMore}
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                className="flex items-center gap-3 px-6 md:px-8 py-3 md:py-4 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 border-2 border-gray-300 dark:border-zinc-600 text-gray-900 dark:text-white font-semibold rounded-xl shadow-sm hover:shadow-md transition-all"
+                            >
+                                <span>Show More</span>
+                                <ChevronDownIcon className="w-5 h-5" />
+                                <span className="text-sm text-gray-600 dark:text-zinc-400">
+                                    ({timelineEntries.length - visibleCount} more)
+                                </span>
+                            </motion.button>
+                        </motion.div>
+                    )}
+                </>
+            ) : (
+                <motion.div
+                    className="text-center py-16 md:py-24 px-4"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                >
+                    <div className="max-w-sm mx-auto">
+                        <div className="w-16 h-16 md:w-20 md:h-20 mx-auto mb-4 md:mb-6 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                            <CalendarDaysIcon className="w-8 h-8 md:w-10 md:h-10 text-gray-400 dark:text-zinc-600" />
+                        </div>
+                        <p className="text-lg md:text-xl text-gray-700 dark:text-zinc-300 font-semibold mb-2">
+                            No films logged yet
+                        </p>
+                        <p className="text-sm md:text-base text-gray-500 dark:text-zinc-500">
+                            Start building your watch history
+                        </p>
+                    </div>
+                </motion.div>
             )}
         </section>
     );

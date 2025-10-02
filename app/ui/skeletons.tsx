@@ -129,50 +129,52 @@ export function PostCardSkeleton() {
 
 function TimelineEntryCardSkeleton() {
     return (
-        <div className="relative pl-8 pb-8">
-            {/* Timeline line */}
-            <div className="absolute left-[11px] top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-zinc-800" />
+        <div className="group">
+            <div className="flex gap-4 md:gap-6 -mx-2 md:-mx-4 px-2 md:px-4 py-3 md:py-4 rounded-xl">
+                {/* Date Section Skeleton */}
+                <div className="flex-shrink-0 w-16 md:w-20 text-center pt-1 space-y-1">
+                    {/* Day */}
+                    <div className="h-9 md:h-11 w-12 md:w-14 mx-auto rounded-md bg-gray-200 dark:bg-zinc-800" />
+                    {/* Month */}
+                    <div className="h-3 md:h-4 w-10 mx-auto rounded-md bg-gray-200 dark:bg-zinc-800" />
+                    {/* Year */}
+                    <div className="h-3 md:h-4 w-12 mx-auto rounded-md bg-gray-200 dark:bg-zinc-800" />
+                </div>
 
-            {/* Timeline dot */}
-            <div className="absolute left-0 top-2 w-6 h-6 rounded-full bg-gray-200 dark:bg-zinc-800 border-4 border-white dark:border-zinc-900" />
+                {/* Poster Skeleton */}
+                <div className="flex-shrink-0">
+                    <div className="w-[80px] h-[120px] md:w-[90px] md:h-[135px] rounded-lg bg-gray-200 dark:bg-zinc-800" />
+                </div>
 
-            {/* Date badge skeleton */}
-            <div className="mb-3 inline-flex h-7 w-32 rounded-full bg-gray-200 dark:bg-zinc-800" />
+                {/* Content Skeleton */}
+                <div className="flex-1 min-w-0 pt-1 space-y-2">
+                    {/* Movie Title */}
+                    <div className="h-6 md:h-7 w-3/4 rounded-md bg-gray-200 dark:bg-zinc-800" />
 
-            {/* Content card skeleton */}
-            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-gray-200 dark:border-zinc-800 shadow-sm overflow-hidden">
-                <div className="flex flex-col sm:flex-row gap-4 p-4">
-                    {/* Poster skeleton */}
-                    <div className="shrink-0 mx-auto sm:mx-0">
-                        <div className="w-[100px] h-[150px] rounded-lg bg-gray-200 dark:bg-zinc-800" />
+                    {/* Year */}
+                    <div className="h-4 md:h-5 w-16 rounded-md bg-gray-200 dark:bg-zinc-800" />
+
+                    {/* Rating Stars */}
+                    <div className="flex items-center gap-1">
+                        {[...Array(5)].map((_, i) => (
+                            <div key={i} className="w-4 h-4 md:w-5 md:h-5 rounded-sm bg-gray-200 dark:bg-zinc-800" />
+                        ))}
+                        <div className="ml-1 h-4 w-10 rounded-md bg-gray-200 dark:bg-zinc-800" />
                     </div>
 
-                    {/* Content skeleton */}
-                    <div className="flex-1 min-w-0 space-y-3">
-                        {/* Title */}
-                        <div className="h-6 w-3/4 rounded-md bg-gray-200 dark:bg-zinc-800" />
-
-                        {/* Year */}
-                        <div className="h-4 w-16 rounded-md bg-gray-200 dark:bg-zinc-800" />
-
-                        {/* Rating stars */}
-                        <div className="flex items-center gap-1">
-                            {[...Array(5)].map((_, i) => (
-                                <div key={i} className="w-5 h-5 rounded-sm bg-gray-200 dark:bg-zinc-800" />
-                            ))}
-                        </div>
-
-                        {/* Notes skeleton */}
-                        <div className="bg-gray-50 dark:bg-zinc-800/50 p-3 rounded-lg border-l-2 border-gray-200 dark:border-zinc-700 space-y-2">
-                            <div className="h-3 w-full rounded-md bg-gray-200 dark:bg-zinc-800" />
-                            <div className="h-3 w-5/6 rounded-md bg-gray-200 dark:bg-zinc-800" />
-                        </div>
-
-                        {/* Review link skeleton */}
-                        <div className="h-5 w-32 rounded-md bg-gray-200 dark:bg-zinc-800" />
+                    {/* Notes Skeleton */}
+                    <div className="space-y-1.5">
+                        <div className="h-3.5 md:h-4 w-full rounded-md bg-gray-200 dark:bg-zinc-800" />
+                        <div className="h-3.5 md:h-4 w-4/5 rounded-md bg-gray-200 dark:bg-zinc-800" />
                     </div>
+
+                    {/* Review Link Skeleton */}
+                    <div className="h-5 w-28 rounded-md bg-gray-200 dark:bg-zinc-800" />
                 </div>
             </div>
+
+            {/* Divider */}
+            <div className="border-b border-gray-200 dark:border-zinc-800 ml-20 md:ml-24 my-2 md:my-3" />
         </div>
     );
 }
@@ -180,11 +182,16 @@ function TimelineEntryCardSkeleton() {
 export function TimelineDisplaySkeleton() {
     return (
         <section className={`${shimmer} relative overflow-hidden max-w-4xl`}>
+            {/* Header Skeleton */}
+            <div className="mb-6 md:mb-8 space-y-2">
+                <div className="h-8 md:h-9 w-48 rounded-md bg-gray-200 dark:bg-zinc-800" />
+                <div className="h-4 md:h-5 w-32 rounded-md bg-gray-200 dark:bg-zinc-800" />
+            </div>
+
+            {/* Timeline Entries */}
             <TimelineEntryCardSkeleton />
             <TimelineEntryCardSkeleton />
             <TimelineEntryCardSkeleton />
         </section>
     );
 }
-
-

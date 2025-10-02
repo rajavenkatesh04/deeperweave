@@ -19,8 +19,8 @@ export default async function ProfileTimelinePage({ params }: { params: Promise<
     const timelineEntries = await getTimelineEntriesByUserId(profile.id);
 
     return (
-        <Suspense fallback={<TimelineDisplaySkeleton />}>
+        <div className="space-y-8">
             <TimelineDisplay timelineEntries={timelineEntries}/>
-        </Suspense>
+        </div>
     );
 }
