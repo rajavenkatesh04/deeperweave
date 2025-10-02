@@ -185,12 +185,6 @@ export default function TimelineDisplay({ timelineEntries }: { timelineEntries: 
                                 {timelineEntries.length} {timelineEntries.length === 1 ? 'film' : 'films'} watched
                             </p>
                         </div>
-
-                        <div>
-                            <Link href={`/timeline/create`}>
-                                + add new entry
-                            </Link>
-                        </div>
                     </div>
 
                     <motion.div variants={containerVariants} initial="hidden" animate="visible">
@@ -236,12 +230,6 @@ export default function TimelineDisplay({ timelineEntries }: { timelineEntries: 
                         <p className="text-lg md:text-xl text-gray-700 dark:text-zinc-300 font-semibold mb-2">
                             No films logged yet
                         </p>
-
-                        <div  className={`p-6 bg-red-400/10 dark:bg-red-500/10 rounded-lg shadow-md text-center`}>
-                            <Link href={`/LogMovieForm`}>
-                                + add new entry
-                            </Link>
-                        </div>
                     </div>
                 </motion.div>
             )}
