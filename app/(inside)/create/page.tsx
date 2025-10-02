@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRightIcon, DocumentPlusIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
+import { ArrowRightIcon, DocumentPlusIcon } from '@heroicons/react/24/outline';
 
 // Type for the creation options and CreateCard props
 interface CreationOption {
@@ -22,14 +22,6 @@ const creationOptions: CreationOption[] = [
         icon: DocumentPlusIcon,
         iconBgColor: 'bg-sky-100 dark:bg-sky-900/50',
         iconTextColor: 'text-sky-600 dark:text-sky-400',
-    },
-    {
-        title: 'Timeline Event',
-        description: 'Add a new milestone, memory, or significant event to your personal timeline.',
-        href: '/timeline/create',
-        icon: CalendarDaysIcon,
-        iconBgColor: 'bg-purple-100 dark:bg-purple-900/50',
-        iconTextColor: 'text-purple-600 dark:text-purple-400',
     },
 ];
 

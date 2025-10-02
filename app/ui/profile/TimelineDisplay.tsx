@@ -6,8 +6,14 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { type TimelineEntry } from '@/lib/data/timeline-data';
-import { StarIcon } from '@heroicons/react/24/solid';
-import { CalendarDaysIcon, PencilSquareIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+// ✅ RENAMED IMPORTS: Using aliases to distinguish between solid and outline icons
+import { StarIcon as SolidStarIcon } from '@heroicons/react/24/solid';
+import {
+    StarIcon as OutlineStarIcon,
+    CalendarDaysIcon,
+    PencilSquareIcon,
+    ChevronDownIcon,
+} from '@heroicons/react/24/outline';
 import { motion, AnimatePresence } from 'framer-motion';
 import MovieInfoCard from '@/app/ui/blog/MovieInfoCard';
 
@@ -17,9 +23,9 @@ const containerVariants = {
     visible: {
         opacity: 1,
         transition: {
-            staggerChildren: 0.08
-        }
-    }
+            staggerChildren: 0.08,
+        },
+    },
 };
 
 const itemVariants = {
@@ -28,11 +34,11 @@ const itemVariants = {
         opacity: 1,
         x: 0,
         transition: {
-            type: "spring" as const,
+            type: 'spring' as const,
             stiffness: 80,
-            damping: 12
-        }
-    }
+            damping: 12,
+        },
+    },
 };
 
 // Card for a single timeline entry
@@ -43,20 +49,18 @@ function TimelineEntryCard({ entry, index }: { entry: TimelineEntry; index: numb
     const day = watchedDate.getDate();
     const month = watchedDate.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
     const year = watchedDate.getFullYear();
+    const rating = Number(entry.rating);
 
     return (
         <>
-            <motion.div
-                variants={itemVariants}
-                className="group"
-            >
+            <motion.div variants={itemVariants} className="group">
                 <div className="flex gap-4 md:gap-6 hover:bg-gray-50/50 dark:hover:bg-zinc-800/30 -mx-2 md:-mx-4 px-2 md:px-4 py-3 md:py-4 rounded-xl transition-colors">
-                    {/* Date Section - Prominent */}
+                    {/* Date Section */}
                     <div className="flex-shrink-0 w-16 md:w-20 text-center pt-1">
                         <div className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white leading-none">
                             {day}
                         </div>
-                        <div className="text-xs md:text-sm font-bold text-rose-600 dark:text-rose-500 uppercase tracking-wider mt-1">
+                        <div className="text-xs md:text-sm font-bold text-red-600 dark:text-red-500 uppercase tracking-wider mt-1">
                             {month}
                         </div>
                         <div className="text-xs md:text-sm text-gray-500 dark:text-zinc-400 font-medium mt-0.5">
@@ -71,7 +75,7 @@ function TimelineEntryCard({ entry, index }: { entry: TimelineEntry; index: numb
                         whileTap={{ scale: 0.98 }}
                         onClick={() => setSelectedMovie({
                             tmdb_id: entry.movies.tmdb_id,
-                            title: entry.movies.title
+                            title: entry.movies.title,
                         })}
                     >
                         <Image
@@ -85,53 +89,51 @@ function TimelineEntryCard({ entry, index }: { entry: TimelineEntry; index: numb
 
                     {/* Content */}
                     <div className="flex-1 min-w-0 pt-1">
-                        {/* Movie Title - Large and Bold */}
                         <h3
-                            className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-1 cursor-pointer hover:text-rose-600 dark:hover:text-rose-500 transition-colors leading-tight"
+                            className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-1 cursor-pointer hover:text-red-600 dark:hover:text-red-500 transition-colors leading-tight"
                             onClick={() => setSelectedMovie({
                                 tmdb_id: entry.movies.tmdb_id,
-                                title: entry.movies.title
+                                title: entry.movies.title,
                             })}
                         >
                             {entry.movies.title}
                         </h3>
 
-                        {/* Year */}
                         <p className="text-sm md:text-base text-gray-500 dark:text-zinc-400 font-medium mb-2">
                             {entry.movies.release_date?.split('-')[0]}
                         </p>
 
-                        {/* Rating */}
-                        {entry.rating && (
+                        {/* ✅ NEW: Star Rating Logic with Half-Star Icon */}
+                        {rating > 0 && (
                             <div className="flex items-center gap-1 mb-2">
-                                {[...Array(5)].map((_, i) => (
-                                    <StarIcon
-                                        key={i}
-                                        className={`w-4 h-4 md:w-5 md:h-5 ${
-                                            i < entry.rating!
-                                                ? 'text-amber-400 dark:text-amber-500'
-                                                : 'text-gray-300 dark:text-zinc-700'
-                                        }`}
-                                    />
-                                ))}
+                                {[1, 2, 3, 4, 5].map((starValue) => {
+                                    if (rating >= starValue) {
+                                        // Full star
+                                        return <SolidStarIcon key={starValue} className="w-4 h-4 md:w-5 md:h-5 text-red-500" />;
+                                    }
+                                    if (rating >= starValue - 0.5) {
+                                        // Half star (using clip-path to show half of a solid star)
+                                        return <SolidStarIcon key={starValue} className="w-4 h-4 md:w-5 md:h-5 text-red-500" style={{ clipPath: 'inset(0 50% 0 0)' }}/>;
+                                    }
+                                    // Empty star
+                                    return <OutlineStarIcon key={starValue} className="w-4 h-4 md:w-5 md:h-5 text-gray-400 dark:text-zinc-600" />;
+                                })}
                                 <span className="ml-1 text-sm font-semibold text-gray-700 dark:text-zinc-300">
-                                    {entry.rating}/5
+                                    {rating.toFixed(1)}/5
                                 </span>
                             </div>
                         )}
 
-                        {/* Notes */}
                         {entry.notes && (
                             <p className="text-sm md:text-base text-gray-600 dark:text-zinc-400 italic mb-2 line-clamp-2">
                                 &ldquo;{entry.notes}&rdquo;
                             </p>
                         )}
 
-                        {/* Review Link */}
                         {entry.posts?.slug && (
                             <Link
                                 href={`/blog/${entry.posts.slug}`}
-                                className="inline-flex items-center gap-1.5 text-sm font-semibold text-rose-600 hover:text-rose-700 dark:text-rose-500 dark:hover:text-rose-400 transition-colors"
+                                className="inline-flex items-center gap-1.5 text-sm font-semibold text-red-600 hover:text-red-700 dark:text-red-500 dark:hover:text-red-400 transition-colors"
                             >
                                 <PencilSquareIcon className="w-4 h-4" />
                                 Read Review
@@ -140,13 +142,11 @@ function TimelineEntryCard({ entry, index }: { entry: TimelineEntry; index: numb
                     </div>
                 </div>
 
-                {/* Divider */}
                 {index < 9 && (
                     <div className="border-b border-gray-200 dark:border-zinc-800 ml-20 md:ml-24 my-2 md:my-3" />
                 )}
             </motion.div>
 
-            {/* Movie Info Modal */}
             {selectedMovie && (
                 <MovieInfoCard
                     movieApiId={selectedMovie.tmdb_id}
@@ -169,28 +169,31 @@ export default function TimelineDisplay({ timelineEntries }: { timelineEntries: 
     const hasMore = visibleCount < timelineEntries.length;
 
     const loadMore = () => {
-        setVisibleCount(prev => Math.min(prev + ITEMS_PER_PAGE, timelineEntries.length));
+        setVisibleCount((prev) => Math.min(prev + ITEMS_PER_PAGE, timelineEntries.length));
     };
 
     return (
-        <section className="max-w-4xl">
+        <section>
             {timelineEntries.length > 0 ? (
                 <>
-                    {/* Header */}
-                    <div className="mb-6 md:mb-8">
-                        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                            Watch History
-                        </h2>
-                        <p className="text-sm md:text-base text-gray-600 dark:text-zinc-400">
-                            {timelineEntries.length} {timelineEntries.length === 1 ? 'film' : 'films'} watched
-                        </p>
+                    <div className={`flex`}>
+                        <div className="mb-6 md:mb-8">
+                            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                                Watch History
+                            </h2>
+                            <p className="text-sm md:text-base text-gray-600 dark:text-zinc-400">
+                                {timelineEntries.length} {timelineEntries.length === 1 ? 'film' : 'films'} watched
+                            </p>
+                        </div>
+
+                        <div>
+                            <Link href={`/timeline/create`}>
+                                + add new entry
+                            </Link>
+                        </div>
                     </div>
 
-                    <motion.div
-                        variants={containerVariants}
-                        initial="hidden"
-                        animate="visible"
-                    >
+                    <motion.div variants={containerVariants} initial="hidden" animate="visible">
                         <AnimatePresence>
                             {visibleEntries.map((entry, index) => (
                                 <TimelineEntryCard key={entry.id} entry={entry} index={index} />
@@ -198,7 +201,6 @@ export default function TimelineDisplay({ timelineEntries }: { timelineEntries: 
                         </AnimatePresence>
                     </motion.div>
 
-                    {/* Load More Button */}
                     {hasMore && (
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
@@ -234,9 +236,12 @@ export default function TimelineDisplay({ timelineEntries }: { timelineEntries: 
                         <p className="text-lg md:text-xl text-gray-700 dark:text-zinc-300 font-semibold mb-2">
                             No films logged yet
                         </p>
-                        <p className="text-sm md:text-base text-gray-500 dark:text-zinc-500">
-                            Start building your watch history
-                        </p>
+
+                        <div  className={`p-6 bg-red-400/10 dark:bg-red-500/10 rounded-lg shadow-md text-center`}>
+                            <Link href={`/LogMovieForm`}>
+                                + add new entry
+                            </Link>
+                        </div>
                     </div>
                 </motion.div>
             )}

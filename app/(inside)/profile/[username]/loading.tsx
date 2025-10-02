@@ -1,4 +1,3 @@
-import {ProfileHeaderSkeleton, TabNavigationSkeleton} from "@/app/ui/skeletons";
 import LoadingSpinner from "@/app/ui/loading-spinner";
 
 

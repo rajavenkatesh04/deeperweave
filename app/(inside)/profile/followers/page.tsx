@@ -21,7 +21,7 @@ export default async function FollowersPage() {
     const followers = await getFollowers(user.id);
 
     return (
-        <div className="mx-auto min-h-screen max-w-4xl p-6">
+        <div className="mx-auto min-h-screen  p-6">
             <Link
                 href={`/profile`} // Note: You might need to fetch the username or have it available
                 className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-200"

@@ -2,6 +2,7 @@
 
 import { Suspense } from 'react';
 import LogMovieForm from '@/app/ui/profile/LogMovieForm';
+import LoadingSpinner from "@/app/ui/loading-spinner";
 
 export default async function CreateTimelineEntryPage({
                                                           params
@@ -14,7 +15,7 @@ export default async function CreateTimelineEntryPage({
     return (
         <main>
             <div className="mt-6">
-                <Suspense fallback={<div>Loading ...</div>}>
+                <Suspense fallback={<LoadingSpinner />}>
                     <LogMovieForm />
                 </Suspense>
             </div>

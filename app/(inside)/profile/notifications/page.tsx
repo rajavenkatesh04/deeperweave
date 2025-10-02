@@ -17,7 +17,7 @@ export default async function NotificationsPage() {
     const requests = await getFollowRequests(userData.user.id);
 
     return (
-        <main>
+        <main className={`m-4`}>
             <Breadcrumbs
                 breadcrumbs={[
                     { label: 'Profile', href: '/profile' },
