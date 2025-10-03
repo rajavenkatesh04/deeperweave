@@ -90,7 +90,7 @@ export async function signup(prevState: AuthState, formData: FormData): Promise<
         return { message: error.message };
     }
 
-    redirect('/auth/sign-up-success');
+    redirect(`/auth/sign-up-success?email=${encodeURIComponent(email)}`);
 }
 
 
