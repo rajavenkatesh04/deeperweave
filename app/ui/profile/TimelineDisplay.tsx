@@ -55,26 +55,25 @@ function TimelineEntryCard({ entry, index }: { entry: TimelineEntry; index: numb
     return (
         <>
             <motion.div variants={itemVariants} className="group">
-                {/* ✨ FIX: Removed negative margins here since the parent section now handles breaking out. Added consistent padding. */}
                 <div className="flex gap-3 sm:gap-4 md:gap-6 hover:bg-gradient-to-r hover:from-gray-50/80 hover:to-transparent dark:hover:from-zinc-800/50 dark:hover:to-transparent px-2 sm:px-3 md:px-4 py-3 sm:py-4 md:py-5 rounded-none sm:rounded-xl md:rounded-2xl transition-all duration-300">
-                    {/* Clean, bigger date section without background */}
+                    {/* ✨ FIX: Increased date font size and container width for mobile */}
                     <motion.div
-                        className="flex-shrink-0 w-16 sm:w-20 md:w-24 text-center"
+                        className="flex-shrink-0 w-20 sm:w-20 md:w-24 text-center"
                         whileHover={{ scale: 1.05 }}
                         transition={{ type: 'spring', stiffness: 300 }}
                     >
-                        <div className="text-4xl sm:text-5xl md:text-6xl font-black text-gray-900 dark:text-white leading-none tracking-tighter">
+                        <div className="text-5xl md:text-6xl font-black text-gray-900 dark:text-white leading-none tracking-tighter">
                             {day}
                         </div>
-                        <div className="text-xs sm:text-sm md:text-base font-black text-red-600 dark:text-red-400 uppercase tracking-widest mt-1 sm:mt-1.5">
+                        <div className="text-sm md:text-base font-black text-red-600 dark:text-red-400 uppercase tracking-widest mt-1 sm:mt-1.5">
                             {month}
                         </div>
-                        <div className="text-xs sm:text-sm text-gray-600 dark:text-zinc-400 font-bold mt-0.5">
+                        <div className="text-sm text-gray-600 dark:text-zinc-400 font-bold mt-0.5">
                             {year}
                         </div>
                     </motion.div>
 
-                    {/* Poster */}
+                    {/* ✨ FIX: Increased poster size for mobile */}
                     <motion.div
                         className="flex-shrink-0 cursor-pointer relative group/poster"
                         whileHover={{ scale: 1.05 }}
@@ -88,18 +87,18 @@ function TimelineEntryCard({ entry, index }: { entry: TimelineEntry; index: numb
                         <Image
                             src={entry.movies.poster_url || '/placeholder-poster.png'}
                             alt={`Poster for ${entry.movies.title}`}
-                            width={70}
-                            height={105}
-                            className="rounded-lg sm:rounded-xl object-cover shadow-lg w-[70px] h-[105px] sm:w-[85px] sm:h-[128px] md:w-[95px] md:h-[143px] ring-2 ring-gray-200 dark:ring-zinc-700 group-hover/poster:ring-red-400 dark:group-hover/poster:ring-red-500 transition-all duration-300"
+                            width={80}
+                            height={120}
+                            className="rounded-lg sm:rounded-xl object-cover shadow-lg w-[80px] h-[120px] sm:w-[85px] sm:h-[128px] md:w-[95px] md:h-[143px] ring-2 ring-gray-200 dark:ring-zinc-700 group-hover/poster:ring-red-400 dark:group-hover/poster:ring-red-500 transition-all duration-300"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover/poster:opacity-100 transition-opacity rounded-lg sm:rounded-xl" />
                     </motion.div>
 
                     {/* Content */}
                     <div className="flex-1 min-w-0 flex flex-col justify-center">
-                        {/* Title */}
+                        {/* ✨ FIX: Increased title font size for mobile */}
                         <motion.h3
-                            className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-black text-gray-900 dark:text-white mb-1 sm:mb-2 cursor-pointer hover:text-red-600 dark:hover:text-red-400 transition-colors leading-tight tracking-tight line-clamp-2"
+                            className="text-xl md:text-2xl lg:text-3xl font-black text-gray-900 dark:text-white mb-1 sm:mb-2 cursor-pointer hover:text-red-600 dark:hover:text-red-400 transition-colors leading-tight tracking-tight line-clamp-2"
                             whileHover={{ x: 4 }}
                             transition={{ type: 'spring', stiffness: 300 }}
                             onClick={() => setSelectedMovie({
@@ -112,7 +111,8 @@ function TimelineEntryCard({ entry, index }: { entry: TimelineEntry; index: numb
 
                         {/* Year and Rating */}
                         <div className="flex items-center flex-wrap gap-2 sm:gap-3 md:gap-4 mb-2 sm:mb-3">
-                            <span className="text-xs sm:text-sm md:text-base text-gray-500 dark:text-zinc-400 font-bold">
+                            {/* ✨ FIX: Increased year font size for mobile */}
+                            <span className="text-sm md:text-base text-gray-500 dark:text-zinc-400 font-bold">
                                 {entry.movies.release_date?.split('-')[0]}
                             </span>
 
@@ -122,6 +122,7 @@ function TimelineEntryCard({ entry, index }: { entry: TimelineEntry; index: numb
                                     whileHover={{ scale: 1.05 }}
                                     transition={{ type: 'spring', stiffness: 400 }}
                                 >
+                                    {/* ✨ FIX: Increased star icon size for mobile */}
                                     {[1, 2, 3, 4, 5].map((starValue) => {
                                         const isFullStar = rating >= starValue;
                                         const isHalfStar = !isFullStar && rating >= starValue - 0.5;
@@ -138,29 +139,30 @@ function TimelineEntryCard({ entry, index }: { entry: TimelineEntry; index: numb
                                                 }}
                                             >
                                                 {isFullStar ? (
-                                                    <SolidStarIcon className="w-3 h-3 sm:w-4 sm:h-4 text-red-500 drop-shadow-sm" />
+                                                    <SolidStarIcon className="w-4 h-4 text-red-500 drop-shadow-sm" />
                                                 ) : isHalfStar ? (
-                                                    <div className="relative w-3 h-3 sm:w-4 sm:h-4">
-                                                        <OutlineStarIcon className="w-3 h-3 sm:w-4 sm:h-4 text-gray-300 dark:text-zinc-600 absolute" />
-                                                        <SolidStarIcon className="w-3 h-3 sm:w-4 sm:h-4 text-red-500" style={{ clipPath: 'inset(0 50% 0 0)' }} />
+                                                    <div className="relative w-4 h-4">
+                                                        <OutlineStarIcon className="w-4 h-4 text-gray-300 dark:text-zinc-600 absolute" />
+                                                        <SolidStarIcon className="w-4 h-4 text-red-500" style={{ clipPath: 'inset(0 50% 0 0)' }} />
                                                     </div>
                                                 ) : (
-                                                    <OutlineStarIcon className="w-3 h-3 sm:w-4 sm:h-4 text-gray-300 dark:text-zinc-600" />
+                                                    <OutlineStarIcon className="w-4 h-4 text-gray-300 dark:text-zinc-600" />
                                                 )}
                                             </motion.div>
                                         );
                                     })}
-                                    <span className="ml-0.5 text-xs sm:text-sm font-black text-gray-800 dark:text-white">
+                                    {/* ✨ FIX: Increased rating font size for mobile */}
+                                    <span className="ml-0.5 text-sm font-black text-gray-800 dark:text-white">
                                         {displayRating}
                                     </span>
                                 </motion.div>
                             )}
                         </div>
 
-                        {/* Notes - clickable to expand */}
+                        {/* ✨ FIX: Increased notes font size for mobile */}
                         {entry.notes && (
                             <motion.p
-                                className="text-xs sm:text-sm md:text-base text-gray-600 dark:text-zinc-400 italic mb-2 sm:mb-3 line-clamp-2 leading-relaxed cursor-pointer hover:text-gray-800 dark:hover:text-zinc-300 transition-colors"
+                                className="text-sm md:text-base text-gray-600 dark:text-zinc-400 italic mb-2 sm:mb-3 line-clamp-2 leading-relaxed cursor-pointer hover:text-gray-800 dark:hover:text-zinc-300 transition-colors"
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 transition={{ delay: 0.2 }}
@@ -173,10 +175,12 @@ function TimelineEntryCard({ entry, index }: { entry: TimelineEntry; index: numb
                         {/* Review link */}
                         {entry.posts?.slug && (
                             <Link
+                                // ✨ FIX: Increased review link font size for mobile
                                 href={`/blog/${entry.posts.slug}`}
-                                className="inline-flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-bold text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors group/link w-fit"
+                                className="inline-flex items-center gap-1.5 sm:gap-2 text-sm font-bold text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors group/link w-fit"
                             >
-                                <PencilSquareIcon className="w-3 h-3 sm:w-4 sm:h-4 group-hover/link:rotate-12 transition-transform" />
+                                {/* ✨ FIX: Increased review icon size for mobile */}
+                                <PencilSquareIcon className="w-4 h-4 group-hover/link:rotate-12 transition-transform" />
                                 <span className="group-hover/link:underline decoration-2 underline-offset-2">Read Review</span>
                             </Link>
                         )}
@@ -258,16 +262,16 @@ export default function TimelineDisplay({ timelineEntries }: { timelineEntries: 
     };
 
     return (
-        // ✨ FIX: Added negative margin on mobile to break out of parent padding, reset on sm screens and up.
         <section className="-mx-4 sm:mx-0">
             {timelineEntries.length > 0 ? (
                 <>
-                    {/* ✨ FIX: Added padding here to align with content below */}
                     <div className="mb-4 sm:mb-6 md:mb-8 px-2 sm:px-0">
-                        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-1 sm:mb-2">
+                        {/* ✨ FIX: Increased header font size for mobile */}
+                        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-1 sm:mb-2">
                             Watch History
                         </h2>
-                        <p className="text-xs sm:text-sm md:text-base text-gray-600 dark:text-zinc-400">
+                        {/* ✨ FIX: Increased count font size for mobile */}
+                        <p className="text-sm md:text-base text-gray-600 dark:text-zinc-400">
                             {timelineEntries.length} {timelineEntries.length === 1 ? 'film' : 'films'} watched
                         </p>
                     </div>
@@ -303,7 +307,6 @@ export default function TimelineDisplay({ timelineEntries }: { timelineEntries: 
                 </>
             ) : (
                 <motion.div
-                    // ✨ FIX: Added padding here to align with content
                     className="text-center py-12 sm:py-16 md:py-24 px-2 sm:px-4"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
