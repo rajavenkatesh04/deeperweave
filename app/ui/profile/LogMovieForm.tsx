@@ -127,7 +127,7 @@ export default function LogMovieForm() {
             setIsSearching(true);
             const TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
             ofetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(movieSearchQuery)}`)
-                .then(response => setSearchResults(response.results.slice(0, 5)))
+                .then(response => setSearchResults(response.results.slice(0, 20)))
                 .catch(error => console.error("Failed to fetch movies:", error))
                 .finally(() => setIsSearching(false));
         }, 500);
