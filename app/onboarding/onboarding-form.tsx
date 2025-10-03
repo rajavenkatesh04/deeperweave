@@ -114,7 +114,7 @@ export function OnboardingForm({ profile }: { profile: UserProfile | null }) {
         country: '',
     });
 
-    // ✨ FIX: This useEffect now ONLY pre-populates data and no longer changes the step.
+    // Pre-populate form and determine starting step
     useEffect(() => {
         if (profile) {
             const initialData = {
@@ -126,7 +126,13 @@ export function OnboardingForm({ profile }: { profile: UserProfile | null }) {
             };
             setFormData(initialData);
 
-            // The logic that automatically set the current step has been removed from here.
+            if (!initialData.username || !initialData.display_name) {
+                setCurrentStep(1);
+            } else if (!initialData.date_of_birth || !initialData.gender) {
+                setCurrentStep(2);
+            } else if (!initialData.country) {
+                setCurrentStep(3);
+            }
         }
     }, [profile]);
 
