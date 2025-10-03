@@ -55,7 +55,8 @@ function TimelineEntryCard({ entry, index }: { entry: TimelineEntry; index: numb
     return (
         <>
             <motion.div variants={itemVariants} className="group">
-                <div className="flex gap-3 sm:gap-4 md:gap-6 hover:bg-gradient-to-r hover:from-gray-50/80 hover:to-transparent dark:hover:from-zinc-800/50 dark:hover:to-transparent -mx-2 sm:-mx-3 md:-mx-4 px-2 sm:px-3 md:px-4 py-3 sm:py-4 md:py-5 rounded-xl md:rounded-2xl transition-all duration-300">
+                {/* ✨ FIX: Removed negative margins here since the parent section now handles breaking out. Added consistent padding. */}
+                <div className="flex gap-3 sm:gap-4 md:gap-6 hover:bg-gradient-to-r hover:from-gray-50/80 hover:to-transparent dark:hover:from-zinc-800/50 dark:hover:to-transparent px-2 sm:px-3 md:px-4 py-3 sm:py-4 md:py-5 rounded-none sm:rounded-xl md:rounded-2xl transition-all duration-300">
                     {/* Clean, bigger date section without background */}
                     <motion.div
                         className="flex-shrink-0 w-16 sm:w-20 md:w-24 text-center"
@@ -257,10 +258,12 @@ export default function TimelineDisplay({ timelineEntries }: { timelineEntries: 
     };
 
     return (
-        <section>
+        // ✨ FIX: Added negative margin on mobile to break out of parent padding, reset on sm screens and up.
+        <section className="-mx-4 sm:mx-0">
             {timelineEntries.length > 0 ? (
                 <>
-                    <div className="mb-4 sm:mb-6 md:mb-8">
+                    {/* ✨ FIX: Added padding here to align with content below */}
+                    <div className="mb-4 sm:mb-6 md:mb-8 px-2 sm:px-0">
                         <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-1 sm:mb-2">
                             Watch History
                         </h2>
@@ -300,7 +303,8 @@ export default function TimelineDisplay({ timelineEntries }: { timelineEntries: 
                 </>
             ) : (
                 <motion.div
-                    className="text-center py-12 sm:py-16 md:py-24 px-4"
+                    // ✨ FIX: Added padding here to align with content
+                    className="text-center py-12 sm:py-16 md:py-24 px-2 sm:px-4"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
