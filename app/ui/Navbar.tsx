@@ -11,18 +11,19 @@ const navLinks = [
     { name: 'Blog', href: '/blog' },
 ];
 
-export default function MobileBottomNav() {
+// ✨ REBRANDED: Renamed component for clarity
+export default function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
 
     return (
-        <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md dark:bg-zinc-900/80">
+        <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md dark:bg-zinc-950/80 border-b border-gray-200/50 dark:border-zinc-800/50">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div className="flex h-16 items-center justify-between">
 
-                    {/* Logo */}
+                    {/* ✨ REBRANDED: Logo */}
                     <div className="flex-shrink-0">
-                        <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-rose-500 bg-clip-text text-transparent">
-                            Liv
+                        <Link href="/" className="text-2xl font-semibold bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text text-transparent">
+                            Deeper Weave
                         </Link>
                     </div>
 
@@ -32,7 +33,8 @@ export default function MobileBottomNav() {
                             <Link
                                 key={link.name}
                                 href={link.href}
-                                className="font-medium text-gray-700 transition-colors duration-200 hover:text-pink-600 dark:text-zinc-300 dark:hover:text-pink-400"
+                                // ✨ REBRANDED: Hover colors
+                                className="font-medium text-gray-700 transition-colors duration-200 hover:text-orange-600 dark:text-zinc-300 dark:hover:text-orange-400"
                             >
                                 {link.name}
                             </Link>
@@ -42,7 +44,8 @@ export default function MobileBottomNav() {
                     {/* Desktop Sign In Button & Mobile Menu Button */}
                     <div className="flex items-center">
                         <div className="hidden md:block">
-                            <Link href="/auth/login" className="rounded-md bg-pink-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-pink-700">
+                            {/* ✨ REBRANDED: Button colors */}
+                            <Link href="/auth/login" className="rounded-md bg-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-orange-700">
                                 Login
                             </Link>
                         </div>
@@ -50,7 +53,8 @@ export default function MobileBottomNav() {
                             <button
                                 onClick={() => setIsOpen(!isOpen)}
                                 type="button"
-                                className="inline-flex items-center justify-center rounded-md p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-pink-500 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white"
+                                // ✨ REBRANDED: Focus ring color
+                                className="inline-flex items-center justify-center rounded-md p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-orange-500 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white"
                                 aria-controls="mobile-menu"
                                 aria-expanded={isOpen}
                             >
@@ -80,8 +84,9 @@ export default function MobileBottomNav() {
                         </Link>
                     ))}
                     <div className="border-t border-gray-200 dark:border-zinc-700 pt-3 mt-3">
-                        <Link href="/auth/login" onClick={() => setIsOpen(false)} className="block rounded-md px-3 py-2 text-base font-medium text-pink-600 dark:text-pink-400 hover:bg-gray-100 dark:hover:bg-zinc-800">
-                            Sign In
+                        {/* ✨ REBRANDED: Link color */}
+                        <Link href="/auth/login" onClick={() => setIsOpen(false)} className="block rounded-md px-3 py-2 text-base font-medium text-orange-600 dark:text-orange-400 hover:bg-gray-100 dark:hover:bg-zinc-800">
+                            Login
                         </Link>
                     </div>
                 </div>
