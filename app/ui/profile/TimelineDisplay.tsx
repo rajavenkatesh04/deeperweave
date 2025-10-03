@@ -6,7 +6,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { type TimelineEntry } from '@/lib/data/timeline-data';
-import { StarIcon as SolidStarIcon } from '@heroicons/react/24/solid';
+import { StarIcon as SolidStarIcon, PlusIcon } from '@heroicons/react/24/solid';
 import {
     StarIcon as OutlineStarIcon,
     CalendarDaysIcon,
@@ -40,6 +40,7 @@ const itemVariants = {
     },
 };
 
+// This component remains unchanged
 function TimelineEntryCard({ entry, index }: { entry: TimelineEntry; index: number }) {
     const [selectedMovie, setSelectedMovie] = useState<{ tmdb_id: number; title: string } | null>(null);
     const [showNotesModal, setShowNotesModal] = useState(false);
@@ -56,7 +57,6 @@ function TimelineEntryCard({ entry, index }: { entry: TimelineEntry; index: numb
         <>
             <motion.div variants={itemVariants} className="group">
                 <div className="flex gap-3 sm:gap-4 md:gap-6 hover:bg-gradient-to-r hover:from-gray-50/80 hover:to-transparent dark:hover:from-zinc-800/50 dark:hover:to-transparent px-2 sm:px-3 md:px-4 py-3 sm:py-4 md:py-5 rounded-none sm:rounded-xl md:rounded-2xl transition-all duration-300">
-                    {/* ✨ FIX: Increased date font size and container width for mobile */}
                     <motion.div
                         className="flex-shrink-0 w-20 sm:w-20 md:w-24 text-center"
                         whileHover={{ scale: 1.05 }}
@@ -73,7 +73,6 @@ function TimelineEntryCard({ entry, index }: { entry: TimelineEntry; index: numb
                         </div>
                     </motion.div>
 
-                    {/* ✨ FIX: Increased poster size for mobile */}
                     <motion.div
                         className="flex-shrink-0 cursor-pointer relative group/poster"
                         whileHover={{ scale: 1.05 }}
@@ -94,9 +93,7 @@ function TimelineEntryCard({ entry, index }: { entry: TimelineEntry; index: numb
                         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover/poster:opacity-100 transition-opacity rounded-lg sm:rounded-xl" />
                     </motion.div>
 
-                    {/* Content */}
                     <div className="flex-1 min-w-0 flex flex-col justify-center">
-                        {/* ✨ FIX: Increased title font size for mobile */}
                         <motion.h3
                             className="text-xl md:text-2xl lg:text-3xl font-black text-gray-900 dark:text-white mb-1 sm:mb-2 cursor-pointer hover:text-red-600 dark:hover:text-red-400 transition-colors leading-tight tracking-tight line-clamp-2"
                             whileHover={{ x: 4 }}
@@ -109,9 +106,7 @@ function TimelineEntryCard({ entry, index }: { entry: TimelineEntry; index: numb
                             {entry.movies.title}
                         </motion.h3>
 
-                        {/* Year and Rating */}
                         <div className="flex items-center flex-wrap gap-2 sm:gap-3 md:gap-4 mb-2 sm:mb-3">
-                            {/* ✨ FIX: Increased year font size for mobile */}
                             <span className="text-sm md:text-base text-gray-500 dark:text-zinc-400 font-bold">
                                 {entry.movies.release_date?.split('-')[0]}
                             </span>
@@ -122,7 +117,6 @@ function TimelineEntryCard({ entry, index }: { entry: TimelineEntry; index: numb
                                     whileHover={{ scale: 1.05 }}
                                     transition={{ type: 'spring', stiffness: 400 }}
                                 >
-                                    {/* ✨ FIX: Increased star icon size for mobile */}
                                     {[1, 2, 3, 4, 5].map((starValue) => {
                                         const isFullStar = rating >= starValue;
                                         const isHalfStar = !isFullStar && rating >= starValue - 0.5;
@@ -151,7 +145,6 @@ function TimelineEntryCard({ entry, index }: { entry: TimelineEntry; index: numb
                                             </motion.div>
                                         );
                                     })}
-                                    {/* ✨ FIX: Increased rating font size for mobile */}
                                     <span className="ml-0.5 text-sm font-black text-gray-800 dark:text-white">
                                         {displayRating}
                                     </span>
@@ -159,7 +152,6 @@ function TimelineEntryCard({ entry, index }: { entry: TimelineEntry; index: numb
                             )}
                         </div>
 
-                        {/* ✨ FIX: Increased notes font size for mobile */}
                         {entry.notes && (
                             <motion.p
                                 className="text-sm md:text-base text-gray-600 dark:text-zinc-400 italic mb-2 sm:mb-3 line-clamp-2 leading-relaxed cursor-pointer hover:text-gray-800 dark:hover:text-zinc-300 transition-colors"
@@ -172,14 +164,11 @@ function TimelineEntryCard({ entry, index }: { entry: TimelineEntry; index: numb
                             </motion.p>
                         )}
 
-                        {/* Review link */}
                         {entry.posts?.slug && (
                             <Link
-                                // ✨ FIX: Increased review link font size for mobile
                                 href={`/blog/${entry.posts.slug}`}
                                 className="inline-flex items-center gap-1.5 sm:gap-2 text-sm font-bold text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors group/link w-fit"
                             >
-                                {/* ✨ FIX: Increased review icon size for mobile */}
                                 <PencilSquareIcon className="w-4 h-4 group-hover/link:rotate-12 transition-transform" />
                                 <span className="group-hover/link:underline decoration-2 underline-offset-2">Read Review</span>
                             </Link>
@@ -192,7 +181,6 @@ function TimelineEntryCard({ entry, index }: { entry: TimelineEntry; index: numb
                 )}
             </motion.div>
 
-            {/* Notes Modal */}
             <AnimatePresence>
                 {showNotesModal && entry.notes && (
                     <motion.div
@@ -236,7 +224,6 @@ function TimelineEntryCard({ entry, index }: { entry: TimelineEntry; index: numb
                 )}
             </AnimatePresence>
 
-            {/* Movie Info Card */}
             {selectedMovie && (
                 <MovieInfoCard
                     movieApiId={selectedMovie.tmdb_id}
@@ -249,7 +236,7 @@ function TimelineEntryCard({ entry, index }: { entry: TimelineEntry; index: numb
     );
 }
 
-export default function TimelineDisplay({ timelineEntries }: { timelineEntries: TimelineEntry[] }) {
+export default function TimelineDisplay({ timelineEntries, isOwnProfile, username }: { timelineEntries: TimelineEntry[]; isOwnProfile: boolean; username: string; }) {
     const INITIAL_ITEMS = 10;
     const ITEMS_PER_PAGE = 10;
     const [visibleCount, setVisibleCount] = useState(INITIAL_ITEMS);
@@ -265,15 +252,29 @@ export default function TimelineDisplay({ timelineEntries }: { timelineEntries: 
         <section className="-mx-4 sm:mx-0">
             {timelineEntries.length > 0 ? (
                 <>
-                    <div className="mb-4 sm:mb-6 md:mb-8 px-2 sm:px-0">
-                        {/* ✨ FIX: Increased header font size for mobile */}
-                        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-1 sm:mb-2">
-                            Watch History
-                        </h2>
-                        {/* ✨ FIX: Increased count font size for mobile */}
-                        <p className="text-sm md:text-base text-gray-600 dark:text-zinc-400">
-                            {timelineEntries.length} {timelineEntries.length === 1 ? 'film' : 'films'} watched
-                        </p>
+                    {/* ✨ FIX: Header is now a flex container to hold the title and button */}
+                    <div className="mb-4 sm:mb-6 md:mb-8 px-2 sm:px-0 flex justify-between items-center">
+                        <div>
+                            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-1 sm:mb-2">
+                                Watch History
+                            </h2>
+                            <p className="text-sm md:text-base text-gray-600 dark:text-zinc-400">
+                                {timelineEntries.length} {timelineEntries.length === 1 ? 'film' : 'films'} watched
+                            </p>
+                        </div>
+                        {/* ✨ FIX: "Add" button is now here, and only shows for the profile owner */}
+                        {isOwnProfile && (
+                            <Link href={`/profile/${username}/timeline/create`} passHref>
+                                <motion.button
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-rose-600 text-white rounded-lg shadow-sm hover:bg-rose-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 dark:focus:ring-offset-zinc-900"
+                                >
+                                    <PlusIcon className="h-5 w-5" />
+                                    <span className="text-sm font-semibold hidden sm:inline">Log Film</span>
+                                </motion.button>
+                            </Link>
+                        )}
                     </div>
 
                     <motion.div variants={containerVariants} initial="hidden" animate="visible">
@@ -319,9 +320,26 @@ export default function TimelineDisplay({ timelineEntries }: { timelineEntries: 
                         <p className="text-base sm:text-lg md:text-xl text-gray-700 dark:text-zinc-300 font-semibold mb-2">
                             No films logged yet
                         </p>
+                        {/* ✨ FIX: "Add" button also appears in the empty state for the profile owner */}
+                        {isOwnProfile && (
+                            <div className="mt-6">
+                                <Link href={`/profile/${username}/timeline/create`} passHref>
+                                    <motion.button
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        className="flex items-center mx-auto gap-2 px-5 py-3 bg-rose-600 text-white rounded-lg shadow-sm hover:bg-rose-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 dark:focus:ring-offset-zinc-900"
+                                    >
+                                        <PlusIcon className="h-5 w-5" />
+                                        <span className="text-sm font-semibold">Log Your First Film</span>
+                                    </motion.button>
+                                </Link>
+                            </div>
+                        )}
                     </div>
                 </motion.div>
             )}
+
+            {/* ✨ FIX: Removed the old Floating Action Button from here */}
         </section>
     );
 }

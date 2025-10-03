@@ -27,6 +27,11 @@ body {
     color: var(--foreground);
 }
 
+
+html {
+    scroll-behavior: smooth;
+}
+
 @layer base {
     body {
         .bg-radial-gradient {

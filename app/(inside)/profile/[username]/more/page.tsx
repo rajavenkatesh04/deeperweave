@@ -73,7 +73,7 @@ function AccountInfoCard({ user, profile }: { user: User; profile: UserProfile }
  */
 function OptionsCard() {
     const navLinks = [
-        { href: '/profile/notifications', icon: BellAlertIcon, label: 'Notifications' },
+        { href: '/profile/notifications', icon: BellAlertIcon, label: 'Follow requests' },
         { href: '/profile/settings', icon: Cog6ToothIcon, label: 'Settings' },
     ];
     return (
