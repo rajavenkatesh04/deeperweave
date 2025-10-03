@@ -63,8 +63,6 @@ import { LinkIcon } from "@/components/tiptap-icons/link-icon"
 
 // --- Hooks ---
 import { useIsMobile } from "@/hooks/use-mobile"
-import { useWindowSize } from "@/hooks/use-window-size"
-import { useCursorVisibility } from "@/hooks/use-cursor-visibility"
 
 // --- Components ---
 import { ThemeToggle } from "@/components/tiptap-templates/simple/theme-toggle"
@@ -77,10 +75,10 @@ import "@/components/tiptap-templates/simple/simple-editor.scss"
 
 // Define the props interface to make this a controlled component
 interface SimpleEditorProps {
-    value?: string          // Current content from parent component
-    onChange?: (html: string) => void  // Callback to notify parent of changes
-    placeholder?: string    // Placeholder text (for future use)
-    className?: string     // Additional CSS classes
+    value?: string
+    onChange?: (html: string) => void
+    placeholder?: string
+    className?: string
 }
 
 const MainToolbarContent = ({
@@ -95,14 +93,11 @@ const MainToolbarContent = ({
     return (
         <>
             <Spacer />
-
             <ToolbarGroup>
                 <UndoRedoButton action="undo" />
                 <UndoRedoButton action="redo" />
             </ToolbarGroup>
-
             <ToolbarSeparator />
-
             <ToolbarGroup>
                 <HeadingDropdownMenu levels={[1, 2, 3, 4]} portal={isMobile} />
                 <ListDropdownMenu
@@ -112,9 +107,7 @@ const MainToolbarContent = ({
                 <BlockquoteButton />
                 <CodeBlockButton />
             </ToolbarGroup>
-
             <ToolbarSeparator />
-
             <ToolbarGroup>
                 <MarkButton type="bold" />
                 <MarkButton type="italic" />
@@ -128,33 +121,24 @@ const MainToolbarContent = ({
                 )}
                 {!isMobile ? <LinkPopover /> : <LinkButton onClick={onLinkClick} />}
             </ToolbarGroup>
-
             <ToolbarSeparator />
-
             <ToolbarGroup>
                 <MarkButton type="superscript" />
                 <MarkButton type="subscript" />
             </ToolbarGroup>
-
             <ToolbarSeparator />
-
             <ToolbarGroup>
                 <TextAlignButton align="left" />
                 <TextAlignButton align="center" />
                 <TextAlignButton align="right" />
                 <TextAlignButton align="justify" />
             </ToolbarGroup>
-
             <ToolbarSeparator />
-
             <ToolbarGroup>
                 <ImageUploadButton text="Add" />
             </ToolbarGroup>
-
             <Spacer />
-
             {isMobile && <ToolbarSeparator />}
-
             <ToolbarGroup>
                 <ThemeToggle />
             </ToolbarGroup>
@@ -180,9 +164,7 @@ const MobileToolbarContent = ({
                 )}
             </Button>
         </ToolbarGroup>
-
         <ToolbarSeparator />
-
         {type === "highlighter" ? (
             <ColorHighlightPopoverContent />
         ) : (
@@ -191,19 +173,15 @@ const MobileToolbarContent = ({
     </>
 )
 
-// Modified SimpleEditor component that accepts props and works as controlled component
 export function SimpleEditor({
-                                 value = '',                           // Default to empty string if no value provided
+                                 value = '',
                                  onChange,
                                  placeholder = 'Start writing your content...',
                                  className = ''
                              }: SimpleEditorProps) {
     const isMobile = useIsMobile()
-    const { height } = useWindowSize()
     const [mobileView, setMobileView] = React.useState<"main" | "highlighter" | "link">("main")
-    const toolbarRef = React.useRef<HTMLDivElement>(null)
 
-    // Create the editor with modified configuration to work with props
     const editor = useEditor({
         immediatelyRender: false,
         shouldRerenderOnTransaction: false,
@@ -213,7 +191,7 @@ export function SimpleEditor({
                 autocorrect: "off",
                 autocapitalize: "off",
                 "aria-label": "Main content area, start typing to enter text.",
-                class: `simple-editor ${className}`, // Include custom className from props
+                class: `simple-editor ${className}`,
             },
         },
         extensions: [
@@ -224,9 +202,7 @@ export function SimpleEditor({
                     enableClickSelection: true,
                 },
             }),
-            Placeholder.configure({
-                placeholder, // Pass the placeholder prop here
-            }),
+            Placeholder.configure({ placeholder }),
             HorizontalRule,
             TextAlign.configure({ types: ["heading", "paragraph"] }),
             TaskList,
@@ -245,36 +221,23 @@ export function SimpleEditor({
                 onError: (error) => console.error("Upload failed:", error),
             }),
         ],
-        // Initialize with the value from props instead of static content
         content: value || '',
-
-        // Handle content changes and notify parent component
         onUpdate: ({ editor }) => {
             const html = editor.getHTML()
-            // Only call onChange if we have a handler and content actually changed
             if (onChange && html !== value) {
                 onChange(html)
             }
         },
     })
 
-    // Effect to sync editor content when the value prop changes from parent
-    // This ensures the editor stays in sync if parent updates the content
     React.useEffect(() => {
         if (editor && value !== undefined) {
             const currentContent = editor.getHTML()
-            // Only update if the content is actually different to avoid unnecessary updates
             if (currentContent !== value) {
-                // Use false as second parameter to not add to undo history
                 editor.commands.setContent(value, { emitUpdate: false })
             }
         }
     }, [editor, value])
-
-    const rect = useCursorVisibility({
-        editor,
-        overlayHeight: toolbarRef.current?.getBoundingClientRect().height ?? 0,
-    })
 
     React.useEffect(() => {
         if (!isMobile && mobileView !== "main") {
@@ -285,16 +248,7 @@ export function SimpleEditor({
     return (
         <div className="simple-editor-wrapper">
             <EditorContext.Provider value={{ editor }}>
-                <Toolbar
-                    ref={toolbarRef}
-                    style={{
-                        ...(isMobile
-                            ? {
-                                bottom: `calc(100% - ${height - rect.y}px)`,
-                            }
-                            : {}),
-                    }}
-                >
+                <Toolbar>
                     {mobileView === "main" ? (
                         <MainToolbarContent
                             onHighlighterClick={() => setMobileView("highlighter")}
