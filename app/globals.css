@@ -4,6 +4,9 @@
 @import '../styles/_variables.scss';
 @import '../styles/_keyframe-animations.scss';
 
+/* In your app/globals.css or equivalent */
+@import 'react-day-picker/dist/style.css';
+
 
 :root {
     --background: #ffffff;
