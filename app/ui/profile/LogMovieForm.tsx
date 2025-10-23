@@ -120,7 +120,7 @@ export default function LogMovieForm() {
         }
 
         const handler = setTimeout(() => {
-            if (movieSearchQuery.trim().length < 3) {
+            if (movieSearchQuery.trim().length < 0) {
                 setSearchResults([]);
                 return;
             }
