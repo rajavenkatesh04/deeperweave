@@ -21,20 +21,26 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             return new Response('Timeline entry not found', { status: 404 });
         }
 
-        // 2. Fetch fonts
-        const interRegular = fetch(new URL('/fonts/Inter_24pt-Regular.ttf', import.meta.url)).then((res) => res.arrayBuffer());
-        const interBold = fetch(new URL('/fonts/Inter_24pt-Bold.ttf', import.meta.url)).then((res) => res.arrayBuffer());
-        const interBlack = fetch(new URL('/fonts/Inter_24pt-Black.ttf', import.meta.url)).then((res) => res.arrayBuffer());
+        // This file is at: /app/api/timeline/share/[id]/route.tsx
+// The fonts are at: /public/fonts/
+
+// 1. Define the relative path to your fonts directory
+        const fontPath = '../../../../../public/fonts/';
+
+// 2. Fetch fonts using the correct relative path
+        const interRegular = fetch(new URL(`${fontPath}Inter_24pt-Regular.ttf`, import.meta.url)).then((res) => res.arrayBuffer());
+        const interBold = fetch(new URL(`${fontPath}Inter_24pt-Bold.ttf`, import.meta.url)).then((res) => res.arrayBuffer());
+        const interBlack = fetch(new URL(`${fontPath}Inter_24pt-Black.ttf`, import.meta.url)).then((res) => res.arrayBuffer());
 
         const [interRegularData, interBoldData, interBlackData] = await Promise.all([interRegular, interBold, interBlack]);
 
-        // 3. Generate the image
+// 3. Generate the image
         return new ImageResponse(
             (
                 <ShareStoryImage entry={entry} />
             ),
             {
-                width: 1080, // 9:16 aspect ratio
+                width: 1080,
                 height: 1920,
                 fonts: [
                     { name: 'Inter', data: interRegularData, style: 'normal', weight: 400 },
