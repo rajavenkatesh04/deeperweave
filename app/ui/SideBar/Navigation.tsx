@@ -19,7 +19,7 @@ export default async function Navigation() {
                     href="/"
                 >
                     <div className="w-24 text-white md:w-32 lg:w-40">
-                        <p className="text-xl font-bold md:text-2xl">Liv</p>
+                        <p className="text-xl font-bold md:text-2xl">DeeperWeave</p>
                     </div>
                 </Link>
 

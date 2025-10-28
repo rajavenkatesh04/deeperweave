@@ -1,5 +1,3 @@
-// @/app/ui/profile/TimelineDisplay.tsx
-
 'use client';
 
 import { useState } from 'react';
@@ -13,9 +11,12 @@ import {
     PencilSquareIcon,
     ChevronDownIcon,
     XMarkIcon,
+    ArrowUpOnSquareIcon, // ✨ ADDED: Share icon
 } from '@heroicons/react/24/outline';
 import { motion, AnimatePresence } from 'framer-motion';
 import MovieInfoCard from '@/app/ui/blog/MovieInfoCard';
+import { toast } from 'sonner'; // ✨ ADDED: For notifications
+import LoadingSpinner from '@/app/ui/loading-spinner'; // ✨ ADDED: Assumed path
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -44,6 +45,7 @@ const itemVariants = {
 function TimelineEntryCard({ entry, index }: { entry: TimelineEntry; index: number }) {
     const [selectedMovie, setSelectedMovie] = useState<{ tmdb_id: number; title: string } | null>(null);
     const [showNotesModal, setShowNotesModal] = useState(false);
+    const [isDownloading, setIsDownloading] = useState(false); // ✨ ADDED: State for download
 
     const watchedDate = new Date(entry.watched_on);
     const day = watchedDate.getDate();
@@ -52,6 +54,46 @@ function TimelineEntryCard({ entry, index }: { entry: TimelineEntry; index: numb
     const rating = Number(entry.rating);
 
     const displayRating = rating % 1 === 0 ? rating.toString() : rating.toFixed(1);
+
+    // ✨ ADDED: Download handler function
+    const handleDownloadShareImage = async () => {
+        setIsDownloading(true);
+        const toastId = toast.loading('Generating your story image...');
+
+        try {
+            // 1. Call our new API route
+            const response = await fetch(`/api/timeline/share/${entry.id}`);
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText || 'Failed to generate image.');
+            }
+
+            // 2. Get the image as a blob
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+
+            // 3. Create a temporary link to trigger the download
+            const a = document.createElement('a');
+            a.href = url;
+            // Sanitize title for filename
+            const safeTitle = entry.movies.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+            a.download = `deeperweave_${safeTitle}_story.png`;
+            document.body.appendChild(a);
+            a.click();
+
+            // 4. Clean up
+            a.remove();
+            window.URL.revokeObjectURL(url);
+
+            toast.success('Image downloaded!', { id: toastId });
+        } catch (error) {
+            console.error(error);
+            toast.error(`Could not download image.`, { id: toastId });
+        } finally {
+            setIsDownloading(false);
+        }
+    };
+
 
     return (
         <>
@@ -173,6 +215,22 @@ function TimelineEntryCard({ entry, index }: { entry: TimelineEntry; index: numb
                                 <span className="group-hover/link:underline decoration-2 underline-offset-2">Read Review</span>
                             </Link>
                         )}
+
+                        {/* ✨ ADDED: Share Button */}
+                        <div className="mt-4 flex gap-4">
+                            <button
+                                onClick={handleDownloadShareImage}
+                                disabled={isDownloading}
+                                className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-zinc-400 hover:text-red-600 dark:hover:text-red-400 disabled:opacity-50 disabled:cursor-wait transition-colors"
+                            >
+                                {isDownloading ? (
+                                    <LoadingSpinner className="w-4 h-4" />
+                                ) : (
+                                    <ArrowUpOnSquareIcon className="w-4 h-4" />
+                                )}
+                                <span>{isDownloading ? 'Generating...' : 'Share to Story'}</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -324,6 +382,11 @@ export default function TimelineDisplay({ timelineEntries, isOwnProfile, usernam
                         {isOwnProfile && (
                             <div className="mt-6">
                                 <Link href={`/profile/${username}/timeline/create`} passHref>
+                                    {/* *
+                                      * FIXED: Changed <button> to <motion.button>
+                                      * to accept whileHover and whileTap props.
+                                      *
+                                      */}
                                     <motion.button
                                         whileHover={{ scale: 1.05 }}
                                         whileTap={{ scale: 0.95 }}
