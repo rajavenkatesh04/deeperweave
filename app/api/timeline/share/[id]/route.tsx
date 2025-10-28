@@ -4,6 +4,7 @@ import ShareStoryImage from '@/app/ui/timeline/ShareStoryImage';
 import { NextRequest } from 'next/server';
 
 export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     // Await params before accessing its properties
