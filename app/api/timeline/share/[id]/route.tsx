@@ -22,9 +22,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         }
 
         // 2. Fetch fonts
-        const interRegular = fetch(new URL('/public/fonts/Inter_24pt-Regular.ttf', import.meta.url)).then((res) => res.arrayBuffer());
-        const interBold = fetch(new URL('/public/fonts/Inter_24pt-Bold.ttf', import.meta.url)).then((res) => res.arrayBuffer());
-        const interBlack = fetch(new URL('/public/fonts/Inter_24pt-Black.ttf', import.meta.url)).then((res) => res.arrayBuffer());
+        const interRegular = fetch(new URL('/fonts/Inter_24pt-Regular.ttf', import.meta.url)).then((res) => res.arrayBuffer());
+        const interBold = fetch(new URL('/fonts/Inter_24pt-Bold.ttf', import.meta.url)).then((res) => res.arrayBuffer());
+        const interBlack = fetch(new URL('/fonts/Inter_24pt-Black.ttf', import.meta.url)).then((res) => res.arrayBuffer());
 
         const [interRegularData, interBoldData, interBlackData] = await Promise.all([interRegular, interBold, interBlack]);
 
