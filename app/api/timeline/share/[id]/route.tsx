@@ -3,7 +3,7 @@ import { getTimelineEntryById } from '@/lib/data/timeline-data';
 import ShareStoryImage from '@/app/ui/timeline/ShareStoryImage';
 import { NextRequest } from 'next/server';
 
-export const runtime = 'edge'; // Use the Edge runtime for @vercel/og
+export const runtime = 'edge';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     // Await params before accessing its properties
@@ -21,20 +21,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             return new Response('Timeline entry not found', { status: 404 });
         }
 
-        // This file is at: /app/api/timeline/share/[id]/route.tsx
-// The fonts are at: /public/fonts/
-
-// 1. Define the relative path to your fonts directory
-        const fontPath = '../../../../../public/fonts/';
-
-// 2. Fetch fonts using the correct relative path
-        const interRegular = fetch(new URL(`${fontPath}Inter_24pt-Regular.ttf`, import.meta.url)).then((res) => res.arrayBuffer());
-        const interBold = fetch(new URL(`${fontPath}Inter_24pt-Bold.ttf`, import.meta.url)).then((res) => res.arrayBuffer());
-        const interBlack = fetch(new URL(`${fontPath}Inter_24pt-Black.ttf`, import.meta.url)).then((res) => res.arrayBuffer());
+        // 2. Fetch fonts from their PUBLIC URLS
+        // We use `request.url` to get the base domain (e.g., https://your-app.vercel.app)
+        // and then fetch the font from the /fonts/ path.
+        const interRegular = fetch(new URL('/fonts/Inter_24pt-Regular.ttf', request.url)).then((res) => res.arrayBuffer());
+        const interBold = fetch(new URL('/fonts/Inter_24pt-Bold.ttf', request.url)).then((res) => res.arrayBuffer());
+        const interBlack = fetch(new URL('/fonts/Inter_24pt-Black.ttf', request.url)).then((res) => res.arrayBuffer());
 
         const [interRegularData, interBoldData, interBlackData] = await Promise.all([interRegular, interBold, interBlack]);
 
-// 3. Generate the image
+        // 3. Generate the image
         return new ImageResponse(
             (
                 <ShareStoryImage entry={entry} />
