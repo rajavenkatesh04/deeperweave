@@ -44,6 +44,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                     { name: 'Inter', data: interBoldData, style: 'normal', weight: 700 },
                     { name: 'Inter', data: interBlackData, style: 'normal', weight: 900 },
                 ],
+                headers: {
+                    'Cache-Control': 'no-store, max-age=0',
+                    'CDN-Cache-Control': 'no-store, max-age=0',
+                    'Vercel-CDN-Cache-Control': 'no-store, max-age=0',
+                    'Pragma': 'no-cache',
+                    'Expires': '0',
+                },
             }
         );
 
