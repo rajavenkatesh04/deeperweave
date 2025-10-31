@@ -203,3 +203,64 @@ export interface ProfileSearchResult {
     bio?: string | null;
     profile_pic_url?: string | null;
 }
+
+// @/lib/definitions.ts
+// ... (keep all your existing definitions) ...
+
+// =====================================================================
+// == Timeline Structures (ADD THIS NEW SECTION)
+// =====================================================================
+
+/**
+ * Represents the join table for tagged users on a timeline entry.
+ * Stored in 'timeline_collaborators'.
+ */
+export interface TimelineCollaborator {
+    entry_id: string; // Foreign key to timeline_entries.id
+    user_id: string;  // Foreign key to profiles.id
+}
+
+/**
+ * A helper type that represents a TimelineCollaborator with the
+ * user's profile information joined.
+ */
+export type TimelineCollaboratorWithProfile = TimelineCollaborator & {
+    // This shape must match the 'profiles(*)' join in your Supabase query
+    profiles: Pick<UserProfile, 'id' | 'username' | 'profile_pic_url'>;
+};
+
+/**
+ * Represents a single entry in a user's movie-watching timeline.
+ * Stored in the 'timeline_entries' table.
+ *
+ * This interface represents the *final shape* of the data after joining
+ * with 'movies', 'posts', and 'timeline_collaborators'.
+ */
+export interface TimelineEntry {
+    id: string; // UUID
+    user_id: string;
+    movie_tmdb_id: number;
+    watched_on: string; // ISO Date string
+    rating: number | null; // This is mandatory, but 0 is stored as null
+    notes: string | null;
+    created_at: string;
+
+    // --- New fields we just added ---
+    post_id: string | null;     // Foreign key to posts.id
+    photo_url: string | null;   // URL from 'timeline_photos' storage bucket
+    is_rewatch: boolean;        // True if this movie was logged before
+    viewing_context: string | null; // "Theatre", "Netflix", "Prime Video", etc.
+
+    // --- Joined Data (from your data-fetching query) ---
+    movies: Movie; // The full joined movie object
+    posts: { slug: string } | null; // Joined from posts table
+    timeline_collaborators: TimelineCollaboratorWithProfile[]; // Joined collaborators
+}
+
+/**
+ * Represents a timeline entry joined with the author's profile.
+ * Used for the share image API.
+ */
+export type TimelineEntryWithUser = TimelineEntry & {
+    profiles: Pick<UserProfile, 'username' | 'display_name' | 'profile_pic_url'>;
+};

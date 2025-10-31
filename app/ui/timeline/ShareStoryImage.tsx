@@ -1,7 +1,7 @@
 // Import the correct type from your data file
-import { type TimelineEntryWithUser } from '@/lib/data/timeline-data';
+import { type TimelineEntryWithUser } from "@/lib/definitions";
 
-// --- SVG Star Components (Slightly larger) ---
+// --- SVG Star Components (Unchanged) ---
 const FullStar = () => (
     <svg width="48" height="48" viewBox="0 0 24 24" fill="#fbbf24" stroke="#fbbf24" strokeWidth="1">
         <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.31h5.518a.562.562 0 01.31.95l-4.225 3.09a.563.563 0 00-.175.545l1.618 5.39a.562.562 0 01-.815.61l-4.47-3.251a.563.563 0 00-.546 0L5.99 20.109a.562.562 0 01-.815-.61l1.618-5.39a.563.563 0 00-.175.545l-4.225-3.09a.562.562 0 01.31-.95h5.518a.563.563 0 00.475-.31l2.125-5.111z" />
@@ -20,23 +20,28 @@ const OutlineStar = () => (
 );
 
 
+// 1. Use the correct prop type: TimelineEntryWithUser
 export default function ShareStoryImage({ entry }: { entry: TimelineEntryWithUser }) {
     const rating = Number(entry.rating);
     const notes = entry.notes || '';
     const releaseYear = entry.movies.release_date?.split('-')[0];
-    const username = entry.username;
-    const displayName = entry.display_name || username;
-    const profilePicUrl = entry.profile_pic_url;
+
+    // 2. Access user data from the nested 'profiles' object
+    const username = entry.profiles.username;
+    const displayName = entry.profiles.display_name || username;
+    const profilePicUrl = entry.profiles.profile_pic_url;
 
     // Create an array for the star rating
     const stars: React.ReactNode[] = [];
-    for (let i = 1; i <= 5; i++) {
-        if (rating >= i) {
-            stars.push(<FullStar key={`star-full-${i}`} />);
-        } else if (rating >= i - 0.5) {
-            stars.push(<HalfStar key={`star-half-${i}`} />);
-        } else {
-            stars.push(<OutlineStar key={`star-outline-${i}`} />);
+    if (rating > 0) {
+        for (let i = 1; i <= 5; i++) {
+            if (rating >= i) {
+                stars.push(<FullStar key={`star-full-${i}`} />);
+            } else if (rating >= i - 0.5) {
+                stars.push(<HalfStar key={`star-half-${i}`} />);
+            } else {
+                stars.push(<OutlineStar key={`star-outline-${i}`} />);
+            }
         }
     }
 
@@ -121,11 +126,12 @@ export default function ShareStoryImage({ entry }: { entry: TimelineEntryWithUse
                     flexDirection: 'column',
                     flex: 1, // Key property to fill remaining space
                     padding: '0 80px 80px 80px',
-                    justifyContent: 'space-between' // Pushes content apart
+                    justifyContent: 'space-between', // Pushes content apart
+                    minHeight: 0 // Prevents overflow issues
                 }}>
 
                     {/* Top block: Title, Rating, Notes */}
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                         {/* Title & Year */}
                         <div style={{
                             display: 'flex',
@@ -160,7 +166,8 @@ export default function ShareStoryImage({ entry }: { entry: TimelineEntryWithUse
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: '8px',
-                                marginBottom: '40px'
+                                marginBottom: '40px',
+                                flexShrink: 0 // Prevent rating from shrinking
                             }}>
                                 {stars}
                                 <span style={{
@@ -181,7 +188,11 @@ export default function ShareStoryImage({ entry }: { entry: TimelineEntryWithUse
                                 flexDirection: 'column',
                                 borderLeft: '4px solid #f43f5e', // Use brand accent color
                                 paddingLeft: '24px',
-                                marginTop: '16px'
+                                marginTop: '16px',
+                                // Allow this block to scroll if notes are very long
+                                overflowY: 'auto',
+                                minHeight: 0,
+                                flexShrink: 1, // Allow notes to shrink if needed
                             }}>
                                 <p style={{
                                     fontSize: '34px',
@@ -189,12 +200,7 @@ export default function ShareStoryImage({ entry }: { entry: TimelineEntryWithUse
                                     lineHeight: 1.6,
                                     fontStyle: 'italic',
                                     margin: 0,
-                                    // For long notes, truncate gracefully
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    display: '-webkit-box',
-                                    WebkitLineClamp: 6, // Show max 6 lines
-                                    WebkitBoxOrient: 'vertical'
+                                    // 3. Removed truncation styles to show full notes
                                 }}>
                                     &ldquo;{notes}&rdquo;
                                 </p>
@@ -203,7 +209,7 @@ export default function ShareStoryImage({ entry }: { entry: TimelineEntryWithUse
                     </div>
 
                     {/* Bottom block: User & Branding */}
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0, paddingTop: '40px' }}>
                         {/* User Info */}
                         <div style={{
                             display: 'flex',
