@@ -83,7 +83,7 @@ function SubmitButton() {
     return <button type="submit" disabled={pending} className="flex h-10 w-full items-center justify-center rounded-lg bg-rose-600 px-6 text-sm font-medium text-white shadow-sm transition-colors hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-rose-400">{pending ? <><LoadingSpinner className="mr-2"/> Saving...</> : 'Log Film'}</button>;
 }
 
-export default function LogMovieForm() {
+export default function TimeLineEntryForm() {
     const initialState: LogMovieState = { message: null, errors: {} };
     const [state, formAction] = useActionState(logMovie, initialState);
 

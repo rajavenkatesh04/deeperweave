@@ -81,3 +81,68 @@ export async function logMovie(prevState: LogMovieState, formData: FormData): Pr
     revalidatePath(`/profile/${userData.profile.username}/timeline`);
     redirect(`/profile/${userData.profile.username}/timeline`);
 }
+
+
+
+export type DeleteTimelineEntryState = {
+    message?: string | null;
+    success?: boolean;
+};
+
+// Add this function after logMovie
+export async function deleteTimelineEntry(entryId: string): Promise<DeleteTimelineEntryState> {
+    const supabase = await createClient();
+    const userData = await getUserProfile();
+
+    if (!userData?.user || !userData.profile) {
+        return {
+            message: 'Authentication Error: You must be logged in to delete an entry.',
+            success: false
+        };
+    }
+
+    // First, verify that this entry belongs to the current user
+    const { data: entry, error: fetchError } = await supabase
+        .from('timeline_entries')
+        .select('user_id')
+        .eq('id', entryId)
+        .single();
+
+    if (fetchError || !entry) {
+        console.error("Timeline entry fetch error:", fetchError);
+        return {
+            message: 'Error: Could not find the entry.',
+            success: false
+        };
+    }
+
+    // Security check: ensure the entry belongs to the current user
+    if (entry.user_id !== userData.user.id) {
+        return {
+            message: 'Authorization Error: You can only delete your own entries.',
+            success: false
+        };
+    }
+
+    // Delete the entry
+    const { error: deleteError } = await supabase
+        .from('timeline_entries')
+        .delete()
+        .eq('id', entryId);
+
+    if (deleteError) {
+        console.error("Timeline delete error:", deleteError);
+        return {
+            message: 'Database Error: Could not delete the entry.',
+            success: false
+        };
+    }
+
+    // Revalidate the timeline page
+    revalidatePath(`/profile/${userData.profile.username}/timeline`);
+
+    return {
+        message: 'Entry deleted successfully!',
+        success: true
+    };
+}

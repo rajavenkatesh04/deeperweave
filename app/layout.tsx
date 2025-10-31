@@ -13,11 +13,11 @@ const calSans = Cal_Sans({
 
 export const metadata: Metadata = {
     title: {
-        template: '%s | Liv',
-        default: 'Liv',
+        template: '%s | DeeperWeave',
+        default: 'DeeperWeave',
     },
     description: 'The heart of your blogs',
-    metadataBase: new URL('https://liv-lively.vercel.app/'),
+    metadataBase: new URL('https://DeeperWeave.com/'),
 };
 
 export default function RootLayout({
