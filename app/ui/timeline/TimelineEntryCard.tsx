@@ -2,8 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import Link from 'next/link'; // <-- This is already here, just confirming
-// ✨ This now imports the full definition
+import Link from 'next/link';
 import { StarIcon as SolidStarIcon } from '@heroicons/react/24/solid';
 import {
     StarIcon as OutlineStarIcon,
@@ -23,23 +22,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import MovieInfoCard from '@/app/ui/blog/MovieInfoCard';
 import { toast } from 'sonner';
 import { deleteTimelineEntry } from '@/lib/actions/timeline-actions';
-import {TimelineEntry} from "@/lib/definitions";
+import { TimelineEntry, UserProfile } from "@/lib/definitions";
+import ImageModal from './ImageModal';
+import UserProfilePopover from './UserProfilePopover';
 
-// (Animation variants from your original file)
-export const itemVariants = {
-    hidden: { opacity: 0, x: -20 },
-    visible: {
-        opacity: 1,
-        x: 0,
-        transition: {
-            type: 'spring' as const,
-            stiffness: 80,
-            damping: 12,
-        },
-    },
-};
-
-// --- DropdownMenu Component (UPDATED) ---
+// (DropdownMenu component remains unchanged)
 function DropdownMenu({ entry, username, onDownload, isDownloading }: { entry: TimelineEntry; username: string; onDownload: () => void; isDownloading: boolean; }) {
     const [isOpen, setIsOpen] = useState(false);
     const [showShareDialog, setShowShareDialog] = useState(false);
@@ -111,7 +98,7 @@ function DropdownMenu({ entry, username, onDownload, isDownloading }: { entry: T
                     </motion.div>
                 )}
             </AnimatePresence>
-            {/* ... (Rest of DropdownMenu is unchanged) ... */}
+            {/* Share Dialog */}
             <AnimatePresence>
                 {showShareDialog && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowShareDialog(false)}>
@@ -138,22 +125,40 @@ function DropdownMenu({ entry, username, onDownload, isDownloading }: { entry: T
     );
 }
 
-// --- Main Card Component (UPDATED) ---
+// (Animation variants unchanged)
+export const itemVariants = {
+    hidden: { opacity: 0, x: -20 },
+    visible: {
+        opacity: 1,
+        x: 0,
+        transition: {
+            type: 'spring' as const,
+            stiffness: 80,
+            damping: 12,
+        },
+    },
+};
+
+// --- Main Card Component (BLENDED) ---
 export default function TimelineEntryCard({
                                               entry,
                                               index,
                                               isOwnProfile,
                                               username
                                           }: {
-    entry: TimelineEntry; // ✨ Uses the full type from definitions.ts
+    entry: TimelineEntry;
     index: number;
     isOwnProfile: boolean;
     username: string;
 }) {
+    // --- STATE ---
+    const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null);
+    const [selectedCollaborator, setSelectedCollaborator] = useState<Pick<UserProfile, 'id' | 'username' | 'profile_pic_url'> | null>(null);
     const [selectedMovie, setSelectedMovie] = useState<{ tmdb_id: number; title: string } | null>(null);
     const [showNotesModal, setShowNotesModal] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
 
+    // (Date, Rating, and Download Handler are unchanged)
     const watchedDate = new Date(entry.watched_on);
     const day = watchedDate.getDate();
     const month = watchedDate.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
@@ -161,7 +166,6 @@ export default function TimelineEntryCard({
     const rating = Number(entry.rating);
     const displayRating = rating % 1 === 0 ? rating.toString() : rating.toFixed(1);
 
-    // (Download handler unchanged)
     const handleDownloadShareImage = async () => {
         setIsDownloading(true);
         const toastId = toast.loading('Generating your story image...');
@@ -187,36 +191,46 @@ export default function TimelineEntryCard({
         }
     };
 
-    // --- NEW: Helper to get context icon ---
+    // (getContextIcon helper is unchanged)
     const getContextIcon = (context: string | null) => {
         if (!context) return null;
         if (context === 'Theatre') {
             return <BuildingLibraryIcon className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" title="Watched in Theatres" />;
         }
-        // You can add more logic here for specific OTT logos
         return <DevicePhoneMobileIcon className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" title={`Watched on ${context}`} />;
     };
 
     return (
         <>
             <motion.div variants={itemVariants} className="group" id={`entry-${entry.id}`}>
-                <div className="flex gap-3 sm:gap-4 md:gap-6 hover:bg-gradient-to-r hover:from-gray-50/80 hover:to-transparent dark:hover:from-zinc-800/50 dark:hover:to-transparent px-2 sm:px-3 md:px-4 py-3 sm:py-4 md:py-5 rounded-none sm:rounded-xl md:rounded-2xl transition-all duration-300">
+                {/* --- Grid Layout (from Code_Notes) --- */}
+                <div className="grid grid-cols-[auto_auto_1fr] gap-x-3 sm:gap-x-4 md:gap-x-6 hover:bg-gradient-to-r hover:from-gray-50/80 hover:to-transparent dark:hover:from-zinc-800/50 dark:hover:to-transparent px-2 sm:px-3 md:px-4 py-3 sm:py-4 md:py-5 rounded-none sm:rounded-xl md:rounded-2xl transition-all duration-300">
 
-                    {/* --- Date Column (unchanged) --- */}
-                    <motion.div className="flex-shrink-0 w-20 sm:w-20 md:w-24 text-center" whileHover={{ scale: 1.05 }} transition={{ type: 'spring', stiffness: 300 }}>
+                    {/* --- Date Column (Spans 2 rows) --- */}
+                    <motion.div
+                        className="flex-shrink-0 w-20 sm:w-20 md:w-24 text-center row-span-2" // <-- row-span-2
+                        whileHover={{ scale: 1.05 }}
+                        transition={{ type: 'spring', stiffness: 300 }}
+                    >
                         <div className="text-5xl md:text-6xl font-black text-gray-900 dark:text-white leading-none tracking-tighter">{day}</div>
                         <div className="text-sm md:text-base font-black text-red-600 dark:text-red-400 uppercase tracking-widest mt-1 sm:mt-1.5">{month}</div>
                         <div className="text-sm text-gray-600 dark:text-zinc-400 font-bold mt-0.5">{year}</div>
                     </motion.div>
 
-                    {/* --- Poster Column (unchanged) --- */}
-                    <motion.div className="flex-shrink-0 cursor-pointer relative group/poster" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }} onClick={() => setSelectedMovie({ tmdb_id: entry.movies.tmdb_id, title: entry.movies.title })}>
+                    {/* --- Poster Column (Unchanged) --- */}
+                    <motion.div
+                        className="flex-shrink-0 cursor-pointer relative group/poster"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                        onClick={() => setSelectedMovie({ tmdb_id: entry.movies.tmdb_id, title: entry.movies.title })}
+                    >
                         <Image src={entry.movies.poster_url || '/placeholder-poster.png'} alt={`Poster for ${entry.movies.title}`} width={80} height={120} className="rounded-lg sm:rounded-xl object-cover shadow-lg w-[80px] h-[120px] sm:w-[85px] sm:h-[128px] md:w-[95px] md:h-[143px] ring-2 ring-gray-200 dark:ring-zinc-700 group-hover/poster:ring-red-400 dark:group-hover/poster:ring-red-500 transition-all duration-300"/>
                         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover/poster:opacity-100 transition-opacity rounded-lg sm:rounded-xl" />
                     </motion.div>
 
-                    {/* --- Main Content Column (UPDATED) --- */}
-                    <div className="flex-1 min-w-0 flex flex-col justify-center">
+                    {/* --- Main Content Column (Top Part Only) --- */}
+                    <div className="flex-1 min-w-0 flex flex-col justify-start">
                         <div className="flex items-start justify-between gap-2 mb-1 sm:mb-2">
                             <div className="flex-1 min-w-0">
                                 <motion.h3
@@ -226,7 +240,7 @@ export default function TimelineEntryCard({
                                 >
                                     {entry.movies.title}
                                 </motion.h3>
-                                {/* --- NEW: Rewatch Badge --- */}
+                                {/* Rewatch Badge */}
                                 {entry.is_rewatch && (
                                     <div className="mt-1">
                                         <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
@@ -239,13 +253,13 @@ export default function TimelineEntryCard({
                             {isOwnProfile && <DropdownMenu entry={entry} username={username} onDownload={handleDownloadShareImage} isDownloading={isDownloading} />}
                         </div>
 
-                        {/* --- Metadata Row (UPDATED) --- */}
-                        <div className="flex items-center flex-wrap gap-2 sm:gap-3 md:gap-4 mb-2 sm:mb-3">
+                        {/* Metadata Row */}
+                        <div className="flex items-center flex-wrap gap-2 sm:gap-3 md:gap-4">
                             <span className="text-sm md:text-base text-gray-500 dark:text-zinc-400 font-bold">
                                 {entry.movies.release_date?.split('-')[0]}
                             </span>
 
-                            {/* --- NEW: Viewing Context --- */}
+                            {/* Viewing Context */}
                             {entry.viewing_context && (
                                 <span className="inline-flex items-center gap-1.5 text-sm md:text-base text-gray-500 dark:text-zinc-400 font-bold">
                                     {getContextIcon(entry.viewing_context)}
@@ -253,7 +267,7 @@ export default function TimelineEntryCard({
                                 </span>
                             )}
 
-                            {/* --- Rating (Now always present, but can be 0/null) --- */}
+                            {/* Rating */}
                             {rating > 0 && (
                                 <motion.div
                                     className="flex items-center gap-1 sm:gap-1.5 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/20 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-red-100 dark:border-red-900/30"
@@ -261,6 +275,7 @@ export default function TimelineEntryCard({
                                     transition={{ type: 'spring', stiffness: 400 }}
                                 >
                                     {[1, 2, 3, 4, 5].map((starValue) => {
+                                        // (Star logic unchanged)
                                         const isFullStar = rating >= starValue;
                                         const isHalfStar = !isFullStar && rating >= starValue - 0.5;
                                         return (
@@ -285,49 +300,71 @@ export default function TimelineEntryCard({
                             )}
                         </div>
 
-                        {/* --- Notes (unchanged) --- */}
-                        {entry.notes && (
-                            <motion.p className="text-sm md:text-base text-gray-600 dark:text-zinc-400 italic mb-2 sm:mb-3 line-clamp-2 leading-relaxed cursor-pointer hover:text-gray-800 dark:hover:text-zinc-300 transition-colors" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} onClick={() => setShowNotesModal(true)}>
-                                &ldquo;{entry.notes}&rdquo;
-                            </motion.p>
-                        )}
-
-                        {/* --- NEW: Attached Photo --- */}
-                        {entry.photo_url && (
-                            <motion.div className="mb-2 sm:mb-3" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} transition={{ delay: 0.3 }}>
-                                <Image
-                                    src={entry.photo_url}
-                                    alt="User-uploaded photo for this entry"
-                                    width={400}
-                                    height={200}
-                                    className="w-full h-auto max-h-64 object-cover rounded-lg border dark:border-zinc-700"
-                                />
-                            </motion.div>
-                        )}
-
-                        {/* --- NEW: "Watched With" Avatars --- */}
+                        {/* --- MOVED: "Watched With" Avatars (from Code_Tagged) --- */}
                         {entry.timeline_collaborators && entry.timeline_collaborators.length > 0 && (
-                            <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                            <div className="flex items-center gap-2 mt-2 sm:mt-3">
                                 <span className="text-xs font-medium text-gray-500 dark:text-zinc-400">With:</span>
                                 <div className="flex -space-x-2 overflow-hidden">
                                     {entry.timeline_collaborators.map(collab => (
                                         collab.profiles ? (
-                                            <Image
+                                            <button
+                                                type="button"
                                                 key={collab.profiles.id}
-                                                src={collab.profiles.profile_pic_url || '/default-avatar.png'}
-                                                alt={collab.profiles.username}
                                                 title={collab.profiles.username} // Hover text
-                                                width={24}
-                                                height={24}
-                                                className="inline-block h-6 w-6 rounded-full ring-2 ring-white dark:ring-zinc-900"
-                                            />
+                                                onClick={() => setSelectedCollaborator(collab.profiles)}
+                                            >
+                                                <Image
+                                                    src={collab.profiles.profile_pic_url || '/default-avatar.png'}
+                                                    alt={collab.profiles.username}
+                                                    width={24}
+                                                    height={24}
+                                                    className="inline-block h-6 w-6 rounded-full ring-2 ring-white dark:ring-zinc-900 hover:ring-rose-500 transition-all"
+                                                />
+                                            </button>
                                         ) : null
                                     ))}
                                 </div>
                             </div>
                         )}
+                    </div>
 
-                        {/* --- Review Link (unchanged) --- */}
+                    {/* --- Bottom Content Row (from Code_Notes) --- */}
+                    <div className="col-start-2 col-span-2 mt-3 sm:mt-4 space-y-3 sm:space-y-4">
+
+                        {/* --- MOVED: Attached Photo (Moved to "far left" / top) --- */}
+                        {entry.photo_url && (
+                            <motion.button
+                                type="button"
+                                className="w-full sm:w-48 h-auto block"
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                transition={{ delay: 0.3 }}
+                                onClick={() => setSelectedPhotoUrl(entry.photo_url)}
+                            >
+                                <Image
+                                    src={entry.photo_url}
+                                    alt="User-uploaded photo for this entry"
+                                    width={25}
+                                    height={25}
+                                    className="object-cover rounded-lg border dark:border-zinc-700 hover:opacity-80 transition-opacity"
+                                />
+                            </motion.button>
+                        )}
+
+                        {/* --- Notes --- */}
+                        {entry.notes && (
+                            <motion.p
+                                className="text-sm md:text-base text-gray-600 dark:text-zinc-400 italic line-clamp-3 leading-relaxed cursor-pointer hover:text-gray-800 dark:hover:text-zinc-300 transition-colors"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.2 }}
+                                onClick={() => setShowNotesModal(true)}
+                            >
+                                &ldquo;{entry.notes}&rdquo;
+                            </motion.p>
+                        )}
+
+                        {/* --- Review Link --- */}
                         {entry.posts?.slug && (
                             <Link href={`/blog/${entry.posts.slug}`} className="inline-flex items-center gap-1.5 sm:gap-2 text-sm font-bold text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors group/link w-fit">
                                 <PencilSquareIcon className="w-4 h-4 group-hover/link:rotate-12 transition-transform" />
@@ -335,14 +372,15 @@ export default function TimelineEntryCard({
                             </Link>
                         )}
                     </div>
-                </div>
+
+                </div> {/* End Grid */}
 
                 {index < 9 && (
                     <div className="border-b border-gray-100 dark:border-zinc-800/50 ml-16 sm:ml-20 md:ml-28 my-2 sm:my-3 md:my-4" />
                 )}
             </motion.div>
 
-            {/* --- Modals (unchanged) --- */}
+            {/* Notes Modal */}
             <AnimatePresence>
                 {showNotesModal && entry.notes && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowNotesModal(false)}>
@@ -356,18 +394,35 @@ export default function TimelineEntryCard({
                             </div>
                             <div className="p-4 sm:p-6">
                                 <p className="text-sm sm:text-base text-gray-700 dark:text-zinc-300 italic leading-relaxed whitespace-pre-wrap">&ldquo;{entry.notes}&rdquo;</p>
-
                             </div>
                         </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* Movie Info Modal */}
             {selectedMovie && (
                 <MovieInfoCard
                     movieApiId={selectedMovie.tmdb_id}
                     initialMovieData={entry.movies}
                     isOpen={true}
                     onClose={() => setSelectedMovie(null)}
+                />
+            )}
+
+            {/* Image Modal */}
+            {selectedPhotoUrl && (
+                <ImageModal
+                    imageUrl={selectedPhotoUrl}
+                    onClose={() => setSelectedPhotoUrl(null)}
+                />
+            )}
+
+            {/* User Profile Popover */}
+            {selectedCollaborator && (
+                <UserProfilePopover
+                    user={selectedCollaborator}
+                    onClose={() => setSelectedCollaborator(null)}
                 />
             )}
         </>

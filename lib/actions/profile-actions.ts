@@ -6,8 +6,9 @@ import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { ProfileSearchResult  } from '@/lib/definitions';
+import { ProfileSearchResult, UserProfile, Movie  } from '@/lib/definitions';
 import { getMovieDetails } from './blog-actions';
+import { unstable_noStore as noStore } from 'next/cache';
 
 export type OnboardingState = {
     message?: string | null;
@@ -332,4 +333,43 @@ export async function searchProfiles(query: string): Promise<ProfileSearchResult
 
     // 3. The 'data' now perfectly matches the 'ProfileSearchResult[]' type
     return data;
+}
+
+
+// =====================================================================
+// == NEW FUNCTION FOR THE USER PROFILE POPOVER
+// =====================================================================
+
+// This is the type your popover component expects
+type ProfileData = {
+    profile: UserProfile | null;
+    followerCount: number;
+    followingCount: number;
+};
+
+// This is the client-callable Server Action
+export async function getProfileCardData(username: string): Promise<ProfileData> {
+    noStore(); // Ensures this function re-runs every time it's called
+    const supabase = await createClient();
+
+    // Fetch profile and follower/following counts in one go
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('*, follower_count:followers!following_id(count), following_count:followers!follower_id(count)')
+        .eq('username', username)
+        .single<UserProfile & { follower_count: [{ count: number }], following_count: [{ count: number }] }>();
+
+    if (!profile) {
+        // Return a shape that matches the ProfileData type
+        return { profile: null, followerCount: 0, followingCount: 0 };
+    }
+
+    const followerCount = profile.follower_count[0]?.count || 0;
+    const followingCount = profile.following_count[0]?.count || 0;
+
+    return {
+        profile,
+        followerCount,
+        followingCount
+    };
 }
