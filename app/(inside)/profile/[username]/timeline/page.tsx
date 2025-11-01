@@ -3,7 +3,7 @@
 import { notFound } from 'next/navigation';
 import { getProfileByUsername } from '@/lib/data/user-data';
 import { getTimelineEntriesByUserId } from '@/lib/data/timeline-data';
-import TimelineDisplay from '@/app/ui/profile/TimelineDisplay';
+import TimelineDisplay from '@/app/ui/timeline/TimelineDisplay';
 // ✨ FIX: Import the standard server client, not the admin client
 import { createClient } from '@/utils/supabase/server';
 

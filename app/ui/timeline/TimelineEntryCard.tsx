@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
+import Link from 'next/link'; // <-- This is already here, just confirming
 // ✨ This now imports the full definition
 import { StarIcon as SolidStarIcon } from '@heroicons/react/24/solid';
 import {
@@ -15,9 +15,9 @@ import {
     TrashIcon,
     LinkIcon,
     ArrowDownTrayIcon,
-    ArrowPathIcon, // <-- NEW
-    BuildingLibraryIcon, // <-- NEW
-    DevicePhoneMobileIcon, // <-- NEW
+    ArrowPathIcon,
+    BuildingLibraryIcon,
+    DevicePhoneMobileIcon,
 } from '@heroicons/react/24/outline';
 import { motion, AnimatePresence } from 'framer-motion';
 import MovieInfoCard from '@/app/ui/blog/MovieInfoCard';
@@ -39,7 +39,7 @@ export const itemVariants = {
     },
 };
 
-// --- DropdownMenu Component (Unchanged from your file) ---
+// --- DropdownMenu Component (UPDATED) ---
 function DropdownMenu({ entry, username, onDownload, isDownloading }: { entry: TimelineEntry; username: string; onDownload: () => void; isDownloading: boolean; }) {
     const [isOpen, setIsOpen] = useState(false);
     const [showShareDialog, setShowShareDialog] = useState(false);
@@ -55,10 +55,6 @@ function DropdownMenu({ entry, username, onDownload, isDownloading }: { entry: T
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [isOpen]);
 
-    const handleEdit = () => {
-        toast.info('Edit functionality coming soon!');
-        setIsOpen(false);
-    };
 
     const handleDelete = async () => {
         if (!confirm('Are you sure you want to delete this entry? This action cannot be undone.')) return;
@@ -100,12 +96,22 @@ function DropdownMenu({ entry, username, onDownload, isDownloading }: { entry: T
                         className="absolute right-0 top-full mt-2 z-50 min-w-[180px] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-2xl p-2"
                     >
                         <button onClick={() => { setShowShareDialog(true); setIsOpen(false); }} className="flex w-full items-center gap-3 px-3 py-2 text-sm text-gray-800 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-md transition-colors text-left"><ShareIcon className="w-4 h-4" /><span>Share...</span></button>
-                        <button onClick={handleEdit} className="flex w-full items-center gap-3 px-3 py-2 text-sm text-gray-800 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-md transition-colors text-left"><PencilIcon className="w-4 h-4" /><span>Edit Entry</span></button>
+
+                        <Link
+                            href={`/profile/${username}/timeline/edit/${entry.id}`}
+                            className="flex w-full items-center gap-3 px-3 py-2 text-sm text-gray-800 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-md transition-colors text-left"
+                            onClick={() => setIsOpen(false)}
+                        >
+                            <PencilIcon className="w-4 h-4" />
+                            <span>Edit Entry</span>
+                        </Link>
+
                         <div className="h-px bg-gray-200 dark:bg-zinc-800 my-1" />
                         <button onClick={handleDelete} className="flex w-full items-center gap-3 px-3 py-2 text-sm text-red-600 dark:text-red-500 hover:bg-red-50 dark:hover:bg-red-950 rounded-md transition-colors text-left"><TrashIcon className="w-4 h-4" /><span>Delete Entry</span></button>
                     </motion.div>
                 )}
             </AnimatePresence>
+            {/* ... (Rest of DropdownMenu is unchanged) ... */}
             <AnimatePresence>
                 {showShareDialog && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowShareDialog(false)}>
@@ -350,6 +356,7 @@ export default function TimelineEntryCard({
                             </div>
                             <div className="p-4 sm:p-6">
                                 <p className="text-sm sm:text-base text-gray-700 dark:text-zinc-300 italic leading-relaxed whitespace-pre-wrap">&ldquo;{entry.notes}&rdquo;</p>
+
                             </div>
                         </motion.div>
                     </motion.div>

@@ -25,9 +25,6 @@ import {
 } from '@heroicons/react/24/solid';
 import LoadingSpinner from '@/app/ui/loading-spinner';
 
-// --- Reusable Components (MovieSearchResults, StarRatingInput, SubmitButton) ---
-// (These are unchanged from the previous version)
-
 type MovieSearchResult = { id: number; title: string; release_date: string; poster_path: string; };
 
 function MovieSearchResults({ results, onSelectMovie, isLoading }: { results: MovieSearchResult[]; onSelectMovie: (movie: MovieSearchResult) => void; isLoading: boolean; }) {
