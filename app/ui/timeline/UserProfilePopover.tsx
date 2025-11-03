@@ -17,7 +17,6 @@ type ProfileData = {
 };
 
 // This is the basic info PASSED IN from the card
-// This is the basic info PASSED IN from the card
 type BaseUser = {
     id: string;
     username: string;
@@ -55,9 +54,10 @@ export default function UserProfilePopover({
     }, [user.username]);
 
     // This logic is correct. It accesses created_at from the fetched data.
-    // const memberSince = data?.profil
-    //     ? new Date(data.profile.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
-    //     : null;
+    // FIX: Changed data?.profil to data?.profile
+    const memberSince = data?.profile
+        ? new Date(data.profile.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
+        : null;
 
     return (
         <AnimatePresence>
@@ -137,12 +137,13 @@ export default function UserProfilePopover({
                                             {data.profile.country}
                                         </div>
                                     )}
-                                    {/*{memberSince && (*/}
-                                    {/*    <div className="text-sm text-gray-500 dark:text-zinc-400 flex items-center gap-1.5">*/}
-                                    {/*        <CalendarIcon className="w-4 h-4" />*/}
-                                    {/*        Joined {memberSince}*/}
-                                    {/*    </div>*/}
-                                    {/*)}*/}
+                                    {/* FIX: Uncommented this block */}
+                                    {memberSince && (
+                                        <div className="text-sm text-gray-500 dark:text-zinc-400 flex items-center gap-1.5">
+                                            <CalendarIcon className="w-4 h-4" />
+                                            Member since {memberSince}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* View Profile Button */}

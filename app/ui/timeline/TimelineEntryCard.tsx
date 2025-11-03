@@ -26,6 +26,19 @@ import { TimelineEntry, UserProfile } from "@/lib/definitions";
 import ImageModal from './ImageModal';
 import UserProfilePopover from './UserProfilePopover';
 
+// --- NEW: Platform data for logos and colors ---
+// Based on the logos from your image and form data
+const ottPlatformDetails: { [key: string]: { logo: string; color: string; darkColor?: string } } = {
+    'Netflix': { logo: '/logos/netflix.svg', color: '#E50914' },
+    'Prime Video': { logo: '/logos/prime-video.svg', color: '#00A8E1' },
+    'Disney+': { logo: '/logos/disney-plus.svg', color: '#011c70', darkColor: '#439ff0' }, // Brighter blue for dark
+    'Hulu': { logo: '/logos/hulu.svg', color: '#1CE783' },
+    'Max': { logo: '/logos/max.svg', color: '#002be7', darkColor: '#6a8aff' }, // Brighter for dark
+    'Apple TV+': { logo: '/logos/apple-tv.svg', color: '#000000', darkColor: '#ffffff' }, // Black text becomes white
+    'Other': { logo: '', color: '#6b7280' }, // Will be caught by fallback
+};
+
+
 // (DropdownMenu component remains unchanged)
 function DropdownMenu({ entry, username, onDownload, isDownloading }: { entry: TimelineEntry; username: string; onDownload: () => void; isDownloading: boolean; }) {
     const [isOpen, setIsOpen] = useState(false);
@@ -191,13 +204,47 @@ export default function TimelineEntryCard({
         }
     };
 
-    // (getContextIcon helper is unchanged)
-    const getContextIcon = (context: string | null) => {
+    // --- ✨ NEW HELPER FUNCTION ---
+    // This renders the correct icon/logo and text color for the viewing context
+    const renderViewingContext = (context: string | null) => {
         if (!context) return null;
+
+        const platform = ottPlatformDetails[context];
+
+        // Case 1: Watched in Theatres
         if (context === 'Theatre') {
-            return <BuildingLibraryIcon className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" title="Watched in Theatres" />;
+            return (
+                <span className="inline-flex items-center gap-1.5 text-sm md:text-base text-gray-500 dark:text-zinc-400 font-bold">
+                    <BuildingLibraryIcon className="w-3 h-3 sm:w-4 sm:h-4" title="Watched in Theatres" />
+                    <span>{context}</span>
+                </span>
+            );
         }
-        return <DevicePhoneMobileIcon className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" title={`Watched on ${context}`} />;
+
+        // Case 2: Watched on a known streaming platform
+        if (platform && platform.logo) {
+            return (
+                <span className="inline-flex items-center gap-1.5 text-sm md:text-base font-bold">
+                    <Image src={platform.logo} alt={context} width={16} height={16} className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span
+                        // Set text color using inline styles
+                        style={{ color: platform.color, '--dark-brand-color': platform.darkColor || platform.color } as React.CSSProperties}
+                        // Use a CSS variable to apply the dark mode color override
+                        className="dark:!text-[var(--dark-brand-color)]"
+                    >
+                        {context}
+                    </span>
+                </span>
+            );
+        }
+
+        // Case 3: Fallback for "Other" or unknown contexts
+        return (
+            <span className="inline-flex items-center gap-1.5 text-sm md:text-base text-gray-500 dark:text-zinc-400 font-bold">
+                <DevicePhoneMobileIcon className="w-3 h-3 sm:w-4 sm:h-4" title={`Watched on ${context}`} />
+                <span>{context}</span>
+            </span>
+        );
     };
 
     return (
@@ -259,13 +306,8 @@ export default function TimelineEntryCard({
                                 {entry.movies.release_date?.split('-')[0]}
                             </span>
 
-                            {/* Viewing Context */}
-                            {entry.viewing_context && (
-                                <span className="inline-flex items-center gap-1.5 text-sm md:text-base text-gray-500 dark:text-zinc-400 font-bold">
-                                    {getContextIcon(entry.viewing_context)}
-                                    <span>{entry.viewing_context}</span>
-                                </span>
-                            )}
+                            {/* --- ✨ MODIFIED: Viewing Context --- */}
+                            {renderViewingContext(entry.viewing_context)}
 
                             {/* Rating */}
                             {rating > 0 && (

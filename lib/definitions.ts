@@ -10,6 +10,7 @@
  */
 export interface UserProfile {
     id: string; // This is the UUID from Supabase Auth
+    created_at: string;
     username: string; // The unique, public @handle
     display_name: string; // The user's full name
     date_of_birth: string; // ISO Date string (e.g., "1990-01-15"). Used for age verification (18+).
