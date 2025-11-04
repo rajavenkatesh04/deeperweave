@@ -63,6 +63,7 @@ export async function login(prevState: AuthState, formData: FormData): Promise<A
 }
 
 // --- SIGNUP ACTION ---
+// --- SIGNUP ACTION (Updated) ---
 export async function signup(prevState: AuthState, formData: FormData): Promise<AuthState> {
     const supabase = await createClient();
 
@@ -76,6 +77,32 @@ export async function signup(prevState: AuthState, formData: FormData): Promise<
     }
 
     const { email, password } = validatedFields.data;
+
+    // --- 👇 NEW PRE-CHECK ADDED HERE ---
+
+    // 1. Call the SQL function we just created
+    const { data: emailExists, error: rpcError } = await supabase.rpc('email_exists', {
+        email_to_check: email
+    });
+
+    // 2. Handle any error from calling the function itself
+    if (rpcError) {
+        console.error('Email check RPC error:', rpcError);
+        return { message: 'Something went wrong. Please try again.' };
+    }
+
+    // 3. If emailExists is true, return a specific error message
+    if (emailExists) {
+        return {
+            // You can also add this to the 'email' field in errors
+            // errors: { email: ['An account with this email already exists.'] },
+            message: 'An account with this email already exists. Please log in.'
+        };
+    }
+    // --- END OF NEW PRE-CHECK ---
+
+
+    // If the email doesn't exist, proceed with the original sign-up logic
     const origin = new URL(process.env.NEXT_PUBLIC_BASE_URL!).origin;
 
     const { error } = await supabase.auth.signUp({
@@ -87,6 +114,7 @@ export async function signup(prevState: AuthState, formData: FormData): Promise<
     });
 
     if (error) {
+        // This will now mostly catch other errors, like weak password (if not caught by Zod)
         return { message: error.message };
     }
 
@@ -98,6 +126,7 @@ export type UpdatePasswordState = {
     message?: string | null;
     errors?: {
         password?: string[];
+        confirmPassword?: string[];
     };
     success?: boolean;
 };
@@ -134,6 +163,64 @@ export async function updatePassword(prevState: UpdatePasswordState, formData: F
 
     // Don't redirect here, just return a success state. Let the client handle the redirect.
     return { success: true, message: 'Your password has been updated successfully!' };
+}
+
+
+export type ForgotPasswordState = {
+    message?: string | null;
+    errors?: {
+        email?: string[];
+    };
+    success?: boolean;
+};
+
+// --- ADD THIS NEW SCHEMA ---
+const ForgotPasswordSchema = z.object({
+    email: z.string().email({ message: 'Please enter a valid email address.' }),
+});
+
+// --- ADD THIS NEW ACTION ---
+export async function requestPasswordReset(
+    prevState: ForgotPasswordState,
+    formData: FormData
+): Promise<ForgotPasswordState> {
+
+    const supabase = await createClient();
+
+    const validatedFields = ForgotPasswordSchema.safeParse(Object.fromEntries(formData.entries()));
+
+    if (!validatedFields.success) {
+        return {
+            errors: validatedFields.error.flatten().fieldErrors,
+            message: 'Invalid email.',
+        };
+    }
+
+    const { email } = validatedFields.data;
+
+    // This is the URL your user will be redirected to after clicking the
+    // reset link in their email.
+    const origin = new URL(process.env.NEXT_PUBLIC_BASE_URL!).origin;
+    const redirectTo = `${origin}/auth/reset-password`;
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: redirectTo,
+    });
+
+    if (error) {
+        // Don't reveal if the email exists or not, just log the error
+        console.error('Password reset error:', error);
+        // Return a generic success message to prevent email enumeration
+        return {
+            success: true,
+            message: 'If an account with this email exists, a reset link has been sent.'
+        };
+    }
+
+    return {
+        success: true,
+        message: 'If an account with this email exists, a reset link has been sent.'
+    };
 }
 
 // --- LOGOUT ACTION ---

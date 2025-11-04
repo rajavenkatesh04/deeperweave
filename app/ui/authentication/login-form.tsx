@@ -1,3 +1,4 @@
+// app/auth/login/page.tsx
 'use client';
 
 import { useActionState } from 'react';
@@ -48,14 +49,25 @@ export default function LoginForm() {
                     </div>
 
                     <div>
-                        <label htmlFor="password" className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Password</label>
+                        {/* --- 👇 LINK ADDED HERE --- */}
+                        <div className="flex items-center justify-between">
+                            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-zinc-300">Password</label>
+                            <Link
+                                href="/auth/forgot-password"
+                                // ✨ REBRANDED: Link color
+                                className="text-sm font-medium text-orange-600 hover:underline dark:text-orange-500"
+                            >
+                                Forgot password?
+                            </Link>
+                        </div>
+                        {/* --- 👆 END OF CHANGE --- */}
                         <input
                             id="password"
                             name="password"
                             type="password"
                             placeholder="••••••••"
                             // ✨ REBRANDED: Input focus colors
-                            className="block w-full rounded-md border-gray-300 bg-gray-50 py-2 px-3 shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-zinc-700 dark:bg-zinc-800"
+                            className="mt-2 block w-full rounded-md border-gray-300 bg-gray-50 py-2 px-3 shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-zinc-700 dark:bg-zinc-800"
                             required
                         />
                     </div>
