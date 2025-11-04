@@ -373,3 +373,59 @@ export async function getProfileCardData(username: string): Promise<ProfileData>
         followingCount
     };
 }
+
+
+
+export type DeleteAccountState = {
+    message?: string | null;
+    errors?: {
+        confirmation?: string[];
+    };
+};
+
+// --- ADD THIS NEW SCHEMA ---
+// We force the user to type 'DELETE' to confirm
+const DeleteAccountSchema = z.object({
+    confirmation: z.string().refine(val => val === 'DELETE', {
+        message: 'You must type "DELETE" to confirm.'
+    }),
+});
+
+// --- ADD THIS NEW ACTION ---
+export async function deleteMyAccount(
+    prevState: DeleteAccountState,
+    formData: FormData
+): Promise<DeleteAccountState> {
+
+    const supabase = await createClient();
+
+    // 1. Check for authenticated user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        return { message: 'Authentication error.' };
+    }
+
+    // 2. Validate the confirmation text
+    const validatedFields = DeleteAccountSchema.safeParse(Object.fromEntries(formData.entries()));
+
+    if (!validatedFields.success) {
+        return {
+            errors: validatedFields.error.flatten().fieldErrors,
+            message: 'Confirmation is incorrect.',
+        };
+    }
+
+    // 3. Call the SQL function
+    const { error: rpcError } = await supabase.rpc('delete_my_account');
+
+    if (rpcError) {
+        console.error('Account deletion RPC error:', rpcError);
+        return { message: 'A server error occurred. Could not delete account.' };
+    }
+
+    // 4. Log the user out and redirect
+    // Revalidating the root layout ensures all user-data is cleared
+    revalidatePath('/', 'layout');
+    redirect('/delete-success');
+    // We don't need to call logout(), redirecting will clear the session
+}

@@ -1,8 +1,21 @@
-import { Suspense } from "react";
+// app/profile/settings/page.tsx (or the correct path)
+'use client'; // <-- MUST be at the top
+
+// --- React/Next.js Imports ---
+import {Suspense, useState, useEffect, useActionState} from "react"; // <-- Added useState, useEffect
 import { redirect } from "next/navigation";
 import Link from 'next/link';
-import { getUserProfile } from '@/lib/data/user-data';
+import { useFormStatus } from 'react-dom';
+
+// --- Action Imports ---
 import { logout } from '@/lib/actions/auth-actions';
+import { deleteMyAccount, type DeleteAccountState } from '@/lib/actions/profile-actions'; // <-- Import delete action
+
+// --- Data/Definition Imports ---
+import { UserProfile } from '@/lib/definitions';
+import { createClient } from '@/utils/supabase/client'; // <-- Import CLIENT Supabase
+
+// --- UI Imports ---
 import {
     EnvelopeIcon,
     CakeIcon,
@@ -13,7 +26,7 @@ import {
     PowerIcon,
     TrashIcon,
 } from '@heroicons/react/24/outline';
-import { UserProfile } from '@/lib/definitions';
+import LoadingSpinner from "@/app/ui/loading-spinner"; // <-- Import loading spinner
 
 // --- TYPE DEFINITIONS ---
 interface User {
@@ -21,7 +34,6 @@ interface User {
     email: string;
 }
 
-// This interface helps ensure the data from getUserProfile has the expected shape.
 interface UserProfileData {
     user: User;
     profile: UserProfile;
@@ -102,53 +114,99 @@ function OptionsCard() {
 }
 
 /**
+ * A helper component for the delete button's pending state.
+ */
+function DeleteButtonContent() {
+    const { pending } = useFormStatus();
+    return (
+        <>
+            {pending ? <LoadingSpinner className="mx-auto" /> : 'I understand, delete my account'}
+        </>
+    );
+}
+
+/**
  * CARD 3: Contains dangerous, irreversible actions like account deletion.
+ * This is now a stateful component.
  */
 function DangerZoneCard() {
     return (
         <div className="rounded-lg border border-red-300 bg-red-50 p-4 dark:border-red-900/50 dark:bg-red-950/20">
             <h3 className="mb-2 text-lg font-semibold text-red-700 dark:text-red-500">Danger Zone</h3>
             <p className="mb-4 text-sm text-gray-600 dark:text-zinc-400">
-                This action is irreversible. Please be certain before proceeding.
+                Permanently delete your account and all of your content.
             </p>
             <div className="border-t border-red-500/30 pt-4 dark:border-red-500/20">
-                <button
-                    type="button" // This button does not have functionality yet
+                <Link
+                    href="/profile/delete-account" // <-- Links to the new page
                     className="group flex w-full items-center justify-center gap-2 rounded-lg bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-600 transition-colors hover:bg-red-500 hover:text-white dark:bg-red-900/40 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white"
                 >
                     <TrashIcon className="h-5 w-5" />
                     Delete My Account
-                </button>
+                </Link>
             </div>
         </div>
     );
 }
 
 
-// --- MAIN PAGE COMPONENT (Server Component) ---
-export default async function ProfileAndSettingsPage() {
-    // Fetches user data on the server.
-    const userData = await getUserProfile();
+// --- MAIN PAGE COMPONENT (Client Component) ---
+export default function ProfileAndSettingsPage() {
+    const [userData, setUserData] = useState<UserProfileData | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
-    // If no user is found, redirect to the login page.
-    if (!userData) {
-        redirect("/auth/login");
+    // --- Client-side data fetching ---
+    useEffect(() => {
+        async function loadUserProfile() {
+            const supabase = createClient();
+            const { data: { user } } = await supabase.auth.getUser();
+
+            if (!user) {
+                redirect("/auth/login");
+            }
+
+            const { data: profile, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', user.id)
+                .single();
+
+            if (error || !profile) {
+                console.error("Error fetching profile:", error);
+                // Handle error, maybe redirect
+                redirect("/auth/login");
+                return;
+            }
+
+            setUserData({
+                user: { id: user.id, email: user.email! }, // Make sure to handle null email if possible
+                profile
+            });
+            setIsLoading(false);
+        }
+
+        loadUserProfile();
+    }, []);
+
+    // --- Loading State ---
+    if (isLoading || !userData) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <LoadingSpinner className="w-10 h-10" />
+            </div>
+        );
     }
 
-    // Destructure user and profile from the fetched data.
-    const { user, profile } = userData as UserProfileData;
+    // --- Loaded State ---
+    const { user, profile } = userData;
 
     return (
         <main>
             <div className="mx-auto space-y-8 py-6">
                 <OptionsCard />
 
-                {/* The AccountInfoCard depends on fetched data, so it's wrapped in Suspense. */}
-                <Suspense fallback="loading...">
-                    <AccountInfoCard user={user} profile={profile} />
-                </Suspense>
-
-                {/* These cards contain static links and actions, so they can be rendered directly. */}
+                {/* We no longer need Suspense because we wait for the fetch */}
+                <AccountInfoCard user={user} profile={profile} />
 
                 <DangerZoneCard />
             </div>
