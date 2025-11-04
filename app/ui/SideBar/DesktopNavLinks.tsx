@@ -26,9 +26,9 @@ export default function DesktopNavLinks() {
                         key={link.name}
                         href={link.href}
                         className={clsx(
-                            'flex items-center gap-3 rounded-md p-3 text-sm font-medium transition-colors hover:bg-gray-100 dark:hover:bg-zinc-800',
+                            'flex items-center gap-3 rounded-md p-3 text-sm font-medium transition-colors hover:bg-red-50 dark:hover:bg-red-900/20',
                             {
-                                'bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-300': isActive,
+                                'bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400': isActive,
                                 'text-gray-700 dark:text-zinc-300': !isActive,
                             },
                         )}

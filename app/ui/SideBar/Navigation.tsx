@@ -15,7 +15,7 @@ export default async function Navigation() {
             {/* Visible only on screens md and larger */}
             <div className="hidden h-full flex-col bg-gray-50 px-3 py-4 dark:bg-zinc-900 md:flex md:w-20 lg:w-64">
                 <Link
-                    className="mb-4 flex h-16 items-end justify-start rounded-md bg-gradient-to-r from-red-400 to-pink-700 p-4 md:h-20 lg:h-32"
+                    className="mb-4 flex h-16 items-end justify-start rounded-md bg-gradient-to-r from-red-500 to-red-800 p-4 md:h-20 lg:h-32"
                     href="/"
                 >
                     <div className="w-24 text-white md:w-32 lg:w-40">
@@ -55,6 +55,3 @@ export default async function Navigation() {
         </>
     );
 }
-
-// NOTE: You can keep your UserProfile.tsx as is for the desktop menu dropdown!
-// We just need to create the new NavLink components below.

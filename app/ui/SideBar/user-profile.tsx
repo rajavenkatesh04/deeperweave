@@ -18,7 +18,7 @@ export default function UserProfile({ user }: { user: UserProps }) {
     // Render a login link if the user is not signed in
     if (!user.profile) {
         return (
-            <Link href="/auth/login" className="flex items-center gap-3 rounded-md p-2 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-pink-500 dark:hover:bg-zinc-800">
+            <Link href="/auth/login" className="flex items-center gap-3 rounded-md p-2 transition-colors hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 dark:hover:bg-red-900/20">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 dark:bg-zinc-700">
                     <PowerIcon className="h-6 w-6 text-gray-500" />
                 </div>
@@ -33,7 +33,7 @@ export default function UserProfile({ user }: { user: UserProps }) {
     return (
         <Menu as="div" className="relative">
             {/* The button that triggers the dropdown */}
-            <Menu.Button className="flex w-full items-center gap-3 rounded-md p-2 text-left transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-pink-500 dark:hover:bg-zinc-800">
+            <Menu.Button className="flex w-full items-center gap-3 rounded-md p-2 text-left transition-colors hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 dark:hover:bg-red-900/20">
                 <Image
                     src={user.profile.profile_pic_url || '/placeholder-user.jpg'}
                     alt={user.profile.display_name ? `${user.profile.display_name}'s profile picture` : 'Profile picture'}
@@ -66,7 +66,7 @@ export default function UserProfile({ user }: { user: UserProps }) {
                                 <Link
                                     href="/profile/notifications"
                                     className={`${
-                                        active ? 'bg-gray-100 dark:bg-zinc-700' : ''
+                                        active ? 'bg-red-100 dark:bg-red-900/30' : ''
                                     } group flex w-full items-center gap-3 rounded-md p-2 text-sm text-gray-900 dark:text-zinc-200`}
                                 >
                                     <BellAlertIcon className="h-5 w-5" />
@@ -81,7 +81,7 @@ export default function UserProfile({ user }: { user: UserProps }) {
                                 <Link
                                     href="/profile"
                                     className={`${
-                                        active ? 'bg-gray-100 dark:bg-zinc-700' : ''
+                                        active ? 'bg-red-100 dark:bg-red-900/30' : ''
                                     } group flex w-full items-center gap-3 rounded-md p-2 text-sm text-gray-900 dark:text-zinc-200`}
                                 >
                                     <UserCircleIcon className="h-5 w-5" />
@@ -96,7 +96,7 @@ export default function UserProfile({ user }: { user: UserProps }) {
                                 <Link
                                     href="/profile/settings"
                                     className={`${
-                                        active ? 'bg-gray-100 dark:bg-zinc-700' : ''
+                                        active ? 'bg-red-100 dark:bg-red-900/30' : ''
                                     } group flex w-full items-center gap-3 rounded-md p-2 text-sm text-gray-900 dark:text-zinc-200`}
                                 >
                                     <Cog6ToothIcon className="h-5 w-5" />
@@ -114,7 +114,7 @@ export default function UserProfile({ user }: { user: UserProps }) {
                                     <button
                                         type="submit"
                                         className={`${
-                                            active ? 'bg-red-500 text-white dark:bg-red-600/50' : 'text-gray-900 dark:text-zinc-200'
+                                            active ? 'bg-red-600 text-white' : 'text-gray-900 dark:text-zinc-200'
                                         } group flex w-full items-center gap-3 rounded-md p-2 text-sm`}
                                     >
                                         <PowerIcon className="h-5 w-5" />

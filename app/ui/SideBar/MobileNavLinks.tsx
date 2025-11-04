@@ -28,8 +28,8 @@ export default function MobileNavLinks() {
                         className={clsx(
                             'flex h-full w-max flex-col items-center justify-center gap-1 text-xs transition-colors',
                             {
-                                'text-pink-600 dark:text-pink-400': isActive,
-                                'text-gray-600 hover:text-pink-600 dark:text-zinc-400 dark:hover:text-pink-400': !isActive,
+                                'text-red-600 dark:text-red-400': isActive,
+                                'text-gray-600 hover:text-red-600 dark:text-zinc-400 dark:hover:text-red-400': !isActive,
                             },
                         )}
                     >

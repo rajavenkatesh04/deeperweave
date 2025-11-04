@@ -26,20 +26,15 @@ import { TimelineEntry, UserProfile } from "@/lib/definitions";
 import ImageModal from './ImageModal';
 import UserProfilePopover from './UserProfilePopover';
 
-// --- NEW: Platform data for logos and colors ---
-// Based on the logos from your image and form data
-const ottPlatformDetails: { [key: string]: { logo: string; color: string; darkColor?: string } } = {
+const ottPlatformDetails: { [key: string]: { logo: string; color: string } } = {
     'Netflix': { logo: '/logos/netflix.svg', color: '#E50914' },
     'Prime Video': { logo: '/logos/prime-video.svg', color: '#00A8E1' },
-    'Disney+': { logo: '/logos/disney-plus.svg', color: '#011c70', darkColor: '#439ff0' }, // Brighter blue for dark
+    'Disney+': { logo: '/logos/disney-plus.svg', color: '#113CCF' },
     'Hulu': { logo: '/logos/hulu.svg', color: '#1CE783' },
-    'Max': { logo: '/logos/max.svg', color: '#002be7', darkColor: '#6a8aff' }, // Brighter for dark
-    'Apple TV+': { logo: '/logos/apple-tv.svg', color: '#000000', darkColor: '#ffffff' }, // Black text becomes white
-    'Other': { logo: '', color: '#6b7280' }, // Will be caught by fallback
+    'Max': { logo: '/logos/max.svg', color: '#0026FF' },
+    'Apple TV+': { logo: '/logos/apple-tv.svg', color: '#000000' },
 };
 
-
-// (DropdownMenu component remains unchanged)
 function DropdownMenu({ entry, username, onDownload, isDownloading }: { entry: TimelineEntry; username: string; onDownload: () => void; isDownloading: boolean; }) {
     const [isOpen, setIsOpen] = useState(false);
     const [showShareDialog, setShowShareDialog] = useState(false);
@@ -54,7 +49,6 @@ function DropdownMenu({ entry, username, onDownload, isDownloading }: { entry: T
         if (isOpen) document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [isOpen]);
-
 
     const handleDelete = async () => {
         if (!confirm('Are you sure you want to delete this entry? This action cannot be undone.')) return;
@@ -96,7 +90,6 @@ function DropdownMenu({ entry, username, onDownload, isDownloading }: { entry: T
                         className="absolute right-0 top-full mt-2 z-50 min-w-[180px] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-2xl p-2"
                     >
                         <button onClick={() => { setShowShareDialog(true); setIsOpen(false); }} className="flex w-full items-center gap-3 px-3 py-2 text-sm text-gray-800 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-md transition-colors text-left"><ShareIcon className="w-4 h-4" /><span>Share...</span></button>
-
                         <Link
                             href={`/profile/${username}/timeline/edit/${entry.id}`}
                             className="flex w-full items-center gap-3 px-3 py-2 text-sm text-gray-800 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-md transition-colors text-left"
@@ -105,13 +98,11 @@ function DropdownMenu({ entry, username, onDownload, isDownloading }: { entry: T
                             <PencilIcon className="w-4 h-4" />
                             <span>Edit Entry</span>
                         </Link>
-
                         <div className="h-px bg-gray-200 dark:bg-zinc-800 my-1" />
                         <button onClick={handleDelete} className="flex w-full items-center gap-3 px-3 py-2 text-sm text-red-600 dark:text-red-500 hover:bg-red-50 dark:hover:bg-red-950 rounded-md transition-colors text-left"><TrashIcon className="w-4 h-4" /><span>Delete Entry</span></button>
                     </motion.div>
                 )}
             </AnimatePresence>
-            {/* Share Dialog */}
             <AnimatePresence>
                 {showShareDialog && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowShareDialog(false)}>
@@ -138,7 +129,6 @@ function DropdownMenu({ entry, username, onDownload, isDownloading }: { entry: T
     );
 }
 
-// (Animation variants unchanged)
 export const itemVariants = {
     hidden: { opacity: 0, x: -20 },
     visible: {
@@ -152,7 +142,6 @@ export const itemVariants = {
     },
 };
 
-// --- Main Card Component (BLENDED) ---
 export default function TimelineEntryCard({
                                               entry,
                                               index,
@@ -164,14 +153,12 @@ export default function TimelineEntryCard({
     isOwnProfile: boolean;
     username: string;
 }) {
-    // --- STATE ---
     const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null);
     const [selectedCollaborator, setSelectedCollaborator] = useState<Pick<UserProfile, 'id' | 'username' | 'profile_pic_url'> | null>(null);
     const [selectedMovie, setSelectedMovie] = useState<{ tmdb_id: number; title: string } | null>(null);
     const [showNotesModal, setShowNotesModal] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
 
-    // (Date, Rating, and Download Handler are unchanged)
     const watchedDate = new Date(entry.watched_on);
     const day = watchedDate.getDate();
     const month = watchedDate.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
@@ -204,44 +191,32 @@ export default function TimelineEntryCard({
         }
     };
 
-    // --- ✨ NEW HELPER FUNCTION ---
-    // This renders the correct icon/logo and text color for the viewing context
     const renderViewingContext = (context: string | null) => {
         if (!context) return null;
 
         const platform = ottPlatformDetails[context];
 
-        // Case 1: Watched in Theatres
         if (context === 'Theatre') {
             return (
-                <span className="inline-flex items-center gap-1.5 text-sm md:text-base text-gray-500 dark:text-zinc-400 font-bold">
-                    <BuildingLibraryIcon className="w-3 h-3 sm:w-4 sm:h-4" title="Watched in Theatres" />
-                    <span>{context}</span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gray-100 dark:bg-zinc-800 text-xs font-medium text-gray-700 dark:text-zinc-300">
+                    <BuildingLibraryIcon className="w-3.5 h-3.5" />
+                    <span>Theatre</span>
                 </span>
             );
         }
 
-        // Case 2: Watched on a known streaming platform
         if (platform && platform.logo) {
             return (
-                <span className="inline-flex items-center gap-1.5 text-sm md:text-base font-bold">
-                    <Image src={platform.logo} alt={context} width={16} height={16} className="h-3 w-3 sm:h-4 sm:w-4" />
-                    <span
-                        // Set text color using inline styles
-                        style={{ color: platform.color, '--dark-brand-color': platform.darkColor || platform.color } as React.CSSProperties}
-                        // Use a CSS variable to apply the dark mode color override
-                        className="dark:!text-[var(--dark-brand-color)]"
-                    >
-                        {context}
-                    </span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gray-100 dark:bg-zinc-800">
+                    <Image src={platform.logo} alt={context} width={14} height={14} className="h-3.5 w-3.5" />
+                    <span className="text-xs font-medium text-gray-700 dark:text-zinc-300">{context}</span>
                 </span>
             );
         }
 
-        // Case 3: Fallback for "Other" or unknown contexts
         return (
-            <span className="inline-flex items-center gap-1.5 text-sm md:text-base text-gray-500 dark:text-zinc-400 font-bold">
-                <DevicePhoneMobileIcon className="w-3 h-3 sm:w-4 sm:h-4" title={`Watched on ${context}`} />
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gray-100 dark:bg-zinc-800 text-xs font-medium text-gray-700 dark:text-zinc-300">
+                <DevicePhoneMobileIcon className="w-3.5 h-3.5" />
                 <span>{context}</span>
             </span>
         );
@@ -250,12 +225,10 @@ export default function TimelineEntryCard({
     return (
         <>
             <motion.div variants={itemVariants} className="group" id={`entry-${entry.id}`}>
-                {/* --- Grid Layout (from Code_Notes) --- */}
                 <div className="grid grid-cols-[auto_auto_1fr] gap-x-3 sm:gap-x-4 md:gap-x-6 hover:bg-gradient-to-r hover:from-gray-50/80 hover:to-transparent dark:hover:from-zinc-800/50 dark:hover:to-transparent px-2 sm:px-3 md:px-4 py-3 sm:py-4 md:py-5 rounded-none sm:rounded-xl md:rounded-2xl transition-all duration-300">
 
-                    {/* --- Date Column (Spans 2 rows) --- */}
                     <motion.div
-                        className="flex-shrink-0 w-20 sm:w-20 md:w-24 text-center row-span-2" // <-- row-span-2
+                        className="flex-shrink-0 w-20 sm:w-20 md:w-24 text-center row-span-2"
                         whileHover={{ scale: 1.05 }}
                         transition={{ type: 'spring', stiffness: 300 }}
                     >
@@ -264,7 +237,6 @@ export default function TimelineEntryCard({
                         <div className="text-sm text-gray-600 dark:text-zinc-400 font-bold mt-0.5">{year}</div>
                     </motion.div>
 
-                    {/* --- Poster Column (Unchanged) --- */}
                     <motion.div
                         className="flex-shrink-0 cursor-pointer relative group/poster"
                         whileHover={{ scale: 1.05 }}
@@ -276,7 +248,6 @@ export default function TimelineEntryCard({
                         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover/poster:opacity-100 transition-opacity rounded-lg sm:rounded-xl" />
                     </motion.div>
 
-                    {/* --- Main Content Column (Top Part Only) --- */}
                     <div className="flex-1 min-w-0 flex flex-col justify-start">
                         <div className="flex items-start justify-between gap-2 mb-1 sm:mb-2">
                             <div className="flex-1 min-w-0">
@@ -287,7 +258,6 @@ export default function TimelineEntryCard({
                                 >
                                     {entry.movies.title}
                                 </motion.h3>
-                                {/* Rewatch Badge */}
                                 {entry.is_rewatch && (
                                     <div className="mt-1">
                                         <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
@@ -300,16 +270,13 @@ export default function TimelineEntryCard({
                             {isOwnProfile && <DropdownMenu entry={entry} username={username} onDownload={handleDownloadShareImage} isDownloading={isDownloading} />}
                         </div>
 
-                        {/* Metadata Row */}
-                        <div className="flex items-center flex-wrap gap-2 sm:gap-3 md:gap-4">
-                            <span className="text-sm md:text-base text-gray-500 dark:text-zinc-400 font-bold">
+                        <div className="flex items-center flex-wrap gap-2 sm:gap-2.5">
+                            <span className="text-sm text-gray-500 dark:text-zinc-400 font-medium">
                                 {entry.movies.release_date?.split('-')[0]}
                             </span>
 
-                            {/* --- ✨ MODIFIED: Viewing Context --- */}
                             {renderViewingContext(entry.viewing_context)}
 
-                            {/* Rating */}
                             {rating > 0 && (
                                 <motion.div
                                     className="flex items-center gap-1 sm:gap-1.5 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/20 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-red-100 dark:border-red-900/30"
@@ -317,7 +284,6 @@ export default function TimelineEntryCard({
                                     transition={{ type: 'spring', stiffness: 400 }}
                                 >
                                     {[1, 2, 3, 4, 5].map((starValue) => {
-                                        // (Star logic unchanged)
                                         const isFullStar = rating >= starValue;
                                         const isHalfStar = !isFullStar && rating >= starValue - 0.5;
                                         return (
@@ -342,7 +308,6 @@ export default function TimelineEntryCard({
                             )}
                         </div>
 
-                        {/* --- MOVED: "Watched With" Avatars (from Code_Tagged) --- */}
                         {entry.timeline_collaborators && entry.timeline_collaborators.length > 0 && (
                             <div className="flex items-center gap-2 mt-2 sm:mt-3">
                                 <span className="text-xs font-medium text-gray-500 dark:text-zinc-400">With:</span>
@@ -352,7 +317,7 @@ export default function TimelineEntryCard({
                                             <button
                                                 type="button"
                                                 key={collab.profiles.id}
-                                                title={collab.profiles.username} // Hover text
+                                                title={collab.profiles.username}
                                                 onClick={() => setSelectedCollaborator(collab.profiles)}
                                             >
                                                 <Image
@@ -370,10 +335,7 @@ export default function TimelineEntryCard({
                         )}
                     </div>
 
-                    {/* --- Bottom Content Row (from Code_Notes) --- */}
                     <div className="col-start-2 col-span-2 mt-3 sm:mt-4 space-y-3 sm:space-y-4">
-
-                        {/* --- MOVED: Attached Photo (Moved to "far left" / top) --- */}
                         {entry.photo_url && (
                             <motion.button
                                 type="button"
@@ -393,7 +355,6 @@ export default function TimelineEntryCard({
                             </motion.button>
                         )}
 
-                        {/* --- Notes --- */}
                         {entry.notes && (
                             <motion.p
                                 className="text-sm md:text-base text-gray-600 dark:text-zinc-400 italic line-clamp-3 leading-relaxed cursor-pointer hover:text-gray-800 dark:hover:text-zinc-300 transition-colors"
@@ -406,7 +367,6 @@ export default function TimelineEntryCard({
                             </motion.p>
                         )}
 
-                        {/* --- Review Link --- */}
                         {entry.posts?.slug && (
                             <Link href={`/blog/${entry.posts.slug}`} className="inline-flex items-center gap-1.5 sm:gap-2 text-sm font-bold text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors group/link w-fit">
                                 <PencilSquareIcon className="w-4 h-4 group-hover/link:rotate-12 transition-transform" />
@@ -415,14 +375,13 @@ export default function TimelineEntryCard({
                         )}
                     </div>
 
-                </div> {/* End Grid */}
+                </div>
 
                 {index < 9 && (
                     <div className="border-b border-gray-100 dark:border-zinc-800/50 ml-16 sm:ml-20 md:ml-28 my-2 sm:my-3 md:my-4" />
                 )}
             </motion.div>
 
-            {/* Notes Modal */}
             <AnimatePresence>
                 {showNotesModal && entry.notes && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowNotesModal(false)}>
@@ -442,7 +401,6 @@ export default function TimelineEntryCard({
                 )}
             </AnimatePresence>
 
-            {/* Movie Info Modal */}
             {selectedMovie && (
                 <MovieInfoCard
                     movieApiId={selectedMovie.tmdb_id}
@@ -452,7 +410,6 @@ export default function TimelineEntryCard({
                 />
             )}
 
-            {/* Image Modal */}
             {selectedPhotoUrl && (
                 <ImageModal
                     imageUrl={selectedPhotoUrl}
@@ -460,7 +417,6 @@ export default function TimelineEntryCard({
                 />
             )}
 
-            {/* User Profile Popover */}
             {selectedCollaborator && (
                 <UserProfilePopover
                     user={selectedCollaborator}
