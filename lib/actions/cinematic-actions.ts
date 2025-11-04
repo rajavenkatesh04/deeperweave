@@ -3,7 +3,7 @@
 import { ofetch } from 'ofetch';
 import { createClient } from '@/utils/supabase/server';
 
-// --- Type Definitions ---
+// --- Type Definitions (Unchanged) ---
 
 type CrewMember = {
     job: string;
@@ -15,22 +15,19 @@ export type CinematicSearchResult = {
     title: string;          // 'title' for movie, 'name' for TV
     release_date: string;   // 'release_date' for movie, 'first_air_date' for TV
     poster_path: string | null;
-    backdrop_path?: string | null; // Added for Hero component
-    overview?: string; // Added for Hero component
+    backdrop_path?: string | null;
+    overview?: string;
     media_type: 'movie' | 'tv';
 };
 
-// This is what TMDB's /search/multi endpoint returns
 interface TmdbMultiSearchItem {
     id: number;
     media_type: 'movie' | 'tv' | 'person';
     poster_path: string | null;
     backdrop_path?: string | null;
     overview?: string;
-    // Movie-specific
     title?: string;
     release_date?: string;
-    // TV-specific
     name?: string;
     first_air_date?: string;
 }
@@ -39,7 +36,6 @@ interface TmdbMultiSearchResponse {
     results: TmdbMultiSearchItem[];
 }
 
-// This is what TMDB's /movie/:id and /tv/:id endpoints return
 interface TmdbItemDetails {
     title?: string;
     name?: string;
@@ -48,23 +44,20 @@ interface TmdbItemDetails {
     release_date?: string;
     first_air_date?: string;
     genres: { id: number; name: string }[];
-    created_by?: { name: string }[]; // For TV
+    created_by?: { name: string }[];
     number_of_seasons?: number;
 }
 
-// This is what TMDB's /credits endpoints return
 interface TmdbCreditsResponse {
     cast: { name: string; profile_path: string; character: string }[];
     crew: CrewMember[];
 }
 
 
-// --- Helper Function ---
-// A single, reusable function to normalize TMDB results
-const normalizeTmdbItem = (item: TmdbMultiSearchItem): CinematicSearchResult | null => {
-    const media_type = item.media_type as 'movie' | 'tv';
+// --- Helper Function (Unchanged) ---
+const normalizeTmdbItem = (item: TmdbMultiSearchItem, forcedMediaType: 'movie' | 'tv' | null = null): CinematicSearchResult | null => {
+    const media_type = item.media_type || forcedMediaType;
 
-    // We only want movies and TV, and they MUST have a poster
     if ((media_type !== 'movie' && media_type !== 'tv') || !item.poster_path) {
         return null;
     }
@@ -80,8 +73,7 @@ const normalizeTmdbItem = (item: TmdbMultiSearchItem): CinematicSearchResult | n
     };
 };
 
-// --- Your Existing Functions (Unchanged) ---
-
+// --- ✨ 1. FIX in searchCinematic ---
 export async function searchCinematic(query: string): Promise<CinematicSearchResult[]> {
     if (query.trim().length < 2) return [];
     const TMDB_API_KEY = process.env.TMDB_API_KEY;
@@ -90,7 +82,8 @@ export async function searchCinematic(query: string): Promise<CinematicSearchRes
     try {
         const data = await ofetch<TmdbMultiSearchResponse>(url);
         return data.results
-            .map(normalizeTmdbItem)
+            // Use an inline arrow function to correctly call the helper
+            .map(item => normalizeTmdbItem(item))
             .filter((item): item is CinematicSearchResult => item !== null)
             .slice(0, 20);
     } catch (error) {
@@ -99,6 +92,7 @@ export async function searchCinematic(query: string): Promise<CinematicSearchRes
     }
 }
 
+// ... (getMovieDetails and getSeriesDetails are unchanged) ...
 export async function getMovieDetails(movieId: number) {
     const supabase = await createClient();
     const { data: cachedMovie } = await supabase.from('movies').select('*').eq('tmdb_id', movieId).maybeSingle();
@@ -134,7 +128,6 @@ export async function getMovieDetails(movieId: number) {
         throw new Error("Could not fetch movie details.");
     }
 }
-
 export async function getSeriesDetails(seriesId: number) {
     const supabase = await createClient();
     const { data: cachedSeries } = await supabase.from('series').select('*').eq('tmdb_id', seriesId).maybeSingle();
@@ -173,15 +166,20 @@ export async function getSeriesDetails(seriesId: number) {
     }
 }
 
-// --- ✨ NEW DISCOVERY FUNCTIONS ✨ ---
-
+// --- ✨ 2. FIX in fetchTmdbList ---
 const TMDB_API_KEY_FALLBACK = process.env.TMDB_API_KEY;
 
-// Generic fetcher for discover rows
 async function fetchTmdbList(endpoint: string, params: Record<string, string> = {}): Promise<CinematicSearchResult[]> {
     if (!TMDB_API_KEY_FALLBACK) {
         console.error("TMDB API Key is not configured on the server.");
         return [];
+    }
+
+    let forcedMediaType: 'movie' | 'tv' | null = null;
+    if (endpoint.startsWith('/movie')) {
+        forcedMediaType = 'movie';
+    } else if (endpoint.startsWith('/tv') || endpoint.startsWith('/discover/tv')) {
+        forcedMediaType = 'tv';
     }
 
     const query = new URLSearchParams({
@@ -194,46 +192,40 @@ async function fetchTmdbList(endpoint: string, params: Record<string, string> = 
     try {
         const data = await ofetch<TmdbMultiSearchResponse>(url);
         return data.results
-            .map(normalizeTmdbItem)
-            .filter((item): item is CinematicSearchResult => item !== null) // Filter out nulls
-            .slice(0, 20); // Get top 20
+            // Use an inline arrow function to correctly call the helper
+            .map(item => normalizeTmdbItem(item, forcedMediaType))
+            .filter((item): item is CinematicSearchResult => item !== null)
+            .slice(0, 20);
     } catch (error) {
         console.error(`TMDB Fetch Error for ${endpoint}:`, error);
         return [];
     }
 }
 
-// For the Hero Component
+// ... (export functions are unchanged) ...
 export async function getTrendingAll() {
     return fetchTmdbList('/trending/all/day');
 }
-
-// For the "Popular Movies" row
 export async function getPopularMovies() {
     return fetchTmdbList('/movie/popular', { language: 'en-US', page: '1' });
 }
-
-// For the "Popular TV" row
 export async function getPopularTv() {
     return fetchTmdbList('/tv/popular', { language: 'en-US', page: '1' });
 }
-
-// For the "Popular Anime" row
 export async function getDiscoverAnime() {
     return fetchTmdbList('/discover/tv', {
-        with_keywords: '210024', // TMDB keyword for "anime"
+        with_keywords: '210024',
+        sort_by: 'popularity.desc',
+        language: 'en-US',
+        page: '1'
+    });
+}
+export async function getDiscoverKdramas() {
+    return fetchTmdbList('/discover/tv', {
+        with_original_language: 'ko',
         sort_by: 'popularity.desc',
         language: 'en-US',
         page: '1'
     });
 }
 
-// For the "Popular K-Dramas" row
-export async function getDiscoverKdramas() {
-    return fetchTmdbList('/discover/tv', {
-        with_original_language: 'ko', // Korean
-        sort_by: 'popularity.desc',
-        language: 'en-US',
-        page: '1'
-    });
-}
