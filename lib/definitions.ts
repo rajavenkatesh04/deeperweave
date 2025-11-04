@@ -1,5 +1,3 @@
-// definitions.ts
-
 // =====================================================================
 // == User & Profile Structures
 // =====================================================================
@@ -25,7 +23,7 @@ export interface UserProfile {
 }
 
 // =====================================================================
-// == Core Content Structures (Posts & Movies)
+// == Core Content Structures (Posts, Movies, & Series)
 // =====================================================================
 
 /**
@@ -35,18 +33,19 @@ export interface UserProfile {
 export interface Post {
     id: string;
     author_id: string;
-    slug: string; // Add this
+    slug: string;
     type: 'review' | 'general';
     movie_id?: number;
+    series_id?: number; // ✨ ADDED
     title: string;
     content_html: string;
-    banner_url?: string | null; // Add this
+    banner_url?: string | null;
     rating?: number;
     is_premium: boolean;
     is_nsfw: boolean;
     has_spoilers: boolean;
     created_at: string;
-    view_count: number; // Add this
+    view_count: number;
     author_username: string;
     author_profile_pic_url?: string;
 }
@@ -72,6 +71,21 @@ export interface Movie {
     director?: string;
     poster_url: string;
     backdrop_url?: string;
+}
+
+/**
+ * ✨ ADDED
+ * Represents series data from an external API like TMDB.
+ * Stored in a 'series' table to cache data.
+ */
+export interface Series {
+    tmdb_id: number; // The Movie Database ID is the primary key
+    title: string;
+    release_date: string;
+    creator?: string;
+    poster_url: string;
+    backdrop_url?: string;
+    number_of_seasons?: number;
 }
 
 /**
@@ -209,7 +223,7 @@ export interface ProfileSearchResult {
 // ... (keep all your existing definitions) ...
 
 // =====================================================================
-// == Timeline Structures (ADD THIS NEW SECTION)
+// == Timeline Structures (✨ UPDATED THIS SECTION)
 // =====================================================================
 
 /**
@@ -240,9 +254,10 @@ export type TimelineCollaboratorWithProfile = TimelineCollaborator & {
 export interface TimelineEntry {
     id: string; // UUID
     user_id: string;
-    movie_tmdb_id: number;
+    movie_id: number | null; // ✨ RENAMED (from movie_tmdb_id) and made nullable
+    series_id: number | null; // ✨ ADDED
     watched_on: string; // ISO Date string
-    rating: number | null; // This is mandatory, but 0 is stored as null
+    rating: number | null;
     notes: string | null;
     created_at: string;
 
@@ -253,7 +268,8 @@ export interface TimelineEntry {
     viewing_context: string | null; // "Theatre", "Netflix", "Prime Video", etc.
 
     // --- Joined Data (from your data-fetching query) ---
-    movies: Movie; // The full joined movie object
+    movies: Movie | null; // ✨ UPDATED: Can be null if it's a series
+    series: Series | null; // ✨ ADDED: The full joined series object
     posts: { slug: string } | null; // Joined from posts table
     timeline_collaborators: TimelineCollaboratorWithProfile[]; // Joined collaborators
 }

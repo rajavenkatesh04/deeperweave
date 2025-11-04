@@ -1,14 +1,15 @@
-// @/app/ui/blog/AnimatedBlogPost.tsx
 'use client';
 
 import { motion, Variants, AnimatePresence } from "framer-motion";
 import { Eye, Calendar, ArrowUp, Star, StarHalf, AlertTriangle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import MovieInfoCard from "@/app/ui/blog/MovieInfoCard";
+// ✨ 1. Renamed the import to match the component name
+import CinematicInfoCard from "@/app/ui/blog/CinematicInfoCard";
 import LikeButton from "@/app/ui/blog/LikeButton";
 import CommentsSection from "@/app/ui/blog/CommentsSection";
-import { Post, Movie, CommentWithAuthor, UserProfile } from "@/lib/definitions";
+// ✨ 2. Imported the 'Series' type
+import { Post, Movie, Series, CommentWithAuthor, UserProfile } from "@/lib/definitions";
 import DOMPurify from 'isomorphic-dompurify';
 import { useState } from 'react';
 
@@ -145,7 +146,6 @@ const StarRating = ({ rating }: { rating: number }) => {
         >
             {[1, 2, 3, 4, 5].map((starValue) => {
                 let starIcon;
-                // This logic now checks for full, half, or empty stars
                 if (rating >= starValue) {
                     starIcon = <Star size={16} className="text-yellow-400 fill-yellow-400" />;
                 } else if (rating >= starValue - 0.5) {
@@ -177,7 +177,7 @@ const StarRating = ({ rating }: { rating: number }) => {
     );
 };
 
-// ✨ FIX: NSFW Warning Screen Component Updated
+// NSFW Warning Screen Component
 const NSFWWarning = ({ onAccept, onReject }: { onAccept: () => void, onReject: () => void }) => {
     return (
         <AnimatePresence>
@@ -202,7 +202,6 @@ const NSFWWarning = ({ onAccept, onReject }: { onAccept: () => void, onReject: (
                     />
                 </div>
 
-                {/* ✨ FIX: Added w-full and responsive padding for mobile */}
                 <motion.div
                     className="relative w-full max-w-md p-6 sm:p-8 bg-white/10 backdrop-blur-md rounded-3xl border border-white/20 text-center text-white shadow-2xl"
                     variants={nsfwContentVariants}
@@ -229,7 +228,6 @@ const NSFWWarning = ({ onAccept, onReject }: { onAccept: () => void, onReject: (
                         Content Warning
                     </motion.h2>
 
-                    {/* ✨ FIX: New humorous message */}
                     <motion.p
                         className="text-gray-300 mb-8 text-base sm:text-lg leading-relaxed"
                         initial={{ opacity: 0, y: 20 }}
@@ -239,7 +237,6 @@ const NSFWWarning = ({ onAccept, onReject }: { onAccept: () => void, onReject: (
                         Warning: May cause blushing, giggling, or browser history issues.
                     </motion.p>
 
-                    {/* ✨ FIX: Buttons are now stacked on mobile and have new text */}
                     <motion.div
                         className="flex flex-col sm:flex-row gap-4 justify-center"
                         initial={{ opacity: 0, y: 20 }}
@@ -270,6 +267,7 @@ const NSFWWarning = ({ onAccept, onReject }: { onAccept: () => void, onReject: (
     );
 };
 
+// ScrollToTop Component
 const ScrollToTop = () => {
     return (
         <motion.button
@@ -289,6 +287,7 @@ const ScrollToTop = () => {
     );
 };
 
+// FloatingStats Component
 const FloatingStats = ({ viewCount }: { viewCount: number }) => {
     return (
         <motion.div
@@ -309,11 +308,12 @@ const FloatingStats = ({ viewCount }: { viewCount: number }) => {
     );
 };
 
-// ✨ FIX: Removed 'premium' prop
+// ✨ 3. UPDATED Props Interface
 interface AnimatedBlogPostProps {
     post: Post;
     author: Pick<UserProfile, 'username' | 'display_name' | 'profile_pic_url'>;
     movie?: Movie | null;
+    series?: Series | null; // <-- ADDED
     likeCount: number;
     userHasLiked: boolean;
     comments: CommentWithAuthor[];
@@ -326,6 +326,7 @@ export default function AnimatedBlogPost({
                                              post,
                                              author,
                                              movie,
+                                             series, // <-- ADDED
                                              likeCount,
                                              userHasLiked,
                                              comments,
@@ -336,6 +337,10 @@ export default function AnimatedBlogPost({
 
     const [nsfwAccepted, setNsfwAccepted] = useState(!nsfw);
     const sanitizedHtml = DOMPurify.sanitize(post.content_html);
+
+    // ✨ 4. Create unified variables
+    const cinematicItem = movie || series;
+    const mediaType = movie ? 'movie' : 'tv';
 
     const handleNsfwAccept = () => {
         setNsfwAccepted(true);
@@ -356,7 +361,7 @@ export default function AnimatedBlogPost({
             initial="initial"
             animate="animate"
         >
-            {/* Floating background elements */}
+            {/* ... (Floating background elements) ... */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none">
                 <motion.div
                     className="absolute -top-24 -right-24 w-96 h-96 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full"
@@ -370,9 +375,7 @@ export default function AnimatedBlogPost({
                 />
             </div>
 
-            {/* ✨ FIX: Premium Badge has been removed from here */}
-
-            {/* Hero Banner Section */}
+            {/* ... (Hero Banner Section) ... */}
             <motion.div
                 className="relative w-full h-[70vh] min-h-[500px] max-h-[800px] overflow-hidden"
                 variants={heroVariants}
@@ -393,7 +396,6 @@ export default function AnimatedBlogPost({
                                 priority
                             />
                         </motion.div>
-
                         <motion.div
                             className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/60 z-1"
                             initial={{ opacity: 0 }}
@@ -415,8 +417,6 @@ export default function AnimatedBlogPost({
                         transition={{ duration: 0.8 }}
                     />
                 )}
-
-                {/* Enhanced floating stats with rating */}
                 <div className="absolute top-8 right-8 z-10 flex flex-col gap-4 items-end">
                     <motion.div
                         initial={{ opacity: 0, x: 50 }}
@@ -425,13 +425,10 @@ export default function AnimatedBlogPost({
                     >
                         <FloatingStats viewCount={post.view_count} />
                     </motion.div>
-
-                    {/* Rating Display */}
                     {rating && rating > 0 && (
                         <StarRating rating={rating} />
                     )}
                 </div>
-
                 <header className="absolute bottom-0 left-0 z-10 w-full p-6 md:p-8">
                     <div className="max-w-4xl mx-auto">
                         <motion.h1
@@ -440,7 +437,6 @@ export default function AnimatedBlogPost({
                         >
                             {post.title}
                         </motion.h1>
-
                         <motion.div
                             className="flex items-center gap-4 bg-black/20 backdrop-blur-sm rounded-full py-3 px-5 w-fit border border-white/10"
                             variants={pillVariants}
@@ -487,6 +483,7 @@ export default function AnimatedBlogPost({
                 </header>
             </motion.div>
 
+            {/* Main Content */}
             <motion.div
                 className="relative max-w-4xl mx-auto px-4 md:px-6 z-10"
                 variants={contentVariants}
@@ -506,22 +503,25 @@ export default function AnimatedBlogPost({
                     dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
                 />
 
-                {post.type === 'review' && post.movie_id && movie && (
+                {/* ✨ 5. FIX: This is the corrected component call */}
+                {post.type === 'review' && cinematicItem && (
                     <motion.div
                         className="mt-8 relative z-20"
                         initial={{ opacity: 0, y: 60 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, delay: 1 }}
                     >
-                        <MovieInfoCard
-                            movieApiId={post.movie_id}
-                            initialMovieData={movie}
+                        <CinematicInfoCard
+                            tmdbId={cinematicItem.tmdb_id}
+                            initialData={cinematicItem}
+                            mediaType={mediaType}
                         />
                     </motion.div>
                 )}
 
+                {/* ... (LikeButton and CommentsSection are unchanged) ... */}
                 <motion.div
-                    className="mt-8 pt-6 p-6 border rounded-xl border-gray-200 dark:border-zinc-800 flex items-center justify-between bg-gradient-to-r from-gray-50/50 to-blue-50/50 dark:from-zinc-900/50 dark:to-zinc-800/50 backdrop-blur-sm relative z-10" // Added relative z-10 here
+                    className="mt-8 pt-6 p-6 border rounded-xl border-gray-200 dark:border-zinc-800 flex items-center justify-between bg-gradient-to-r from-gray-50/50 to-blue-50/50 dark:from-zinc-900/50 dark:to-zinc-800/50 backdrop-blur-sm relative z-10"
                     initial={{ opacity: 0, y: 40 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 1.1 }}

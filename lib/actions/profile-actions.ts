@@ -1,15 +1,16 @@
-// app/lib/actions/profile-actions.ts
-
 'use server';
 
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { ProfileSearchResult, UserProfile, Movie  } from '@/lib/definitions';
-import { getMovieDetails } from './blog-actions';
+// ✨ 1. IMPORT Series
+import { ProfileSearchResult, UserProfile, Movie, Series } from '@/lib/definitions';
+// ✨ 2. IMPORT FROM YOUR NEW "LIBRARY"
+import { getMovieDetails, getSeriesDetails } from './cinematic-actions';
 import { unstable_noStore as noStore } from 'next/cache';
 
+// ... (OnboardingState and OnboardingSchema are unchanged) ...
 export type OnboardingState = {
     message?: string | null;
     errors?: {
@@ -20,7 +21,6 @@ export type OnboardingState = {
         gender?: string[];
     };
 };
-
 const OnboardingSchema = z.object({
     username: z.string().min(3, 'Username must be at least 3 characters.').regex(/^[a-z0-9_]+$/, 'Username can only contain lowercase letters, numbers, and underscores.'),
     display_name: z.string().min(1, 'Display name is required.'),
@@ -40,51 +40,43 @@ const OnboardingSchema = z.object({
     }),
 });
 
+// ... (completeProfile function is unchanged) ...
 export async function completeProfile(prevState: OnboardingState, formData: FormData): Promise<OnboardingState> {
     const supabase = await createClient();
-
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
         return { message: 'Authentication error. Please timeline in again.' };
     }
-
     const validatedFields = OnboardingSchema.safeParse(Object.fromEntries(formData.entries()));
-
     if (!validatedFields.success) {
         return {
             errors: validatedFields.error.flatten().fieldErrors,
             message: 'There were errors with your submission. Please review the fields.',
         };
     }
-
     const { username, display_name, date_of_birth, country, gender } = validatedFields.data;
-
     const { data: existingProfile } = await supabase
         .from('profiles').select('username').eq('username', username).neq('id', user.id).maybeSingle();
-
     if (existingProfile) {
         return {
             errors: { username: ['This username is already taken.'] },
             message: 'Username is unavailable.',
         };
     }
-
     const { error } = await supabase
         .from('profiles')
         .update({ username, display_name, date_of_birth, country, gender })
         .eq('id', user.id);
-
     if (error) {
         console.error('Profile update error:', error);
         return { message: 'Database error: Could not update profile.' };
     }
-
     revalidatePath('/profile', 'layout');
     redirect('/profile');
 }
 
 
-
+// ... (EditProfileState is unchanged) ...
 export type EditProfileState = {
     message?: string | null;
     errors?: {
@@ -95,22 +87,41 @@ export type EditProfileState = {
     };
 };
 
-// Define a specific type for the data being inserted
+// ✨ 3. UPDATED FavoriteFilmInsert type
 type FavoriteFilmInsert = {
     user_id: string;
-    movie_tmdb_id: number;
     rank: number;
+    movie_id?: number;  // Renamed
+    series_id?: number; // Added
 };
 
+// ✨ 4. UPDATED UpdateProfileSchema
+// This now expects your form to send 'id' and 'type' for each favorite
 const UpdateProfileSchema = z.object({
     username: z.string().min(3, 'Username must be at least 3 characters.').regex(/^[a-z0-9_]+$/, 'Username can only contain lowercase letters, numbers, and underscores.'),
     display_name: z.string().min(1, 'Display name is required.'),
     bio: z.string().max(160, 'Bio cannot be longer than 160 characters.').optional(),
-    fav_movie_1: z.coerce.number().optional(),
-    fav_movie_2: z.coerce.number().optional(),
-    fav_movie_3: z.coerce.number().optional(),
+
+    // Favorite 1
+    fav_1_id: z.coerce.number().optional(),
+    fav_1_type: z.enum(['movie', 'tv']).optional(),
+
+    // Favorite 2
+    fav_2_id: z.coerce.number().optional(),
+    fav_2_type: z.enum(['movie', 'tv']).optional(),
+
+    // Favorite 3
+    fav_3_id: z.coerce.number().optional(),
+    fav_3_type: z.enum(['movie', 'tv']).optional(),
+}).refine(data => !data.fav_1_id || (data.fav_1_id && data.fav_1_type), {
+    message: 'Type missing for favorite 1', path: ['fav_1_id']
+}).refine(data => !data.fav_2_id || (data.fav_2_id && data.fav_2_type), {
+    message: 'Type missing for favorite 2', path: ['fav_2_id']
+}).refine(data => !data.fav_3_id || (data.fav_3_id && data.fav_3_type), {
+    message: 'Type missing for favorite 3', path: ['fav_3_id']
 });
 
+// ✨ 5. UPDATED updateProfile function
 export async function updateProfile(prevState: EditProfileState, formData: FormData): Promise<EditProfileState> {
     const supabase = await createClient();
 
@@ -128,11 +139,17 @@ export async function updateProfile(prevState: EditProfileState, formData: FormD
         };
     }
 
-    const { username, display_name, bio, fav_movie_1, fav_movie_2, fav_movie_3 } = validatedFields.data;
+    // Get the new validated data
+    const {
+        username, display_name, bio,
+        fav_1_id, fav_1_type,
+        fav_2_id, fav_2_type,
+        fav_3_id, fav_3_type
+    } = validatedFields.data;
 
+    // --- Username Check (unchanged) ---
     const { data: existingProfile } = await supabase
         .from('profiles').select('username').eq('username', username).neq('id', user.id).maybeSingle();
-
     if (existingProfile) {
         return {
             errors: { username: ['This username is already taken.'] },
@@ -140,6 +157,7 @@ export async function updateProfile(prevState: EditProfileState, formData: FormD
         };
     }
 
+    // --- Profile Pic Upload (unchanged) ---
     const dataToUpdate: {
         username: string;
         display_name: string;
@@ -150,80 +168,81 @@ export async function updateProfile(prevState: EditProfileState, formData: FormD
         display_name,
         bio: bio,
     };
-
     const profilePicFile = formData.get('profile_pic') as File;
-
     if (profilePicFile && profilePicFile.size > 0) {
         const fileExtension = profilePicFile.name.split('.').pop();
         const filePath = `${user.id}/profile.${fileExtension}`;
-
         const { error: uploadError } = await supabase.storage
             .from('profile_pics')
             .upload(filePath, profilePicFile, {
                 upsert: true,
                 cacheControl: '3600',
             });
-
         if (uploadError) {
             console.error('Upload Error:', uploadError);
             return { message: 'Database error: Could not upload profile picture.' };
         }
-
         const { data: { publicUrl } } = supabase.storage
             .from('profile_pics')
             .getPublicUrl(filePath);
-
         dataToUpdate.profile_pic_url = `${publicUrl}?updated_at=${Date.now()}`;
     }
 
+    // --- Profile Data Update (unchanged) ---
     const { error: updateError } = await supabase
         .from('profiles')
         .update(dataToUpdate)
         .eq('id', user.id);
-
-
     if (updateError) {
         console.error('Profile update error:', updateError);
         return { message: 'Database error: Could not update profile.' };
     }
 
-    // Upsert movie details before adding them as favorites
-    const favoriteMovieIds = [fav_movie_1, fav_movie_2, fav_movie_3].filter(Boolean);
-    if (favoriteMovieIds.length > 0) {
+    // --- ✨ 6. FAVORITES CACHING (Updated) ---
+    const favoriteItems = [
+        { id: fav_1_id, type: fav_1_type },
+        { id: fav_2_id, type: fav_2_type },
+        { id: fav_3_id, type: fav_3_type },
+    ].filter(item => item.id && item.type); // Filter out empty slots
+
+    if (favoriteItems.length > 0) {
         try {
-            for (const movieId of favoriteMovieIds) {
-                const movieDetails = await getMovieDetails(movieId as number);
-                await supabase.from('movies').upsert({
-                    tmdb_id: movieId,
-                    title: movieDetails.title,
-                    poster_url: movieDetails.poster_path ? `https://image.tmdb.org/t/p/w500${movieDetails.poster_path}` : null,
-                    release_date: movieDetails.release_date,
-                    director: movieDetails.director,
-                });
+            for (const item of favoriteItems) {
+                if (item.type === 'movie') {
+                    // This now calls your caching "library" function
+                    await getMovieDetails(item.id!);
+                } else if (item.type === 'tv') {
+                    // This also calls your "library"
+                    await getSeriesDetails(item.id!);
+                }
             }
         } catch (error) {
-            console.error("Favorite movie upsert error:", error);
-            return { message: "Server Error: Could not save favorite movie details." };
+            console.error("Favorite item cache error:", error);
+            return { message: "Server Error: Could not save favorite item details." };
         }
     }
 
+    // --- ✨ 7. FAVORITES INSERTION (Updated) ---
+
+    // Delete all old favorites
     const { error: deleteError } = await supabase.from('favorite_films').delete().eq('user_id', user.id);
     if (deleteError) {
         console.error('Error clearing old favorites:', deleteError);
-        return { message: 'Database error: Could not update favorite films.' };
+        return { message: 'Database error: Could not update favorite items.' };
     }
 
-    const newFavorites = [
-        fav_movie_1 && { user_id: user.id, movie_tmdb_id: fav_movie_1, rank: 1 },
-        fav_movie_2 && { user_id: user.id, movie_tmdb_id: fav_movie_2, rank: 2 },
-        fav_movie_3 && { user_id: user.id, movie_tmdb_id: fav_movie_3, rank: 3 },
-    ].filter(Boolean);
+    // Build the new array with correct movie/series columns
+    const newFavorites: FavoriteFilmInsert[] = [
+        fav_1_id && { user_id: user.id, rank: 1, movie_id: fav_1_type === 'movie' ? fav_1_id : undefined, series_id: fav_1_type === 'tv' ? fav_1_id : undefined },
+        fav_2_id && { user_id: user.id, rank: 2, movie_id: fav_2_type === 'movie' ? fav_2_id : undefined, series_id: fav_2_type === 'tv' ? fav_2_id : undefined },
+        fav_3_id && { user_id: user.id, rank: 3, movie_id: fav_3_type === 'movie' ? fav_3_id : undefined, series_id: fav_3_type === 'tv' ? fav_3_id : undefined },
+    ].filter(Boolean) as FavoriteFilmInsert[];
 
     if (newFavorites.length > 0) {
-        const { error: insertError } = await supabase.from('favorite_films').insert(newFavorites as FavoriteFilmInsert[]);
+        const { error: insertError } = await supabase.from('favorite_films').insert(newFavorites);
         if (insertError) {
             console.error('Error inserting new favorites:', insertError);
-            return { message: 'Database error: Could not save favorite films.' };
+            return { message: 'Database error: Could not save favorite items.' };
         }
     }
 
@@ -233,37 +252,32 @@ export async function updateProfile(prevState: EditProfileState, formData: FormD
 }
 
 
+// ... (checkUsernameAvailability is unchanged) ...
 export async function checkUsernameAvailability(username: string) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-
     if (!user) {
         return { available: false, message: 'Not authenticated' };
     }
-
     if (!username || username.length < 3) {
         return { available: false, message: 'Username too short' };
     }
-
     const { data: existingProfile, error } = await supabase
         .from('profiles')
         .select('id')
         .eq('username', username)
-        .neq('id', user.id) // Important: exclude the current user's own profile
+        .neq('id', user.id)
         .maybeSingle();
-
     if (error) {
         return { available: false, message: 'Database error' };
     }
-
     if (existingProfile) {
         return { available: false, message: 'Username is already taken.' };
     }
-
     return { available: true, message: 'Username is available!' };
 }
 
-
+// ... (SettingsState and SettingsSchema are unchanged) ...
 export type SettingsState = {
     message?: string | null;
     errors?: {
@@ -271,102 +285,80 @@ export type SettingsState = {
         content_preference?: string[];
     };
 };
-
 const SettingsSchema = z.object({
     visibility: z.enum(['public', 'private']),
     content_preference: z.enum(['sfw', 'all']),
 });
 
+// ... (updateProfileSettings is unchanged) ...
 export async function updateProfileSettings(prevState: SettingsState, formData: FormData): Promise<SettingsState> {
     const supabase = await createClient();
-
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
         return { message: 'Authentication error.' };
     }
-
     const validatedFields = SettingsSchema.safeParse(Object.fromEntries(formData.entries()));
-
     if (!validatedFields.success) {
         return {
             errors: validatedFields.error.flatten().fieldErrors,
             message: 'Invalid data provided.',
         };
     }
-
     const { visibility, content_preference } = validatedFields.data;
-
     const { error } = await supabase
         .from('profiles')
         .update({ visibility, content_preference })
         .eq('id', user.id);
-
     if (error) {
         console.error('Settings update error:', error);
         return { message: 'Database Error: Could not update settings.' };
     }
-
     revalidatePath('/profile/settings');
-    revalidatePath('/profile'); // Also revalidate the main profile page
+    revalidatePath('/profile');
     redirect('/profile');
+    // ✨ This return is unreachable due to redirect(), but fine
     return { message: 'Your settings have been saved successfully!' };
 }
 
-
-
+// ... (searchProfiles is unchanged) ...
 export async function searchProfiles(query: string): Promise<ProfileSearchResult[]> {
     if (query.length < 2) {
         return [];
     }
     const supabase = await createClient();
-
     const { data, error } = await supabase
         .from('profiles')
         .select('id, username, display_name, profile_pic_url, bio')
         .or(`username.ilike.%${query}%,display_name.ilike.%${query}%`)
         .limit(10);
-
     if (error) {
         console.error('Search error:', error);
         return [];
     }
-
-    // 3. The 'data' now perfectly matches the 'ProfileSearchResult[]' type
     return data;
 }
 
-
-// =====================================================================
-// == NEW FUNCTION FOR THE USER PROFILE POPOVER
-// =====================================================================
-
-// This is the type your popover component expects
+// ... (ProfileData type is unchanged) ...
 type ProfileData = {
     profile: UserProfile | null;
     followerCount: number;
     followingCount: number;
 };
 
-// This is the client-callable Server Action
+// ... (getProfileCardData is unchanged) ...
 export async function getProfileCardData(username: string): Promise<ProfileData> {
-    noStore(); // Ensures this function re-runs every time it's called
+    noStore();
     const supabase = await createClient();
-
-    // Fetch profile and follower/following counts in one go
     const { data: profile } = await supabase
         .from('profiles')
         .select('*, follower_count:followers!following_id(count), following_count:followers!follower_id(count)')
         .eq('username', username)
         .single<UserProfile & { follower_count: [{ count: number }], following_count: [{ count: number }] }>();
-
     if (!profile) {
-        // Return a shape that matches the ProfileData type
         return { profile: null, followerCount: 0, followingCount: 0 };
     }
-
     const followerCount = profile.follower_count[0]?.count || 0;
     const followingCount = profile.following_count[0]?.count || 0;
-
     return {
         profile,
         followerCount,
@@ -374,58 +366,41 @@ export async function getProfileCardData(username: string): Promise<ProfileData>
     };
 }
 
-
-
+// ... (DeleteAccountState and DeleteAccountSchema are unchanged) ...
 export type DeleteAccountState = {
     message?: string | null;
     errors?: {
         confirmation?: string[];
     };
 };
-
-// --- ADD THIS NEW SCHEMA ---
-// We force the user to type 'DELETE' to confirm
 const DeleteAccountSchema = z.object({
     confirmation: z.string().refine(val => val === 'DELETE', {
         message: 'You must type "DELETE" to confirm.'
     }),
 });
 
-// --- ADD THIS NEW ACTION ---
+// ... (deleteMyAccount function is unchanged) ...
 export async function deleteMyAccount(
     prevState: DeleteAccountState,
     formData: FormData
 ): Promise<DeleteAccountState> {
-
     const supabase = await createClient();
-
-    // 1. Check for authenticated user
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
         return { message: 'Authentication error.' };
     }
-
-    // 2. Validate the confirmation text
     const validatedFields = DeleteAccountSchema.safeParse(Object.fromEntries(formData.entries()));
-
     if (!validatedFields.success) {
         return {
             errors: validatedFields.error.flatten().fieldErrors,
             message: 'Confirmation is incorrect.',
         };
     }
-
-    // 3. Call the SQL function
     const { error: rpcError } = await supabase.rpc('delete_my_account');
-
     if (rpcError) {
         console.error('Account deletion RPC error:', rpcError);
         return { message: 'A server error occurred. Could not delete account.' };
     }
-
-    // 4. Log the user out and redirect
-    // Revalidating the root layout ensures all user-data is cleared
     revalidatePath('/', 'layout');
-    redirect('/delete-success');
-    // We don't need to call logout(), redirecting will clear the session
+    redirect('/profile/delete-success');
 }

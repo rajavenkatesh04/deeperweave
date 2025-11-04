@@ -1,15 +1,14 @@
-// @/lib/data/blog-data.ts
-
 'use server';
 
 import { createClient } from '@/utils/supabase/server';
 import { unstable_noStore as noStore } from 'next/cache';
-import { CommentWithAuthor, Movie, Post, UserProfile } from "@/lib/definitions";
+import { CommentWithAuthor, Movie, Series, Post, UserProfile } from "@/lib/definitions"; // ✨ 1. IMPORT Series
 
-// Define more specific types for our queries to improve type safety
+// ✨ 2. UPDATE TYPES
 export type PostForFeed = Post & {
     author: UserProfile;
     movie: Pick<Movie, 'title' | 'poster_url'> | null;
+    series: Pick<Series, 'title' | 'poster_url'> | null; // ✨ ADDED
     likes: [{ count: number }];
     comments: [{ count: number }];
 };
@@ -17,6 +16,7 @@ export type PostForFeed = Post & {
 export type PostForPage = Post & {
     author: UserProfile;
     movie: Movie | null;
+    series: Series | null; // ✨ ADDED
     comments: CommentWithAuthor[];
     likes: [{ count: number }];
 };
@@ -28,12 +28,15 @@ export type PostForPage = Post & {
 export async function getPosts(): Promise<PostForFeed[]> {
     noStore();
     const supabase = await createClient();
+
+    // ✨ 3. UPDATE SELECT
     const { data, error } = await supabase
         .from('posts')
         .select(`
             *,
             author:profiles!posts_author_id_fkey(*), 
             movie:movies(title, poster_url),
+            series:series(title, poster_url),
             likes(count),
             comments(count)
         `)
@@ -56,12 +59,14 @@ export async function getPostBySlug(slug: string) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
+    // ✨ 4. UPDATE SELECT
     const { data: post, error } = await supabase
         .from('posts')
         .select(`
             *,
             author:profiles!posts_author_id_fkey(*),
             movie:movies(*),
+            series:series(*),
             comments(*, author:profiles!comments_author_id_fkey(username, display_name, profile_pic_url)),
             likes(count)
         `)
@@ -92,18 +97,18 @@ export async function getPostBySlug(slug: string) {
 /**
  * Fetches all posts created by a specific user.
  */
-// ✨ FIX: Updated the function to return the correct PostForFeed[] type
 export async function getPostsByUserId(userId: string): Promise<PostForFeed[]> {
     noStore();
     const supabase = await createClient();
 
+    // ✨ 5. UPDATE SELECT
     const { data, error } = await supabase
         .from('posts')
-        // ✨ FIX: The select statement now matches getPosts() to include all necessary data
         .select(`
             *,
             author:profiles!posts_author_id_fkey(*),
             movie:movies(title, poster_url),
+            series:series(title, poster_url),
             likes(count),
             comments(count)
         `)

@@ -5,7 +5,7 @@ import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getUserProfile } from '@/lib/data/user-data';
-import { getMovieDetails } from '@/lib/actions/blog-actions';
+import { getMovieDetails, getSeriesDetails } from './cinematic-actions';
 
 // --- File Validation Constants ---
 const MAX_FILE_SIZE_MB = 5;
@@ -13,10 +13,11 @@ const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic'];
 
 // --- State Types ---
-export type LogMovieState = {
+export type LogEntryState = {
     message?: string | null;
     errors?: {
-        movieApiId?: string[];
+        cinematicApiId?: string[];
+        media_type?: string[];
         watched_on?: string[];
         rating?: string[];
         notes?: string[];
@@ -26,12 +27,15 @@ export type LogMovieState = {
         watched_with?: string[];
     };
 };
-export type UpdateMovieState = LogMovieState;
+export type UpdateEntryState = LogEntryState;
 
-// --- Zod Schema ---
+// --- ✨ Zod Schema UPDATED (This is the fix) ---
 const TimelineEntrySchema = z.object({
-    movieApiId: z.coerce.number()
-        .min(1, 'You must select a movie.'),
+    // --- Make these optional here ---
+    cinematicApiId: z.coerce.number().optional(),
+    media_type: z.enum(['movie', 'tv']).optional(),
+
+    // --- Keep the rest of your schema the same ---
     watched_on: z.string().refine((date) => !isNaN(Date.parse(date)), {
         message: 'Please enter a valid date.',
     }),
@@ -48,28 +52,49 @@ const TimelineEntrySchema = z.object({
         .refine(file => !file || file.size === 0 || ALLOWED_IMAGE_TYPES.includes(file.type),
             'Only .jpg, .png, .webp, and .heic formats are supported.'),
     watched_with: z.array(z.string().uuid()).optional(),
-}).refine(data => {
-    if (data.viewing_medium === 'ott') {
-        return data.ott_platform && data.ott_platform.trim() !== '';
-    }
-    return true;
-}, {
-    message: 'Please select an OTT platform.',
-    path: ['ott_platform'],
-});
+})
+    // --- Use .superRefine to handle all complex checks ---
+    .superRefine((data, ctx) => {
+        // 1. Check if a cinematic item was selected
+        if (!data.cinematicApiId) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'You must select a movie or series.',
+                path: ['cinematicApiId'], // This is the field where the error will appear
+            });
+        }
+        // 2. Check if media_type is present (it should be if cinematicApiId is)
+        if (data.cinematicApiId && !data.media_type) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'Media type is missing. Please re-select your item.',
+                path: ['cinematicApiId'], // Add error to the same field
+            });
+        }
+
+        // 3. Your OTT platform check
+        if (data.viewing_medium === 'ott' && (!data.ott_platform || data.ott_platform.trim() === '')) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'Please select an OTT platform.',
+                path: ['ott_platform'],
+            });
+        }
+    });
 
 
 // =====================================================================
-// == CREATE (logMovie)
+// == CREATE (logEntry)
 // =====================================================================
-export async function logMovie(prevState: LogMovieState, formData: FormData): Promise<LogMovieState> {
+export async function logEntry(prevState: LogEntryState, formData: FormData): Promise<LogEntryState> {
     const supabase = await createClient();
     const userData = await getUserProfile();
 
     if (!userData?.user || !userData.profile) {
-        return { message: 'Authentication Error: You must be logged in to log a movie.' };
+        return { message: 'Authentication Error: You must be logged in to log an entry.' };
     }
 
+    // --- Form Data Prep ---
     const formDataObj: Record<string, FormDataEntryValue | FormDataEntryValue[] | File | number | undefined> = {};
     for (const [key, value] of formData.entries()) {
         if (key !== 'watched_with') formDataObj[key] = value;
@@ -82,6 +107,7 @@ export async function logMovie(prevState: LogMovieState, formData: FormData): Pr
         formDataObj.photo = undefined;
     }
     if (formDataObj.rating === '0') formDataObj.rating = 0;
+    // --- End Prep ---
 
     const validatedFields = TimelineEntrySchema.safeParse(formDataObj);
 
@@ -94,38 +120,52 @@ export async function logMovie(prevState: LogMovieState, formData: FormData): Pr
     }
 
     const {
-        movieApiId, watched_on, rating, notes,
+        cinematicApiId, media_type, watched_on, rating, notes,
         viewing_medium, ott_platform, photo, watched_with
     } = validatedFields.data;
 
-    // --- 1. Upsert Movie Details ---
-    try {
-        const movieDetails = await getMovieDetails(movieApiId);
-        await supabase.from('movies').upsert({
-            tmdb_id: movieApiId,
-            title: movieDetails.title,
-            poster_url: movieDetails.poster_path ? `https://image.tmdb.org/t/p/w500${movieDetails.poster_path}` : null,
-            release_date: movieDetails.release_date,
-            director: movieDetails.director,
-        });
-    } catch (error) {
-        console.error("Timeline movie upsert error:", error);
-        return { message: "Server Error: Could not save movie details." };
+    // Validation guarantees these are present if we pass this point
+    if (!cinematicApiId || !media_type) {
+        return { message: 'Validation failed unexpectedly. Missing cinematic ID or media type.' };
     }
 
-    // --- 2. Check for Rewatch ---
-    const { data: existingEntries } = await supabase
+    let movieId: number | undefined = undefined;
+    let seriesId: number | undefined = undefined;
+
+    // --- 1. Upsert Cinematic Details (using the "library") ---
+    try {
+        if (media_type === 'movie') {
+            await getMovieDetails(cinematicApiId); // This will fetch and cache
+            movieId = cinematicApiId;
+        } else if (media_type === 'tv') {
+            await getSeriesDetails(cinematicApiId); // This will fetch and cache
+            seriesId = cinematicApiId;
+        }
+    } catch (error) {
+        console.error("Timeline cinematic upsert error:", error);
+        return { message: "Server Error: Could not save movie/series details." };
+    }
+
+    // --- 2. Check for Rewatch (Updated Logic) ---
+    const rewatchQuery = supabase
         .from('timeline_entries')
         .select('id')
-        .eq('user_id', userData.user.id)
-        .eq('movie_tmdb_id', movieApiId);
+        .eq('user_id', userData.user.id);
+
+    if (media_type === 'movie') {
+        rewatchQuery.eq('movie_id', cinematicApiId);
+    } else {
+        rewatchQuery.eq('series_id', cinematicApiId);
+    }
+
+    const { data: existingEntries } = await rewatchQuery;
     const isRewatch = !!existingEntries && existingEntries.length > 0;
 
     // --- 3. Handle Photo Upload ---
     let photoUrl: string | null = null;
     if (photo) {
         const fileExtension = photo.name.split('.').pop();
-        const filePath = `${userData.user.id}/${movieApiId}-${Date.now()}.${fileExtension}`;
+        const filePath = `${userData.user.id}/${cinematicApiId}-${Date.now()}.${fileExtension}`;
         const { error: uploadError } = await supabase.storage
             .from('timeline_photos')
             .upload(filePath, photo, { upsert: true, cacheControl: '3600' });
@@ -147,7 +187,8 @@ export async function logMovie(prevState: LogMovieState, formData: FormData): Pr
 
     const entryToInsert = {
         user_id: userData.user.id,
-        movie_tmdb_id: movieApiId,
+        movie_id: movieId,
+        series_id: seriesId,
         watched_on,
         rating: rating === 0 ? null : rating,
         notes: notes || null,
@@ -182,15 +223,17 @@ export async function logMovie(prevState: LogMovieState, formData: FormData): Pr
 
     // --- 7. Revalidate and Redirect ---
     revalidatePath(`/profile/${userData.profile.username}/timeline`);
-    redirect(`/profile/${userData.profile.username}/timeline`);
+    // ✨ FIX: Return success message instead of redirecting
+    // The redirect will be handled by the form's useEffect
+    return { message: 'Success' };
 }
 
 
 // =====================================================================
-// == UPDATE (updateTimelineEntry) - CLEANED UP
+// == UPDATE (updateTimelineEntry)
 // =====================================================================
 
-export async function updateTimelineEntry(prevState: UpdateMovieState, formData: FormData): Promise<UpdateMovieState> {
+export async function updateTimelineEntry(prevState: UpdateEntryState, formData: FormData): Promise<UpdateEntryState> {
     const supabase = await createClient();
     const userData = await getUserProfile();
 
@@ -206,7 +249,7 @@ export async function updateTimelineEntry(prevState: UpdateMovieState, formData:
     // --- 1. Permission Check ---
     const { data: existingEntry, error: fetchError } = await supabase
         .from('timeline_entries')
-        .select('user_id, photo_url, movie_tmdb_id')
+        .select('user_id, photo_url, movie_id, series_id')
         .eq('id', entryId)
         .single();
 
@@ -242,15 +285,22 @@ export async function updateTimelineEntry(prevState: UpdateMovieState, formData:
     }
 
     const {
-        movieApiId, watched_on, rating, notes,
+        cinematicApiId, media_type, watched_on, rating, notes,
         viewing_medium, ott_platform, photo, watched_with
     } = validatedFields.data;
 
-    // --- 3. Verify Movie ID Hasn't Changed (Security Check) ---
-    // Since the form doesn't allow changing the movie, this is a sanity check
-    // to ensure no one is trying to manipulate the form data
-    if (movieApiId !== existingEntry.movie_tmdb_id) {
-        return { message: 'Error: Movie cannot be changed when editing an entry.' };
+    // Validation guarantees these are present
+    if (!cinematicApiId || !media_type) {
+        return { message: 'Validation failed unexpectedly. Missing cinematic ID or media type.' };
+    }
+
+    // --- 3. Verify Cinematic ID Hasn't Changed (Security Check) ---
+    const dbItemId = existingEntry.movie_id || existingEntry.series_id;
+    const dbItemType = existingEntry.movie_id ? 'movie' : 'tv';
+
+    if (cinematicApiId !== dbItemId || media_type !== dbItemType) {
+        console.error("Form manipulation suspected. Submitted:", {cinematicApiId, media_type}, "DB:", {dbItemId, dbItemType});
+        return { message: 'Error: Cinematic item cannot be changed when editing an entry.' };
     }
 
     // --- 4. Handle Photo Update Logic ---
@@ -270,26 +320,19 @@ export async function updateTimelineEntry(prevState: UpdateMovieState, formData:
     };
 
     if (photo) {
-        // Case 1: New photo uploaded
         await deleteOldPhoto();
-
         const fileExtension = photo.name.split('.').pop();
-        const filePath = `${userData.user.id}/${movieApiId}-${Date.now()}.${fileExtension}`;
+        const filePath = `${userData.user.id}/${cinematicApiId}-${Date.now()}.${fileExtension}`;
         const { error: uploadError } = await supabase.storage
             .from('timeline_photos')
             .upload(filePath, photo, { upsert: true, cacheControl: '3600' });
-
         if (uploadError) return { message: 'Database Error: Could not upload new photo.' };
-
         const { data: { publicUrl } } = supabase.storage.from('timeline_photos').getPublicUrl(filePath);
         photoUrl = publicUrl;
-
     } else if (removePhoto) {
-        // Case 2: Photo explicitly removed
         await deleteOldPhoto();
         photoUrl = null;
     }
-    // Case 3: No change - photoUrl remains existingEntry.photo_url
 
     // --- 5. Prepare Data for Update ---
     let viewingContext: string | null = null;
@@ -302,7 +345,6 @@ export async function updateTimelineEntry(prevState: UpdateMovieState, formData:
         notes: notes || null,
         photo_url: photoUrl,
         viewing_context: viewingContext,
-        // We DO NOT update user_id, movie_tmdb_id, or is_rewatch
     };
 
     // --- 6. Update Timeline Entry ---
@@ -321,7 +363,6 @@ export async function updateTimelineEntry(prevState: UpdateMovieState, formData:
         .from('timeline_collaborators')
         .delete()
         .eq('entry_id', entryId);
-
     if (deleteCollabError) console.error("Collaborator delete error:", deleteCollabError);
 
     if (watched_with && watched_with.length > 0) {
@@ -337,7 +378,8 @@ export async function updateTimelineEntry(prevState: UpdateMovieState, formData:
 
     // --- 8. Revalidate and Redirect ---
     revalidatePath(`/profile/${userData.profile.username}/timeline`);
-    redirect(`/profile/${userData.profile.username}/timeline`);
+    // ✨ FIX: Return success message
+    return { message: 'Success' };
 }
 
 
@@ -357,9 +399,10 @@ export async function deleteTimelineEntry(entryId: string): Promise<DeleteTimeli
         return { message: 'Authentication Error: You must be logged in to delete an entry.', success: false };
     }
 
+    // --- 1. Get Entry and Check Ownership ---
     const { data: entry, error: fetchError } = await supabase
         .from('timeline_entries')
-        .select('user_id')
+        .select('user_id, photo_url')
         .eq('id', entryId)
         .single();
 
@@ -372,22 +415,17 @@ export async function deleteTimelineEntry(entryId: string): Promise<DeleteTimeli
         return { message: 'Authorization Error: You can only delete your own entries.', success: false };
     }
 
-    // Delete photo from storage
-    const { data: entryWithPhoto } = await supabase
-        .from('timeline_entries')
-        .select('photo_url')
-        .eq('id', entryId)
-        .single();
-
-    if (entryWithPhoto?.photo_url) {
+    // --- 2. Delete Photo from Storage (if it exists) ---
+    if (entry.photo_url) {
         try {
-            const oldFilePath = entryWithPhoto.photo_url.split('/timeline_photos/')[1];
+            const oldFilePath = entry.photo_url.split('/timeline_photos/')[1];
             await supabase.storage.from('timeline_photos').remove([oldFilePath]);
         } catch (delError) {
             console.error("Could not delete photo during entry deletion:", delError);
         }
     }
 
+    // --- 3. Delete the Entry ---
     const { error: deleteError } = await supabase
         .from('timeline_entries')
         .delete()
@@ -398,6 +436,7 @@ export async function deleteTimelineEntry(entryId: string): Promise<DeleteTimeli
         return { message: 'Database Error: Could not delete the entry.', success: false };
     }
 
+    // --- 4. Revalidate ---
     revalidatePath(`/profile/${userData.profile.username}/timeline`);
     return { message: 'Entry deleted successfully!', success: true };
 }

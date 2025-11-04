@@ -4,34 +4,51 @@ import { useActionState, useEffect, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import Image from 'next/image';
 import Link from 'next/link';
-import { UserProfile, Movie } from '@/lib/definitions';
+// ✨ 1. IMPORT Series and your new server action/types
+import { UserProfile, Movie, Series } from '@/lib/definitions';
 import { updateProfile, EditProfileState, checkUsernameAvailability } from '@/lib/actions/profile-actions';
-import { ofetch } from 'ofetch';
-import { PhotoIcon, CheckCircleIcon, XCircleIcon, FilmIcon, XMarkIcon, MagnifyingGlassIcon } from '@heroicons/react/24/solid';
+import { searchCinematic, type CinematicSearchResult } from '@/lib/actions/cinematic-actions';
+// import { ofetch } from 'ofetch'; // <-- No longer needed
+import {
+    PhotoIcon, CheckCircleIcon, XCircleIcon, FilmIcon,
+    XMarkIcon, MagnifyingGlassIcon, TvIcon
+} from '@heroicons/react/24/solid';
 import LoadingSpinner from '@/app/ui/loading-spinner';
 import { clsx } from 'clsx';
 
-// A helper type for what the TMDB API search returns
-type MovieSearchResult = { id: number; title: string; release_date: string; poster_path: string; };
-
-// Helper component to display movie search results
-function MovieSearchResults({ results, onSelectMovie, isLoading }: { results: MovieSearchResult[]; onSelectMovie: (movie: MovieSearchResult) => void; isLoading: boolean; }) {
+// ✨ 2. REPLACED MovieSearchResults with CinematicSearchResults
+function CinematicSearchResults({ results, onSelect, isLoading }: {
+    results: CinematicSearchResult[];
+    onSelect: (item: CinematicSearchResult) => void;
+    isLoading: boolean;
+}) {
     if (isLoading) return <div className="absolute z-10 w-full mt-1 p-4 text-center rounded-md shadow-lg bg-white dark:bg-zinc-800 border dark:border-zinc-700"><LoadingSpinner /></div>;
     if (results.length === 0) return null;
 
     return (
         <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg dark:bg-zinc-800 dark:border-zinc-700 max-h-60 overflow-y-auto">
-            {results.map((movie) => (
-                <li key={movie.id} className="flex items-center p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-700" onClick={() => onSelectMovie(movie)}>
-                    {movie.poster_path ? <Image src={`https://image.tmdb.org/t/p/w92${movie.poster_path}`} alt={movie.title} width={40} height={60} className="object-cover mr-3 rounded" /> : <div className="w-10 h-[60px] mr-3 rounded flex items-center justify-center bg-gray-200 dark:bg-zinc-700"><FilmIcon className="w-5 h-5 text-gray-400"/></div>}
-                    <div><p className="font-semibold">{movie.title}</p><p className="text-sm text-gray-500">{movie.release_date?.split('-')[0]}</p></div>
+            {results.map((item) => (
+                <li key={item.id} className="flex items-center p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-700" onClick={() => onSelect(item)}>
+                    {item.poster_path ? <Image src={`https://image.tmdb.org/t/p/w92${item.poster_path}`} alt={item.title} width={40} height={60} className="object-cover mr-3 rounded" /> : <div className="w-10 h-[60px] mr-3 rounded flex items-center justify-center bg-gray-200 dark:bg-zinc-700"><FilmIcon className="w-5 h-5 text-gray-400"/></div>}
+                    <div className="flex-1">
+                        <p className="font-semibold">{item.title}</p>
+                        <p className="text-sm text-gray-500">{item.release_date?.split('-')[0]}</p>
+                    </div>
+                    <div className={`flex items-center gap-1.5 flex-shrink-0 text-xs px-2 py-0.5 rounded-full ${
+                        item.media_type === 'movie'
+                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                            : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                    }`}>
+                        {item.media_type === 'movie' ? <FilmIcon className="w-3 h-3" /> : <TvIcon className="w-3 h-3" />}
+                        <span>{item.media_type === 'movie' ? 'Movie' : 'TV'}</span>
+                    </div>
                 </li>
             ))}
         </ul>
     );
 }
 
-// A submit button that shows a loading state
+// ... (SubmitButton is unchanged) ...
 function SubmitButton() {
     const { pending } = useFormStatus();
     return (
@@ -42,41 +59,48 @@ function SubmitButton() {
 }
 
 // --- Main EditForm Component ---
-export default function ProfileEditForm({ profile, favoriteFilms }: { profile: UserProfile; favoriteFilms: { rank: number; movies: Movie }[] }) {
+// ✨ 3. UPDATED props to accept 'favoriteItems'
+export default function ProfileEditForm({ profile, favoriteItems }: {
+    profile: UserProfile;
+    favoriteItems: { rank: number; movies: Movie | null, series: Series | null }[]
+}) {
     const initialState: EditProfileState = { message: null, errors: {} };
     const [state, formAction] = useActionState(updateProfile, initialState);
 
-    // State for image preview & username logic
+    // ... (State for image preview & username is unchanged) ...
     const [previewUrl, setPreviewUrl] = useState<string | null>(profile.profile_pic_url || null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [username, setUsername] = useState(profile.username);
     const [availability, setAvailability] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
 
-    // State for Favorite Films UI
-    const [favFilms, setFavFilms] = useState<(MovieSearchResult | null)[]>([null, null, null]);
-    const [movieSearchQuery, setMovieSearchQuery] = useState('');
-    const [searchResults, setSearchResults] = useState<MovieSearchResult[]>([]);
+    // ✨ 4. UPDATED State for Favorite Items
+    const [favItems, setFavItems] = useState<(CinematicSearchResult | null)[]>([null, null, null]);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<CinematicSearchResult[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const dragItem = useRef<number | null>(null);
     const dragOverItem = useRef<number | null>(null);
 
-    // This effect runs once on mount to populate the form's film state from the server-side props.
+    // ✨ 5. UPDATED useEffect to populate state from 'favoriteItems'
     useEffect(() => {
-        const initialFilms: (MovieSearchResult | null)[] = [null, null, null];
-        favoriteFilms.forEach(fav => {
-            if (fav.rank >= 1 && fav.rank <= 3 && fav.movies) {
-                initialFilms[fav.rank - 1] = {
-                    id: fav.movies.tmdb_id,
-                    title: fav.movies.title,
-                    release_date: fav.movies.release_date,
-                    poster_path: fav.movies.poster_url?.replace('https://image.tmdb.org/t/p/w500', '') || ''
+        const initialItems: (CinematicSearchResult | null)[] = [null, null, null];
+        favoriteItems.forEach(fav => {
+            const item = fav.movies || fav.series; // Get whichever one exists
+            if (fav.rank >= 1 && fav.rank <= 3 && item) {
+                const media_type = fav.movies ? 'movie' : 'tv';
+                initialItems[fav.rank - 1] = {
+                    id: item.tmdb_id,
+                    title: item.title,
+                    release_date: item.release_date,
+                    poster_path: item.poster_url?.replace('https://image.tmdb.org/t/p/w500', '') || null,
+                    media_type: media_type
                 };
             }
         });
-        setFavFilms(initialFilms);
-    }, [favoriteFilms]);
+        setFavItems(initialItems);
+    }, [favoriteItems]);
 
-    // Debounce username availability check to avoid spamming the server
+    // ... (Username check effect is unchanged) ...
     useEffect(() => {
         if (username === profile.username) {
             setAvailability('idle');
@@ -86,34 +110,37 @@ export default function ProfileEditForm({ profile, favoriteFilms }: { profile: U
             setAvailability('idle');
             return;
         }
-
         const handler = setTimeout(() => {
             setAvailability('checking');
             checkUsernameAvailability(username).then(result => {
                 setAvailability(result.available ? 'available' : 'taken');
             });
-        }, 500); // Wait 500ms after user stops typing
-
+        }, 500);
         return () => clearTimeout(handler);
     }, [username, profile.username]);
 
-    // Debounced effect for movie search
+    // ✨ 6. UPDATED search effect to use Server Action
     useEffect(() => {
-        const handler = setTimeout(() => {
-            if (movieSearchQuery.trim().length < 2) {
+        const handler = setTimeout(async () => {
+            if (searchQuery.trim().length < 2) {
                 setSearchResults([]);
                 return;
             }
             setIsSearching(true);
-            const TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
-            ofetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(movieSearchQuery)}`)
-                .then(response => setSearchResults(response.results.slice(0, 5)))
-                .catch(error => console.error("Failed to fetch movies:", error))
-                .finally(() => setIsSearching(false));
+            try {
+                // Call the server action
+                const results = await searchCinematic(searchQuery);
+                setSearchResults(results);
+            } catch (error) {
+                console.error("Failed to fetch cinematic results:", error);
+            } finally {
+                setIsSearching(false);
+            }
         }, 500);
         return () => clearTimeout(handler);
-    }, [movieSearchQuery]);
+    }, [searchQuery]);
 
+    // ... (handleFileChange is unchanged) ...
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
@@ -121,37 +148,39 @@ export default function ProfileEditForm({ profile, favoriteFilms }: { profile: U
         }
     };
 
-    const handleAddFavorite = (movie: MovieSearchResult) => {
-        const firstEmptyIndex = favFilms.findIndex(film => film === null);
-        if (firstEmptyIndex !== -1 && !favFilms.some(f => f?.id === movie.id)) {
-            const newFilms = [...favFilms];
-            newFilms[firstEmptyIndex] = movie;
-            setFavFilms(newFilms);
+    // ✨ 7. UPDATED Add/Remove handlers
+    const handleAddFavorite = (item: CinematicSearchResult) => {
+        const firstEmptyIndex = favItems.findIndex(film => film === null);
+        if (firstEmptyIndex !== -1 && !favItems.some(f => f?.id === item.id)) {
+            const newFilms = [...favItems];
+            newFilms[firstEmptyIndex] = item;
+            setFavItems(newFilms);
         }
-        setMovieSearchQuery('');
+        setSearchQuery('');
         setSearchResults([]);
     };
 
     const handleRemoveFavorite = (index: number) => {
-        const newFilms = [...favFilms];
+        const newFilms = [...favItems];
         newFilms[index] = null;
-        setFavFilms(newFilms);
+        setFavItems(newFilms);
     };
 
+    // ... (handleDragSort is unchanged) ...
     const handleDragSort = () => {
         if (dragItem.current === null || dragOverItem.current === null) return;
-        const newFilms = [...favFilms];
+        const newFilms = [...favItems];
         const draggedItemContent = newFilms[dragItem.current];
         newFilms[dragItem.current] = newFilms[dragOverItem.current];
         newFilms[dragOverItem.current] = draggedItemContent;
         dragItem.current = null;
         dragOverItem.current = null;
-        setFavFilms(newFilms);
+        setFavItems(newFilms);
     };
 
     return (
         <form action={formAction} className="space-y-8">
-            {/* Profile Picture Section */}
+            {/* ... (Profile Picture Section is unchanged) ... */}
             <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Profile Picture</h3>
                 <div className="mt-4 flex items-center gap-6">
@@ -163,7 +192,7 @@ export default function ProfileEditForm({ profile, favoriteFilms }: { profile: U
                 </div>
             </div>
 
-            {/* User Details Section */}
+            {/* ... (User Details Section is unchanged) ... */}
             <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Your Details</h3>
                 <div className="mt-6 grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-6">
@@ -192,29 +221,28 @@ export default function ProfileEditForm({ profile, favoriteFilms }: { profile: U
                 </div>
             </div>
 
-            {/* Favorite Films Section */}
+            {/* ✨ 8. UPDATED Favorite Items Section */}
             <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Favorite Films</h3>
-                <p className="mt-1 text-sm text-gray-600 dark:text-zinc-400">Add up to three films, then drag to reorder.</p>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Favorite Films & Series</h3>
+                <p className="mt-1 text-sm text-gray-600 dark:text-zinc-400">Add up to three items, then drag to reorder.</p>
                 <div className="relative mt-4">
                     <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-                    <input type="text" value={movieSearchQuery} onChange={(e) => setMovieSearchQuery(e.target.value)} placeholder="Search to add a film..." className="w-full rounded-md border-gray-300 bg-gray-50 py-2 pl-10 pr-4 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800" autoComplete="off" disabled={favFilms.every(film => film !== null)} />
-                    <MovieSearchResults results={searchResults} onSelectMovie={handleAddFavorite} isLoading={isSearching} />
+                    <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search to add a film or series..." className="w-full rounded-md border-gray-300 bg-gray-50 py-2 pl-10 pr-4 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800" autoComplete="off" disabled={favItems.every(film => film !== null)} />
+                    <CinematicSearchResults results={searchResults} onSelect={handleAddFavorite} isLoading={isSearching} />
                 </div>
                 <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-6">
-                    {/* Map over the 3 slots for favorite films */}
                     {[0, 1, 2].map(index => {
-                        const film = favFilms[index];
+                        const item = favItems[index];
                         const rankStyles = ['border-amber-400 text-amber-400', 'border-slate-400 text-slate-400', 'border-orange-600 text-orange-600'];
                         return (
-                            <div key={index} className={clsx(`relative rounded-lg border-2 bg-white/5 p-4 transition-all duration-300 dark:bg-zinc-900/50`, rankStyles[index], dragOverItem.current === index && 'border-dashed border-sky-400 bg-sky-900/30')} onDragOver={(e) => { e.preventDefault(); dragOverItem.current = index; setFavFilms([...favFilms]); }} onDrop={handleDragSort} onDragEnd={() => { dragOverItem.current = null; setFavFilms([...favFilms]); }}>
+                            <div key={index} className={clsx(`relative rounded-lg border-2 bg-white/5 p-4 transition-all duration-300 dark:bg-zinc-900/50`, rankStyles[index], dragOverItem.current === index && 'border-dashed border-sky-400 bg-sky-900/30')} onDragOver={(e) => { e.preventDefault(); dragOverItem.current = index; setFavItems([...favItems]); }} onDrop={handleDragSort} onDragEnd={() => { dragOverItem.current = null; setFavItems([...favItems]); }}>
                                 <h4 className={`text-sm font-bold`}>Top {index + 1}</h4>
-                                {film ? (
+                                {item ? (
                                     <div className={`mt-2 flex cursor-grab items-center gap-3 rounded-md p-2 transition-opacity active:cursor-grabbing ${dragItem.current === index ? 'opacity-40' : 'opacity-100'}`} draggable onDragStart={() => dragItem.current = index}>
-                                        <Image src={`https://image.tmdb.org/t/p/w92${film.poster_path}`} alt={film.title} width={40} height={60} className="rounded object-cover shadow-lg" />
+                                        <Image src={`https://image.tmdb.org/t/p/w92${item.poster_path}`} alt={item.title} width={40} height={60} className="rounded object-cover shadow-lg" />
                                         <div className="flex-1 min-w-0">
-                                            <p className="font-medium text-sm truncate text-zinc-100">{film.title}</p>
-                                            <p className="text-xs text-zinc-400">{film.release_date?.split('-')[0]}</p>
+                                            <p className="font-medium text-sm truncate text-zinc-100">{item.title}</p>
+                                            <p className="text-xs text-zinc-400">{item.release_date?.split('-')[0]}</p>
                                         </div>
                                         <button type="button" onClick={() => handleRemoveFavorite(index)} className="p-1 text-zinc-400 hover:text-red-500 flex-shrink-0"><XMarkIcon className="h-5 w-5"/></button>
                                     </div>
@@ -225,12 +253,18 @@ export default function ProfileEditForm({ profile, favoriteFilms }: { profile: U
                         );
                     })}
                 </div>
-                <input type="hidden" name="fav_movie_1" value={favFilms[0]?.id || ''} />
-                <input type="hidden" name="fav_movie_2" value={favFilms[1]?.id || ''} />
-                <input type="hidden" name="fav_movie_3" value={favFilms[2]?.id || ''} />
+                {/* ✨ 9. UPDATED Hidden Inputs to match the action */}
+                <input type="hidden" name="fav_1_id" value={favItems[0]?.id || ''} />
+                <input type="hidden" name="fav_1_type" value={favItems[0]?.media_type || ''} />
+
+                <input type="hidden" name="fav_2_id" value={favItems[1]?.id || ''} />
+                <input type="hidden" name="fav_2_type" value={favItems[1]?.media_type || ''} />
+
+                <input type="hidden" name="fav_3_id" value={favItems[2]?.id || ''} />
+                <input type="hidden" name="fav_3_type" value={favItems[2]?.media_type || ''} />
             </div>
 
-            {/* Action Buttons */}
+            {/* ... (Action Buttons are unchanged) ... */}
             <div className="flex justify-end gap-4">
                 <Link href="/profile" className="flex h-10 items-center justify-center rounded-lg border border-gray-300 bg-white px-6 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700">Cancel</Link>
                 <SubmitButton />

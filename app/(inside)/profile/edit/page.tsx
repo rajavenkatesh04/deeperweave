@@ -1,16 +1,15 @@
 import Breadcrumbs from "@/app/ui/Breadcrumbs";
-// ✨ 1. Use the new data fetching function
 import { getProfileForEdit } from "@/lib/data/user-data";
 import { redirect } from "next/navigation";
 import ProfileEditForm from "./edit-form";
 import { Suspense } from "react";
 
 export default async function ProfileEditPage() {
-    // ✨ 2. Fetch all data needed for the edit page, including favorite films
     const userData = await getProfileForEdit();
 
     if (!userData || !userData.profile) {
-        redirect("/login");
+        // Not logged in or hasn't completed onboarding
+        redirect("/auth/login");
     }
 
     return (
@@ -23,10 +22,12 @@ export default async function ProfileEditPage() {
             />
             <div className="mt-6">
                 <Suspense fallback={`loading...`}>
-                    {/* ✨ 3. Pass the favorite films down to the form component */}
                     <ProfileEditForm
                         profile={userData.profile}
-                        favoriteFilms={userData.favoriteFilms || []}
+                        // ✨ THIS IS THE FIX:
+                        // Pass 'favoriteItems' (from user-data.ts)
+                        // instead of 'favoriteFilms'
+                        favoriteItems={userData.favoriteItems || []}
                     />
                 </Suspense>
             </div>

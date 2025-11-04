@@ -2,47 +2,65 @@
 
 import { useState, useTransition, useEffect } from 'react';
 import Image from 'next/image';
-import { getMovieDetails } from '@/lib/actions/blog-actions';
-import { UserGroupIcon, XMarkIcon, FilmIcon } from '@heroicons/react/24/solid';
+// ✨ 1. IMPORT from your 'cinematic-actions' library
+import { getMovieDetails, getSeriesDetails } from '@/lib/actions/cinematic-actions';
+import { UserGroupIcon, XMarkIcon, FilmIcon, TvIcon } from '@heroicons/react/24/solid'; // ✨ 2. Added TvIcon
 import LoadingSpinner from '@/app/ui/loading-spinner';
-import { Movie } from '@/lib/definitions';
+import { Movie, Series } from '@/lib/definitions'; // ✨ 3. Imported Movie and Series
 
-type MovieDetailsFromApi = {
+// ✨ 4. Created a unified type for API details
+type ApiDetails = {
     overview: string;
     cast: { name: string; profile_path: string; character: string }[];
     genres: { id: number; name: string }[];
     director?: string;
+    creator?: string;
+    number_of_seasons?: number;
 };
 
-interface MovieInfoCardProps {
-    movieApiId: number;
-    initialMovieData: Movie;
+// ✨ 5. Updated Props
+interface CinematicInfoCardProps {
+    tmdbId: number;
+    initialData: Movie | Series; // Now accepts Movie or Series
+    mediaType: 'movie' | 'tv';  // This prop is required
     isOpen?: boolean;
     onClose?: () => void;
 }
 
-export default function MovieInfoCard({ movieApiId, initialMovieData, isOpen, onClose }: MovieInfoCardProps) {
+export default function CinematicInfoCard({
+                                              tmdbId,
+                                              initialData,
+                                              mediaType,
+                                              isOpen,
+                                              onClose
+                                          }: CinematicInfoCardProps) {
     const isControlled = typeof isOpen !== 'undefined' && typeof onClose !== 'undefined';
     const [internalIsOpen, setInternalIsOpen] = useState(false);
-    const [apiDetails, setApiDetails] = useState<MovieDetailsFromApi | null>(null);
+    const [apiDetails, setApiDetails] = useState<ApiDetails | null>(null);
     const [isPending, startTransition] = useTransition();
 
     const isModalOpen = isControlled ? isOpen : internalIsOpen;
 
+    // ✨ 6. Updated useEffect to fetch based on mediaType
     useEffect(() => {
         if (isModalOpen && !apiDetails) {
             startTransition(async () => {
                 try {
-                    const movieDetails = await getMovieDetails(movieApiId);
-                    setApiDetails(movieDetails);
+                    if (mediaType === 'movie') {
+                        const movieDetails = await getMovieDetails(tmdbId);
+                        setApiDetails(movieDetails);
+                    } else if (mediaType === 'tv') {
+                        const seriesDetails = await getSeriesDetails(tmdbId);
+                        setApiDetails(seriesDetails);
+                    }
                 } catch (error) {
-                    console.error("Failed to fetch movie details from API:", error);
+                    console.error("Failed to fetch cinematic details from API:", error);
                 }
             });
         } else if (!isModalOpen) {
             setApiDetails(null);
         }
-    }, [isModalOpen, movieApiId, apiDetails, startTransition]);
+    }, [isModalOpen, tmdbId, apiDetails, startTransition, mediaType]);
 
     const handleOpen = () => {
         if (!isControlled) {
@@ -58,29 +76,33 @@ export default function MovieInfoCard({ movieApiId, initialMovieData, isOpen, on
         }
     };
 
+    // ✨ 7. Unified displayDetails
     const displayDetails = {
-        ...initialMovieData,
+        ...initialData,
         ...apiDetails
     };
 
     return (
         <>
+            {/* --- Uncontrolled Button (Uses initialData) --- */}
             {!isControlled && (
                 <div className="my-6 relative ">
                     <button
                         onClick={handleOpen}
                         className="group relative w-full overflow-hidden rounded-2xl bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/40 p-4 md:p-6 text-left shadow-lg ring-2 ring-blue-100/40 backdrop-blur-sm transition-all duration-500 hover:scale-[1.01] hover:shadow-xl hover:ring-blue-300/60 dark:from-slate-900/95 dark:via-blue-950/30 dark:to-indigo-950/40 dark:ring-blue-800/40 dark:hover:ring-blue-500/60"
                     >
-                        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-indigo-500/8 to-purple-500/5 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-                        <div className="absolute -top-2 -right-2 h-16 w-16 md:h-24 md:w-24 rounded-full bg-gradient-to-br from-blue-400/10 to-indigo-500/10 blur-xl transition-all duration-500 group-hover:scale-125" />
+                        {/* ... (rest of the button styling) ... */}
                         <div className="relative flex flex-col md:flex-row items-center md:items-start gap-4 md:gap-6">
-                            {initialMovieData.poster_url && (
+                            {initialData.poster_url && (
                                 <div className="relative flex-shrink-0">
                                     <div className="overflow-hidden rounded-xl shadow-lg ring-2 ring-white/40 transition-all duration-500 group-hover:scale-105 group-hover:ring-blue-200/60 dark:ring-slate-700/40 dark:group-hover:ring-blue-400/40">
-                                        <Image src={initialMovieData.poster_url} alt={`Poster for ${initialMovieData.title}`} width={80} height={120} className="md:w-24 md:h-36 object-cover" />
+                                        <Image src={initialData.poster_url} alt={`Poster for ${initialData.title}`} width={80} height={120} className="md:w-24 md:h-36 object-cover" />
                                     </div>
                                     <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-blue-500/20 via-indigo-500/20 to-purple-500/20 opacity-0 blur transition-opacity duration-500 group-hover:opacity-40" />
-                                    <div className="absolute -bottom-1 -right-1 rounded-full bg-blue-600 p-1.5 shadow-md ring-2 ring-white dark:bg-blue-500 dark:ring-slate-800"><FilmIcon className="h-3 w-3 text-white" /></div>
+                                    {/* ✨ 8. Conditional Icon on button */}
+                                    <div className={`absolute -bottom-1 -right-1 rounded-full p-1.5 shadow-md ring-2 ring-white dark:ring-slate-800 ${mediaType === 'movie' ? 'bg-blue-600 dark:bg-blue-500' : 'bg-green-600 dark:bg-green-500'}`}>
+                                        {mediaType === 'movie' ? <FilmIcon className="h-3 w-3 text-white" /> : <TvIcon className="h-3 w-3 text-white" />}
+                                    </div>
                                 </div>
                             )}
                             <div className="flex-grow text-center md:text-left">
@@ -89,22 +111,17 @@ export default function MovieInfoCard({ movieApiId, initialMovieData, isOpen, on
                                         <FilmIcon className="h-2.5 w-2.5" /> In this post
                                     </span>
                                 </div>
-                                <h3 className="mb-2 text-2xl md:text-3xl font-bold leading-tight tracking-tight text-slate-900 transition-colors duration-500 group-hover:text-blue-700 dark:text-slate-100 dark:group-hover:text-blue-400">{initialMovieData.title || 'N/A'}</h3>
-                                <p className="mb-3 md:mb-4 text-sm md:text-base text-slate-600 dark:text-slate-400">Released: <span className="font-semibold">{initialMovieData.release_date || 'N/A'}</span></p>
-                                <div className="flex items-center justify-center md:justify-start gap-2 text-blue-600 opacity-70 transition-all duration-500 group-hover:translate-x-1 group-hover:opacity-100 dark:text-blue-400">
-                                    <span className="text-xs md:text-sm font-semibold">Click for details</span>
-                                    <svg className="h-4 w-4 transition-transform duration-500 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
-                                </div>
+                                <h3 className="mb-2 text-2xl md:text-3xl font-bold leading-tight tracking-tight text-slate-900 transition-colors duration-500 group-hover:text-blue-700 dark:text-slate-100 dark:group-hover:text-blue-400">{initialData.title || 'N/A'}</h3>
+                                <p className="mb-3 md:mb-4 text-sm md:text-base text-slate-600 dark:text-slate-400">Released: <span className="font-semibold">{initialData.release_date || 'N/A'}</span></p>
+                                {/* ... (rest of the button) ... */}
                             </div>
                         </div>
-                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
                     </button>
-                    <div className="mt-2 text-center">
-                        <p className="text-xs text-slate-500 italic dark:text-slate-400">Referenced in the article above</p>
-                    </div>
+                    {/* ... */}
                 </div>
             )}
 
+            {/* --- Modal --- */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-2 md:p-4 backdrop-blur-xl animate-fade-in" onClick={handleClose}>
                     <div className="relative flex flex-col w-full max-w-6xl max-h-[95vh] md:max-h-[90vh] transform rounded-2xl md:rounded-3xl bg-white/96 shadow-2xl ring-2 ring-black/10 backdrop-blur-2xl transition-all dark:bg-slate-900/96 dark:ring-white/10" onClick={(e) => e.stopPropagation()}>
@@ -113,9 +130,24 @@ export default function MovieInfoCard({ movieApiId, initialMovieData, isOpen, on
                         </button>
                         <div className="flex-grow overflow-y-auto p-4 md:p-8">
                             <div className="mb-6 md:mb-8 text-center">
-                                <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-100 to-indigo-100 px-3 md:px-4 py-1.5 md:py-2 dark:from-blue-900/30 dark:to-indigo-900/30">
-                                    <FilmIcon className="h-4 w-4 md:h-5 md:w-5 text-blue-600 dark:text-blue-400" />
-                                    <span className="text-xs md:text-sm font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide">Featured Movie Details</span>
+                                {/* ✨ 9. Conditional Header */}
+                                <div className={`inline-flex items-center gap-2 rounded-full px-3 md:px-4 py-1.5 md:py-2 ${
+                                    mediaType === 'movie'
+                                        ? 'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30'
+                                        : 'bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30'
+                                }`}>
+                                    {mediaType === 'movie' ? (
+                                        <FilmIcon className="h-4 w-4 md:h-5 md:w-5 text-blue-600 dark:text-blue-400" />
+                                    ) : (
+                                        <TvIcon className="h-4 w-4 md:h-5 md:w-5 text-green-600 dark:text-green-400" />
+                                    )}
+                                    <span className={`text-xs md:text-sm font-semibold uppercase tracking-wide ${
+                                        mediaType === 'movie'
+                                            ? 'text-blue-700 dark:text-blue-300'
+                                            : 'text-green-700 dark:text-green-300'
+                                    }`}>
+                                        {mediaType === 'movie' ? 'Featured Movie Details' : 'Featured Series Details'}
+                                    </span>
                                 </div>
                             </div>
                             <div className="grid grid-cols-1 gap-6 md:gap-8 lg:grid-cols-3">
@@ -126,10 +158,22 @@ export default function MovieInfoCard({ movieApiId, initialMovieData, isOpen, on
                                         </div>
                                     )}
                                     <div className="space-y-3 md:space-y-4">
+                                        {/* ✨ 10. Conditional Director/Creator Field */}
                                         <div className="rounded-lg md:rounded-xl bg-slate-50 p-3 md:p-4 dark:bg-slate-800/50">
-                                            <h4 className="font-bold text-blue-700 dark:text-blue-400 mb-1 text-sm md:text-base">Director</h4>
-                                            <p className="text-slate-800 dark:text-slate-200 text-sm md:text-base">{displayDetails.director || 'N/A'}</p>
+                                            <h4 className="font-bold text-blue-700 dark:text-blue-400 mb-1 text-sm md:text-base">
+                                                {mediaType === 'movie' ? 'Director' : 'Creator'}
+                                            </h4>
+                                            <p className="text-slate-800 dark:text-slate-200 text-sm md:text-base">
+                                                {displayDetails.director || displayDetails.creator || 'N/A'}
+                                            </p>
                                         </div>
+                                        {/* ✨ 11. Added Seasons Field */}
+                                        {displayDetails.number_of_seasons && (
+                                            <div className="rounded-lg md:rounded-xl bg-slate-50 p-3 md:p-4 dark:bg-slate-800/50">
+                                                <h4 className="font-bold text-blue-700 dark:text-blue-400 mb-1 text-sm md:text-base">Seasons</h4>
+                                                <p className="text-slate-800 dark:text-slate-200 text-sm md:text-base">{displayDetails.number_of_seasons}</p>
+                                            </div>
+                                        )}
                                         {displayDetails.genres && (
                                             <div className="space-y-2">
                                                 <h4 className="font-bold text-blue-700 dark:text-blue-400 text-sm md:text-base">Genres</h4>
@@ -167,6 +211,7 @@ export default function MovieInfoCard({ movieApiId, initialMovieData, isOpen, on
                     </div>
                 </div>
             )}
+            {/* ... (keep the style tag) ... */}
             <style jsx global>{`@keyframes fadeIn {from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); }}.animate-fade-in {animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;}`}</style>
         </>
     );

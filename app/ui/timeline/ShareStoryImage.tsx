@@ -99,9 +99,36 @@ const ViewingContext = ({ context }: { context: string | null }) => {
 };
 
 export default function ShareStoryImage({ entry }: { entry: TimelineEntryWithUser }) {
+
+    // ✨ 1. THE FIX: Create a unified item
+    // This is the core fix. We check for movies first, then fall back to series.
+    const cinematicItem = entry.movies || entry.series;
+
+    // ✨ 2. SAFETY CHECK
+    // If there's no item (data error), we must return a fallback
+    // to prevent the API route from crashing.
+    if (!cinematicItem) {
+        return (
+            <div style={{
+                display: 'flex',
+                width: 1080,
+                height: 1920,
+                justifyContent: 'center',
+                alignItems: 'center',
+                flexDirection: 'column',
+                color: 'white',
+                backgroundColor: '#0a0a0a',
+            }}>
+                <h1 style={{fontSize: 48, fontFamily: 'sans-serif'}}>Error</h1>
+                <p style={{fontSize: 32, fontFamily: 'sans-serif'}}>Could not find movie or series data.</p>
+            </div>
+        )
+    }
+
+    // ✨ 3. USE THE UNIFIED ITEM
     const rating = Number(entry.rating);
     const notes = entry.notes || '';
-    const releaseYear = entry.movies.release_date?.split('-')[0];
+    const releaseYear = cinematicItem.release_date?.split('-')[0]; // Use unified item
 
     const username = entry.profiles.username;
     const displayName = entry.profiles.display_name || username;
@@ -142,10 +169,10 @@ export default function ShareStoryImage({ entry }: { entry: TimelineEntryWithUse
             backgroundColor: '#0a0a0a',
             fontFamily: '"Cormorant Garamond", "Georgia", serif'
         }}>
-            {/* Cinematic Background */}
-            {entry.movies.poster_url && (
+            {/* ✨ 4. USE THE UNIFIED ITEM */}
+            {cinematicItem.poster_url && (
                 <img
-                    src={entry.movies.poster_url}
+                    src={cinematicItem.poster_url}
                     alt="Background"
                     style={{
                         position: 'absolute',
@@ -245,10 +272,11 @@ export default function ShareStoryImage({ entry }: { entry: TimelineEntryWithUse
                         }}>
                             {/* Poster */}
                             <div style={{ flexShrink: 0, display: 'flex' }}>
-                                {entry.movies.poster_url && (
+                                {/* ✨ 5. USE THE UNIFIED ITEM */}
+                                {cinematicItem.poster_url && (
                                     <img
-                                        src={entry.movies.poster_url}
-                                        alt={entry.movies.title}
+                                        src={cinematicItem.poster_url}
+                                        alt={cinematicItem.title}
                                         width={420}
                                         height={630}
                                         style={{
@@ -279,7 +307,8 @@ export default function ShareStoryImage({ entry }: { entry: TimelineEntryWithUse
                                     letterSpacing: '-0.015em',
                                     margin: 0
                                 }}>
-                                    {entry.movies.title}
+                                    {/* ✨ 6. USE THE UNIFIED ITEM */}
+                                    {cinematicItem.title}
                                 </h1>
 
                                 {/* Year */}

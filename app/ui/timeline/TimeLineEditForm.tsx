@@ -4,7 +4,8 @@ import { useActionState, useState, useEffect, useRef } from 'react';
 import { useFormStatus } from 'react-dom';
 import Image from 'next/image';
 import Link from 'next/link';
-import { updateTimelineEntry, type LogMovieState } from '@/lib/actions/timeline-actions';
+// ✨ 1. FIX: Import the correct types
+import { updateTimelineEntry, type UpdateEntryState } from '@/lib/actions/timeline-actions';
 import { searchProfiles } from '@/lib/actions/profile-actions';
 import { type ProfileSearchResult, type TimelineEntry } from '@/lib/definitions';
 
@@ -17,14 +18,15 @@ import {
     PhotoIcon,
     UserPlusIcon,
     XMarkIcon,
-    CheckIcon
+    CheckIcon,
+    TvIcon,     // ✨ 2. ADDED TvIcon
+    FilmIcon    // ✨ 3. ADDED FilmIcon
 } from '@heroicons/react/24/solid';
 import LoadingSpinner from '@/app/ui/loading-spinner';
 
-// --- Star Rating Component ---
+// --- Star Rating Component (Unchanged) ---
 function StarRatingInput({ rating, setRating, error }: { rating: number; setRating: (rating: number) => void; error?: string }) {
     const [hover, setHover] = useState(0);
-
     return (
         <div>
             <div className="flex items-center gap-4">
@@ -83,7 +85,7 @@ function StarRatingInput({ rating, setRating, error }: { rating: number; setRati
     );
 }
 
-// --- Submit Button ---
+// --- Submit Button (Unchanged) ---
 function SubmitButton() {
     const { pending } = useFormStatus();
     return (
@@ -102,7 +104,7 @@ function SubmitButton() {
     );
 }
 
-// --- Constants ---
+// --- Constants (Unchanged) ---
 const ottPlatforms = [
     { name: 'Netflix', logo: '/logos/netflix.svg', color: '#E50914' },
     { name: 'Prime Video', logo: '/logos/prime-video.svg', color: '#00A8E1' },
@@ -125,37 +127,40 @@ export default function TimeLineEditForm({
     username: string,
     entryToEdit: TimelineEntry;
 }) {
-    const initialState: LogMovieState = { message: null, errors: {} };
+    // ✨ 4. FIX: Use the correct State type
+    const initialState: UpdateEntryState = { message: null, errors: {} };
     const [state, formAction] = useActionState(updateTimelineEntry, initialState);
 
     const formRef = useRef<HTMLFormElement>(null);
 
-    // Core Entry State (initialized from entryToEdit)
+    // ✨ 5. FIX: Create unified variables for the item
+    const cinematicItem = entryToEdit.movies || entryToEdit.series;
+    const mediaType = entryToEdit.movies ? 'movie' : 'tv';
+
+    // ... (Core Entry State is unchanged, it's correct) ...
     const [rating, setRating] = useState(entryToEdit.rating ?? 0);
     const [watchedOn, setWatchedOn] = useState(entryToEdit.watched_on);
 
-    // Viewing context state
+    // ... (Viewing context state is unchanged, it's correct) ...
     const getInitialMedium = () => {
         if (!entryToEdit.viewing_context) return null;
         if (entryToEdit.viewing_context === 'Theatre') return 'theatre';
         return 'ott';
     };
-
     const getInitialPlatform = () => {
         if (!entryToEdit.viewing_context || entryToEdit.viewing_context === 'Theatre') return '';
         return entryToEdit.viewing_context;
     };
-
     const [viewingMedium, setViewingMedium] = useState<'theatre' | 'ott' | null>(getInitialMedium());
     const [selectedPlatform, setSelectedPlatform] = useState<string>(getInitialPlatform());
 
-    // Photo state
+    // ... (Photo state is unchanged, it's correct) ...
     const [photoPreview, setPhotoPreview] = useState<string | null>(entryToEdit.photo_url ?? null);
     const [photoError, setPhotoError] = useState<string | null>(null);
     const [removePhoto, setRemovePhoto] = useState(false);
     const [isFileValid, setIsFileValid] = useState(!!entryToEdit.photo_url);
 
-    // Tag state
+    // ... (Tag state is unchanged, it's correct) ...
     const [tagSearchQuery, setTagSearchQuery] = useState('');
     const [isTagSearching, setIsTagSearching] = useState(false);
     const [tagResults, setTagResults] = useState<ProfileSearchResult[]>([]);
@@ -168,14 +173,13 @@ export default function TimeLineEditForm({
         }))
     );
 
-    // User tag search effect
+    // ... (User tag search effect is unchanged) ...
     useEffect(() => {
         const handler = setTimeout(async () => {
             if (tagSearchQuery.trim().length < 2) {
                 setTagResults([]);
                 return;
             }
-
             setIsTagSearching(true);
             try {
                 const results = await searchProfiles(tagSearchQuery);
@@ -188,19 +192,17 @@ export default function TimeLineEditForm({
                 setIsTagSearching(false);
             }
         }, 300);
-
         return () => clearTimeout(handler);
     }, [tagSearchQuery, taggedUsers]);
 
+    // ... (Photo handlers are unchanged) ...
     const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (photoPreview && !photoPreview.startsWith('http')) {
             URL.revokeObjectURL(photoPreview);
         }
-
         setIsFileValid(false);
         setRemovePhoto(false);
-
         if (file) {
             if (file.size > MAX_FILE_SIZE_BYTES) {
                 setPhotoError(`File is too large (max ${MAX_FILE_SIZE_MB}MB).`);
@@ -208,14 +210,12 @@ export default function TimeLineEditForm({
                 e.target.value = '';
                 return;
             }
-
             if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
                 setPhotoError('Invalid file type. Please use JPG, PNG, or WEBP.');
                 setPhotoPreview(null);
                 e.target.value = '';
                 return;
             }
-
             setPhotoError(null);
             setPhotoPreview(URL.createObjectURL(file));
             setIsFileValid(true);
@@ -224,33 +224,46 @@ export default function TimeLineEditForm({
             setPhotoError(null);
         }
     };
-
     const clearPhoto = () => {
         if (photoPreview && !photoPreview.startsWith('http')) {
             URL.revokeObjectURL(photoPreview);
         }
-
         setPhotoPreview(null);
         setPhotoError(null);
         setIsFileValid(false);
-
         const fileInput = formRef.current?.querySelector('input[type="file"]') as HTMLInputElement;
         if (fileInput) fileInput.value = '';
-
         if (entryToEdit.photo_url) {
             setRemovePhoto(true);
         }
     };
 
+    // ... (User tag handlers are unchanged) ...
     const handleSelectUser = (user: ProfileSearchResult) => {
         setTaggedUsers(prev => [...prev, user]);
         setTagSearchQuery('');
         setTagResults([]);
     };
-
     const handleRemoveUser = (userId: string) => {
         setTaggedUsers(prev => prev.filter(user => user.id !== userId));
     };
+
+    // ✨ 6. FIX: Add a safety check
+    if (!cinematicItem) {
+        return (
+            <div className="w-full max-w-lg mx-auto rounded-lg border bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                <Link
+                    href={`/profile/${username}/timeline`}
+                    className="mb-4 inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-white transition-colors"
+                >
+                    <ArrowLeftIcon className="w-4 h-4" />
+                    Back to Timeline
+                </Link>
+                <h2 className="text-xl font-bold mb-4 text-red-500">Error</h2>
+                <p>This entry is corrupted and missing its movie or series data.</p>
+            </div>
+        )
+    }
 
     return (
         <div className="w-full max-w-lg mx-auto rounded-lg border bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
@@ -265,25 +278,26 @@ export default function TimeLineEditForm({
             <h2 className="text-xl font-bold mb-4">Edit Log Entry</h2>
 
             <form ref={formRef} action={formAction} className="space-y-6">
-                {/* Hidden fields */}
+                {/* ✨ 7. FIX: Hidden fields now use the correct data */}
                 <input type="hidden" name="entryId" value={entryToEdit.id} />
                 <input type="hidden" name="remove_photo" value={String(removePhoto)} />
-                <input type="hidden" name="movieApiId" value={entryToEdit.movies.tmdb_id} />
+                <input type="hidden" name="cinematicApiId" value={cinematicItem.tmdb_id} />
+                <input type="hidden" name="media_type" value={mediaType} />
 
-                {/* Movie Display (Locked) */}
+                {/* ✨ 8. FIX: Movie Display (Locked) now uses unified item */}
                 <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-900 dark:text-zinc-200">
-                        Film
+                        Item
                     </label>
                     <div className="p-3 rounded-md border border-gray-300 bg-gray-50 dark:border-zinc-700 dark:bg-zinc-800">
                         <div className="flex items-center gap-3">
-                            {entryToEdit.movies.poster_url && (
+                            {cinematicItem.poster_url && (
                                 <Image
-                                    src={entryToEdit.movies.poster_url.startsWith('https')
-                                        ? entryToEdit.movies.poster_url
-                                        : `https://image.tmdb.org/t/p/w92${entryToEdit.movies.poster_url}`
+                                    src={cinematicItem.poster_url.startsWith('https')
+                                        ? cinematicItem.poster_url
+                                        : `https://image.tmdb.org/t/p/w92${cinematicItem.poster_url}`
                                     }
-                                    alt={entryToEdit.movies.title}
+                                    alt={cinematicItem.title}
                                     width={40}
                                     height={60}
                                     className="rounded object-cover"
@@ -291,20 +305,29 @@ export default function TimeLineEditForm({
                             )}
                             <div className="flex-1 min-w-0">
                                 <p className="font-medium text-sm truncate">
-                                    {entryToEdit.movies.title}
+                                    {cinematicItem.title}
                                 </p>
                                 <p className="text-xs text-gray-500 dark:text-zinc-400">
-                                    {entryToEdit.movies.release_date?.split('-')[0]}
+                                    {cinematicItem.release_date?.split('-')[0]}
                                 </p>
+                            </div>
+                            {/* Added media type badge */}
+                            <div className={`flex items-center gap-1.5 flex-shrink-0 text-xs px-2 py-0.5 rounded-full ${
+                                mediaType === 'movie'
+                                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                                    : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                            }`}>
+                                {mediaType === 'movie' ? <FilmIcon className="w-3 h-3" /> : <TvIcon className="w-3 h-3" />}
+                                <span>{mediaType === 'movie' ? 'Movie' : 'TV'}</span>
                             </div>
                         </div>
                         <p className="mt-2 text-xs text-gray-500 dark:text-zinc-400">
-                            The movie cannot be changed when editing an entry
+                            The item cannot be changed when editing an entry.
                         </p>
                     </div>
                 </div>
 
-                {/* Watched On & Rating */}
+                {/* ... (Watched On & Rating section is unchanged) ... */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div className="space-y-2">
                         <label
@@ -329,7 +352,6 @@ export default function TimeLineEditForm({
                             </p>
                         )}
                     </div>
-
                     <div className="space-y-2">
                         <label className="block text-sm font-medium text-gray-900 dark:text-zinc-200">
                             Rating *
@@ -343,7 +365,7 @@ export default function TimeLineEditForm({
                     </div>
                 </div>
 
-                {/* Viewing Medium */}
+                {/* ... (Viewing Medium section is unchanged) ... */}
                 <div className="space-y-3">
                     <label className="block text-sm font-medium text-gray-900 dark:text-zinc-200">
                         Where did you watch? (Optional)
@@ -393,7 +415,7 @@ export default function TimeLineEditForm({
                     )}
                 </div>
 
-                {/* OTT Platform Selector */}
+                {/* ... (OTT Platform Selector is unchanged) ... */}
                 {viewingMedium === 'ott' && (
                     <div className="space-y-3">
                         <label className="block text-sm font-medium text-gray-900 dark:text-zinc-200">
@@ -448,7 +470,7 @@ export default function TimeLineEditForm({
                     </div>
                 )}
 
-                {/* Notes */}
+                {/* ... (Notes section is unchanged) ... */}
                 <div className="space-y-2">
                     <label
                         htmlFor="notes"
@@ -471,7 +493,7 @@ export default function TimeLineEditForm({
                     )}
                 </div>
 
-                {/* Photo Upload */}
+                {/* ... (Photo Upload section is unchanged) ... */}
                 <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-900 dark:text-zinc-200">
                         Add a Photo (Optional)
@@ -530,7 +552,7 @@ export default function TimeLineEditForm({
                     )}
                 </div>
 
-                {/* Watched With Tags */}
+                {/* ... (Watched With Tags section is unchanged) ... */}
                 <div className="space-y-2">
                     <label
                         htmlFor="tagSearch"
@@ -538,7 +560,6 @@ export default function TimeLineEditForm({
                     >
                         Watched With (Optional)
                     </label>
-
                     {taggedUsers.map(user => (
                         <input
                             key={user.id}
@@ -547,7 +568,6 @@ export default function TimeLineEditForm({
                             value={user.id}
                         />
                     ))}
-
                     {taggedUsers.length > 0 && (
                         <div className="flex flex-wrap gap-2 mb-2">
                             {taggedUsers.map(user => (
@@ -574,7 +594,6 @@ export default function TimeLineEditForm({
                             ))}
                         </div>
                     )}
-
                     <div className="relative">
                         <UserPlusIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                         <input
@@ -586,7 +605,6 @@ export default function TimeLineEditForm({
                             autoComplete="off"
                             className="block w-full rounded-md border-gray-300 bg-gray-50 py-2 pl-10 pr-3 text-sm shadow-sm focus:border-rose-500 focus:ring-rose-500 dark:border-zinc-700 dark:bg-zinc-800"
                         />
-
                         {(isTagSearching || tagResults.length > 0) && (
                             <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg dark:bg-zinc-800 dark:border-zinc-700 max-h-48 overflow-y-auto">
                                 {isTagSearching ? (
@@ -619,12 +637,10 @@ export default function TimeLineEditForm({
                     </div>
                 </div>
 
-                {/* Error Message */}
+                {/* ... (Error Message and Submit Button are unchanged) ... */}
                 {state.message && state.message !== 'Success' && (
                     <p className="text-sm text-red-500">{state.message}</p>
                 )}
-
-                {/* Submit Button */}
                 <SubmitButton />
             </form>
         </div>

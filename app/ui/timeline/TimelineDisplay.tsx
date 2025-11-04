@@ -48,7 +48,7 @@ export default function TimelineDisplay({
                                 Watch History
                             </h2>
                             <p className="text-sm md:text-base text-gray-600 dark:text-zinc-400">
-                                {timelineEntries.length} {timelineEntries.length === 1 ? 'film' : 'films'} watched
+                                {timelineEntries.length} {timelineEntries.length === 1 ? 'entry' : 'entries'} logged
                             </p>
                         </div>
                         {isOwnProfile && (
@@ -59,7 +59,7 @@ export default function TimelineDisplay({
                                     className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-rose-600 text-white rounded-lg shadow-sm hover:bg-rose-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 dark:focus:ring-offset-zinc-900"
                                 >
                                     <PlusIcon className="h-5 w-5" />
-                                    <span className="text-sm font-semibold hidden sm:inline">Log Film</span>
+                                    <span className="text-sm font-semibold hidden sm:inline">Log Entry</span>
                                 </motion.button>
                             </Link>
                         )}
@@ -112,7 +112,7 @@ export default function TimelineDisplay({
                             <CalendarDaysIcon className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-gray-400 dark:text-zinc-600" />
                         </div>
                         <p className="text-base sm:text-lg md:text-xl text-gray-700 dark:text-zinc-300 font-semibold mb-2">
-                            No films logged yet
+                            No entries logged yet
                         </p>
                         {isOwnProfile && (
                             <div className="mt-6">
@@ -123,7 +123,7 @@ export default function TimelineDisplay({
                                         className="flex items-center mx-auto gap-2 px-5 py-3 bg-rose-600 text-white rounded-lg shadow-sm hover:bg-rose-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 dark:focus:ring-offset-zinc-900"
                                     >
                                         <PlusIcon className="h-5 w-5" />
-                                        <span className="text-sm font-semibold">Log Your First Film</span>
+                                        <span className="text-sm font-semibold">Log Your First Entry</span>
                                     </motion.button>
                                 </Link>
                             </div>
