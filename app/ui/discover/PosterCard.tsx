@@ -14,7 +14,7 @@ export default function PosterCard({ item }: { item: CinematicSearchResult }) {
             className="w-40 md:w-48 flex-shrink-0"
         >
             <div className="relative">
-                <Link href={`/discover/${item.media_type}/${item.id}`} className="block">
+                <Link href={`/app/discover/${item.media_type}/${item.id}`} className="block">
                     <div className="aspect-[2/3] w-full relative overflow-hidden rounded-lg shadow-lg">
                         <Image
                             src={`https://image.tmdb.org/t/p/w500${item.poster_path}`}
@@ -35,7 +35,7 @@ export default function PosterCard({ item }: { item: CinematicSearchResult }) {
                 </div>
             </div>
             <div className="mt-2">
-                <Link href={`/discover/${item.media_type}/${item.id}`} className="block">
+                <Link href={`/app/discover/${item.media_type}/${item.id}`} className="block">
                     <h3 className="font-bold text-md line-clamp-1 hover:text-red-500 dark:hover:text-red-400 transition-colors">
                         {item.title}
                     </h3>

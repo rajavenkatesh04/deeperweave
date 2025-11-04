@@ -6,7 +6,7 @@ import clsx from 'clsx';
 import { BookOpenIcon, PlusCircleIcon, HomeIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 
 const links = [
-    { name: 'Feed', href: '/feed', icon: HomeIcon },
+    { name: 'Discover', href: '/discover', icon: HomeIcon },
     { name: 'Blogs', href: '/blog', icon: BookOpenIcon },
     { name: 'Create', href: '/create', icon: PlusCircleIcon },
     { name: 'Search', href: '/search', icon: MagnifyingGlassIcon},

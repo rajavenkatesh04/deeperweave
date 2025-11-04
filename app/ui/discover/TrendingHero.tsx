@@ -1,18 +1,55 @@
 'use client';
 
-import { useState } from 'react';
+// ✨ 1. Import useEffect, useRef, and AnimatePresence
+import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import {AnimatePresence, motion, useMotionValue} from 'framer-motion';
+import { motion, useMotionValue, AnimatePresence } from 'framer-motion';
 import { CinematicSearchResult } from '@/lib/actions/cinematic-actions';
 import { FilmIcon, TvIcon } from '@heroicons/react/24/solid';
 
-// How far to drag before triggering a slide change
 const DRAG_BUFFER = 50;
+const AUTO_SCROLL_INTERVAL = 5000; // 5 seconds
 
 export default function TrendingHero({ items }: { items: CinematicSearchResult[] }) {
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [isHovered, setIsHovered] = useState(false);
     const dragX = useMotionValue(0);
+
+    // ✨ 2. Set up a ref to hold the interval ID
+    const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+    // ✨ 3. Create the function to advance the slide
+    const showNextSlide = () => {
+        setCurrentIndex((prev) => (prev === items.length - 1 ? 0 : prev + 1));
+    };
+
+    // ✨ 4. Create the function to start the auto-scroll
+    const startAutoScroll = () => {
+        // Clear any existing interval
+        if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+        }
+        // Start a new one
+        intervalRef.current = setInterval(() => {
+            showNextSlide();
+        }, AUTO_SCROLL_INTERVAL);
+    };
+
+    // ✨ 5. Set up the effect
+    useEffect(() => {
+        // Start the timer when the component mounts
+        if (!isHovered) {
+            startAutoScroll();
+        }
+
+        // Clear the interval when the component unmounts
+        return () => {
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+            }
+        };
+    }, [isHovered]); // Re-run this effect if the hover state changes
 
     const onDragEnd = () => {
         const x = dragX.get();
@@ -22,10 +59,27 @@ export default function TrendingHero({ items }: { items: CinematicSearchResult[]
         } else if (x >= DRAG_BUFFER && currentIndex > 0) {
             setCurrentIndex(i => i - 1);
         }
+
+        // ✨ 6. Restart the timer after a manual drag
+        if (!isHovered) {
+            startAutoScroll();
+        }
+    };
+
+    const onDragStart = () => {
+        // ✨ 7. Clear the timer when manual drag starts
+        if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+        }
     };
 
     return (
-        <div className="relative w-full h-[60vh] md:h-[80vh] overflow-hidden bg-black">
+        // ✨ 8. Add hover events to pause/resume
+        <div
+            className="relative w-full h-[60vh] md:h-[80vh] overflow-hidden bg-black"
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+        >
             {/* Backgrounds */}
             <AnimatePresence>
                 {items.map((item, i) => i === currentIndex && (
@@ -57,6 +111,7 @@ export default function TrendingHero({ items }: { items: CinematicSearchResult[]
                 drag="x"
                 dragConstraints={{ left: 0, right: 0 }}
                 style={{ x: dragX }}
+                onDragStart={onDragStart} // ✨ Added
                 onDragEnd={onDragEnd}
                 animate={{ translateX: `-${currentIndex * 100}%` }}
                 transition={{ type: 'spring', stiffness: 300, damping: 30 }}
