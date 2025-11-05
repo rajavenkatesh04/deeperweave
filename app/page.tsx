@@ -1,23 +1,27 @@
-import { getTrendingAll } from '@/lib/actions/cinematic-actions';
 import LandingPageClient from '@/app/ui/landing/LandingPageClient';
+import { getLandingPageData } from '@/lib/data/landing-data'; // You'll create this new combined function
+import { FilmIcon, TvIcon, SparklesIcon, HeartIcon } from "@heroicons/react/24/solid";
 
-// Revalidate this data every hour so the landing page stays fresh but fast
-export const revalidate = 3600;
+export const revalidate = 86400; // Daily revalidation
 
 export default async function Home() {
-    // Fetch real trending data for the hero background
-    const trendingItems = await getTrendingAll();
+    const data = await getLandingPageData();
 
-    // We need a lot of posters for the infinite scroll effect, so we'll
-    // just duplicate the list a few times to make sure we have enough.
-    // We only need the poster paths.
-    const posterPaths = trendingItems
-        .filter(item => item.poster_path)
-        .map(item => item.poster_path as string);
+    // Prepare data for Client Component.
+    // NOTE: You can't pass server components (like HeroIcons) directly as props easily if they aren't serializable.
+    // It's often easier to keep the static icon definitions in the client component if they don't change dynamically,
+    // OR map them in the client component based on a string type passed from server.
+    // For simplicity here, I've kept the icons in the Client Component and am just passing the raw data strings.
 
     return (
         <main>
-            <LandingPageClient posters={posterPaths} />
+            {/* You might need to map strings to icons inside the client component if you pass raw data */}
+            <LandingPageClient
+                heroPosters={data.heroPosters}
+                heroItems={data.heroItems}
+                searchDemoItems={data.searchDemoItems}
+                bentoItems={data.bentoItems}
+            />
         </main>
     );
 }
