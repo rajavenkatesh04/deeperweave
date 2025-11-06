@@ -1,26 +1,42 @@
 import LandingPageClient from '@/app/ui/landing/LandingPageClient';
-import { getLandingPageData } from '@/lib/data/landing-data'; // You'll create this new combined function
-import { FilmIcon, TvIcon, SparklesIcon, HeartIcon } from "@heroicons/react/24/solid";
+import { getLandingPageData } from '@/lib/data/landing-data';
 
 export const revalidate = 86400; // Daily revalidation
 
-export default async function Home() {
-    const data = await getLandingPageData();
+// Minimal fallback data to prevent build crashes if TMDB is unreachable
+const FALLBACK_DATA = {
+    heroPosters: [],
+    heroItems: [
+        { label: "Movies", bg: "" }, // Empty bg needs handling in client or provide a local static image path
+    ],
+    searchDemoItems: [],
+    bentoItems: {
+        anime: { title: 'Anime', href: '/discover', img: '' },
+        movie: { title: 'Movies', href: '/discover', img: '' },
+        kdrama: { title: 'K-Drama', href: '/discover', img: '' },
+        tv: { title: 'TV Series', href: '/discover', img: '' },
+    }
+};
 
-    // Prepare data for Client Component.
-    // NOTE: You can't pass server components (like HeroIcons) directly as props easily if they aren't serializable.
-    // It's often easier to keep the static icon definitions in the client component if they don't change dynamically,
-    // OR map them in the client component based on a string type passed from server.
-    // For simplicity here, I've kept the icons in the Client Component and am just passing the raw data strings.
+export default async function Home() {
+    let data;
+
+    try {
+        // Attempt to fetch fresh data
+        data = await getLandingPageData();
+    } catch (error) {
+        // Log error but don't crash the build
+        console.error("⚠️ Failed to fetch landing page data during build. Using fallback data.", error);
+        data = FALLBACK_DATA;
+    }
 
     return (
         <main>
-            {/* You might need to map strings to icons inside the client component if you pass raw data */}
             <LandingPageClient
-                heroPosters={data.heroPosters}
-                heroItems={data.heroItems}
-                searchDemoItems={data.searchDemoItems}
-                bentoItems={data.bentoItems}
+                heroPosters={data?.heroPosters ?? FALLBACK_DATA.heroPosters}
+                heroItems={data?.heroItems ?? FALLBACK_DATA.heroItems}
+                searchDemoItems={data?.searchDemoItems ?? FALLBACK_DATA.searchDemoItems}
+                bentoItems={data?.bentoItems ?? FALLBACK_DATA.bentoItems}
             />
         </main>
     );
