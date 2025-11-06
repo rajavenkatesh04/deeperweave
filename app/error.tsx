@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
-import { ExclamationTriangleIcon, ArrowPathIcon } from '@heroicons/react/24/solid';
+import { ArrowPathIcon } from '@heroicons/react/24/outline';
 
 export default function Error({
                                   error,
@@ -12,39 +12,40 @@ export default function Error({
     reset: () => void;
 }) {
     useEffect(() => {
-        // Best practice: Log the error to an error reporting service like Sentry
         console.error(error);
     }, [error]);
 
     return (
-        <main className="flex min-h-full flex-col items-center justify-center bg-gray-50 p-8 dark:bg-zinc-950">
-            <div className="w-full max-w-lg rounded-2xl border border-red-500/20 bg-white p-8 text-center shadow-2xl shadow-red-500/10 dark:border-red-500/30 dark:bg-zinc-900 dark:shadow-red-500/20">
+        <main className="flex min-h-screen flex-col items-center justify-center bg-white px-6 py-24 text-center dark:bg-[#09090b]">
+            <div className="max-w-3xl space-y-8">
+                {/* Subtle technical digest for developers/support if needed, keeps it formal */}
+                {error.digest && (
+                    <p className="font-mono text-xs uppercase tracking-widest text-zinc-400 dark:text-zinc-600">
+                        Error Digest: {error.digest}
+                    </p>
+                )}
 
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-100 dark:bg-red-500/10">
-                    <ExclamationTriangleIcon className="h-8 w-8 text-red-600 dark:text-red-500" aria-hidden="true" />
-                </div>
-
-                <h1 className="mt-6 text-2xl font-bold tracking-tight text-gray-900 dark:text-zinc-100">
-                    Oops, Something Went Wrong
+                <h1 className="text-5xl font-semibold tracking-tighter text-zinc-900 sm:text-7xl dark:text-white">
+                    Something went wrong.
                 </h1>
 
-                <p className="mt-4 text-base text-gray-600 dark:text-zinc-400">
-                    We encountered an unexpected issue. Please try again.
+                <p className="mx-auto max-w-lg text-lg text-zinc-500 dark:text-zinc-400">
+                    We apologize for the inconvenience. An unexpected error has occurred while processing your request.
                 </p>
 
-                <div className="mt-10 flex items-center justify-center gap-4">
+                <div className="flex flex-col items-center justify-center gap-4 sm:flex-row pt-8">
                     <button
                         onClick={() => reset()}
-                        className="group inline-flex items-center justify-center gap-2 rounded-xl bg-gray-900 px-6 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 dark:bg-white dark:text-gray-900 dark:focus:ring-white"
+                        className="group relative inline-flex h-12 items-center justify-center gap-2 rounded-md bg-zinc-900 px-8 text-sm font-medium text-white transition-all hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
                     >
-                        <ArrowPathIcon className="h-5 w-5 transition-transform duration-200 group-hover:rotate-180" />
+                        <ArrowPathIcon className="h-4 w-4 transition-transform group-hover:rotate-180" />
                         <span>Try Again</span>
                     </button>
                     <Link
                         href="/"
-                        className="text-sm font-semibold text-gray-700 hover:underline dark:text-zinc-300"
+                        className="inline-flex h-12 items-center justify-center rounded-md border border-zinc-200 px-8 text-sm font-medium text-zinc-900 transition-all hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-900"
                     >
-                        Go Home
+                        Return Home
                     </Link>
                 </div>
             </div>

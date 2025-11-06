@@ -35,7 +35,7 @@ export default function PosterCard({ item }: { item: CinematicSearchResult }) {
                 </div>
             </div>
             <div className="mt-2">
-                <Link href={`/app/discover/${item.media_type}/${item.id}`} className="block">
+                <Link href={`/discover/${item.media_type}/${item.id}`} className="block">
                     <h3 className="font-bold text-md line-clamp-1 hover:text-red-500 dark:hover:text-red-400 transition-colors">
                         {item.title}
                     </h3>
