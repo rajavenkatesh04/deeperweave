@@ -4,7 +4,7 @@ import {
     getPopularMovies,
     getPopularTv,
     getDiscoverAnime,
-    getDiscoverKdramas
+    getDiscoverKdramas, getTrendingHero
 } from '@/lib/actions/cinematic-actions';
 import TrendingHero from '@/app/ui/discover/TrendingHero';
 import CinematicRow from '@/app/ui/discover/CinematicRow';
@@ -15,12 +15,14 @@ export default async function DiscoverPage() {
 
     // Fetch all our data in parallel for maximum speed
     const [
+        heroItems,          // <--- Use the new Mixed Hero variable
         trendingItems,
         popularMovies,
         popularTv,
         popularAnime,
         popularKdramas
     ] = await Promise.all([
+        getTrendingHero(),  // <--- Call the new function here
         getTrendingAll(),
         getPopularMovies(),
         getPopularTv(),
@@ -38,7 +40,7 @@ export default async function DiscoverPage() {
                 {/* The Hero component gets the first 5 trending items.
                   We pass the full list (which is 20) to the first row.
                 */}
-                <TrendingHero items={trendingItems.slice(0, 5)} />
+                <TrendingHero items={heroItems} />
 
                 <div className="space-y-8 lg:space-y-12 py-8 lg:py-12">
                     <CinematicRow

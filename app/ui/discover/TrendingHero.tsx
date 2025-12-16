@@ -1,167 +1,181 @@
 'use client';
 
-// ✨ 1. Import useEffect, useRef, and AnimatePresence
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { motion, useMotionValue, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { CinematicSearchResult } from '@/lib/actions/cinematic-actions';
-import { FilmIcon, TvIcon } from '@heroicons/react/24/solid';
+import {
+    FilmIcon,
+    TvIcon,
+    ChevronLeftIcon,
+    ChevronRightIcon
+} from '@heroicons/react/24/solid';
 
-const DRAG_BUFFER = 50;
-const AUTO_SCROLL_INTERVAL = 5000; // 5 seconds
+const AUTO_SCROLL_INTERVAL = 6000;
+
+const contentVariants = {
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -20 }
+};
 
 export default function TrendingHero({ items }: { items: CinematicSearchResult[] }) {
-    const [currentIndex, setCurrentIndex] = useState(0);
+    const [[page, direction], setPage] = useState([0, 0]);
     const [isHovered, setIsHovered] = useState(false);
-    const dragX = useMotionValue(0);
-
-    // ✨ 2. Set up a ref to hold the interval ID
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-    // ✨ 3. Create the function to advance the slide
-    const showNextSlide = () => {
-        setCurrentIndex((prev) => (prev === items.length - 1 ? 0 : prev + 1));
-    };
+    const index = ((page % items.length) + items.length) % items.length;
+    const currentItem = items[index];
 
-    // ✨ 4. Create the function to start the auto-scroll
-    const startAutoScroll = () => {
-        // Clear any existing interval
-        if (intervalRef.current) {
-            clearInterval(intervalRef.current);
-        }
-        // Start a new one
+    const paginate = useCallback((newDirection: number) => {
+        setPage([page + newDirection, newDirection]);
+    }, [page]);
+
+    const startAutoScroll = useCallback(() => {
+        if (intervalRef.current) clearInterval(intervalRef.current);
         intervalRef.current = setInterval(() => {
-            showNextSlide();
+            paginate(1);
         }, AUTO_SCROLL_INTERVAL);
+    }, [paginate]);
+
+    const stopAutoScroll = () => {
+        if (intervalRef.current) clearInterval(intervalRef.current);
     };
 
-    // ✨ 5. Set up the effect
     useEffect(() => {
-        // Start the timer when the component mounts
         if (!isHovered) {
             startAutoScroll();
         }
+        return () => stopAutoScroll();
+    }, [isHovered, startAutoScroll]);
 
-        // Clear the interval when the component unmounts
-        return () => {
-            if (intervalRef.current) {
-                clearInterval(intervalRef.current);
-            }
-        };
-    }, [isHovered]); // Re-run this effect if the hover state changes
+    const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+        const swipe = Math.abs(info.offset.x) * info.velocity.x;
 
-    const onDragEnd = () => {
-        const x = dragX.get();
-
-        if (x <= -DRAG_BUFFER && currentIndex < items.length - 1) {
-            setCurrentIndex(i => i + 1);
-        } else if (x >= DRAG_BUFFER && currentIndex > 0) {
-            setCurrentIndex(i => i - 1);
-        }
-
-        // ✨ 6. Restart the timer after a manual drag
-        if (!isHovered) {
-            startAutoScroll();
-        }
-    };
-
-    const onDragStart = () => {
-        // ✨ 7. Clear the timer when manual drag starts
-        if (intervalRef.current) {
-            clearInterval(intervalRef.current);
+        if (swipe < -10000) {
+            paginate(1);
+        } else if (swipe > 10000) {
+            paginate(-1);
         }
     };
 
     return (
-        // ✨ 8. Add hover events to pause/resume
         <div
-            className="relative w-full h-[60vh] md:h-[80vh] overflow-hidden bg-black"
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
+            className="relative w-full h-[65vh] md:h-[85vh] overflow-hidden bg-black group"
+            onMouseEnter={() => { setIsHovered(true); stopAutoScroll(); }}
+            onMouseLeave={() => { setIsHovered(false); startAutoScroll(); }}
         >
-            {/* Backgrounds */}
-            <AnimatePresence>
-                {items.map((item, i) => i === currentIndex && (
-                    <motion.div
-                        key={item.id}
-                        initial={{ opacity: 0, scale: 1.1 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 1.1 }}
-                        transition={{ duration: 0.8, ease: 'easeInOut' }}
-                        className="absolute inset-0"
-                    >
-                        <Image
-                            src={`https://image.tmdb.org/t/p/original${item.backdrop_path}`}
-                            alt={item.title}
-                            fill
-                            className="object-cover"
-                            priority
-                        />
-                        {/* Gradient overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-                        <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent" />
-                    </motion.div>
-                ))}
+            <AnimatePresence initial={false}>
+                <motion.div
+                    key={page}
+                    initial={{ opacity: 0, scale: 1.1 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.7 }}
+                    className="absolute inset-0 z-0"
+                >
+                    <Image
+                        src={`https://image.tmdb.org/t/p/original${currentItem.backdrop_path}`}
+                        alt={currentItem.title}
+                        fill
+                        className="object-cover opacity-60"
+                        priority
+                    />
+
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/20 to-transparent" />
+                </motion.div>
             </AnimatePresence>
 
-            {/* Draggable Carousel */}
+            <div className="absolute inset-0 z-10 flex flex-col justify-end pb-12 md:pb-24 px-6 md:px-16">
+                <AnimatePresence mode='wait' custom={direction}>
+                    <motion.div
+                        key={page}
+                        custom={direction}
+                        variants={contentVariants}
+                        initial="initial"
+                        animate="animate"
+                        exit="exit"
+                        transition={{ duration: 0.4, ease: "easeOut" }}
+                        className="max-w-3xl"
+                    >
+                        <div className="flex items-center gap-2 mb-4">
+                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-md ${
+                                currentItem.media_type === 'movie'
+                                    ? 'bg-blue-500/20 text-blue-100 border border-blue-500/30'
+                                    : 'bg-green-500/20 text-green-100 border border-green-500/30'
+                            }`}>
+                                {currentItem.media_type === 'movie' ? <FilmIcon className="w-3 h-3" /> : <TvIcon className="w-3 h-3" />}
+                                {currentItem.media_type === 'movie' ? 'Movie' : 'Series'}
+                            </span>
+                            <span className="text-white/60 text-xs font-medium uppercase tracking-widest border border-white/20 px-2 py-1 rounded-full">
+                                Trending
+                            </span>
+                        </div>
+
+                        <h1 className="text-4xl md:text-7xl font-black text-white leading-tight drop-shadow-lg mb-4">
+                            {currentItem.title}
+                        </h1>
+
+                        <p className="text-white/90 text-sm md:text-lg line-clamp-3 md:line-clamp-2 max-w-xl leading-relaxed mb-8 drop-shadow-md">
+                            {currentItem.overview}
+                        </p>
+
+                        <div className="flex items-center gap-4">
+                            <Link
+                                href={`/discover/${currentItem.media_type}/${currentItem.id}`}
+                                className="px-8 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-all transform hover:scale-105 shadow-xl shadow-red-900/20 flex items-center gap-2"
+                            >
+                                <span>Watch Now</span>
+                            </Link>
+                            <button className="px-8 py-3 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white font-semibold rounded-lg transition-all border border-white/10">
+                                + My List
+                            </button>
+                        </div>
+                    </motion.div>
+                </AnimatePresence>
+            </div>
+
+            <div className="absolute inset-0 z-20 pointer-events-none flex justify-between items-center px-4">
+                <button
+                    onClick={() => paginate(-1)}
+                    className="pointer-events-auto p-3 rounded-full bg-black/20 hover:bg-black/60 text-white/70 hover:text-white backdrop-blur-sm transition-all opacity-0 group-hover:opacity-100 -translate-x-4 group-hover:translate-x-0"
+                    aria-label="Previous Slide"
+                >
+                    <ChevronLeftIcon className="w-8 h-8" />
+                </button>
+
+                <button
+                    onClick={() => paginate(1)}
+                    className="pointer-events-auto p-3 rounded-full bg-black/20 hover:bg-black/60 text-white/70 hover:text-white backdrop-blur-sm transition-all opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0"
+                    aria-label="Next Slide"
+                >
+                    <ChevronRightIcon className="w-8 h-8" />
+                </button>
+            </div>
+
             <motion.div
-                className="absolute inset-0 z-10"
+                className="absolute inset-0 z-30 md:hidden"
                 drag="x"
                 dragConstraints={{ left: 0, right: 0 }}
-                style={{ x: dragX }}
-                onDragStart={onDragStart} // ✨ Added
-                onDragEnd={onDragEnd}
-                animate={{ translateX: `-${currentIndex * 100}%` }}
-                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            >
-                {/* This div holds all the slides side-by-side */}
-                <div className="flex h-full" style={{ width: `${items.length * 100}%` }}>
-                    {items.map((item) => (
-                        <div key={item.id} className="w-full h-full flex flex-col justify-end p-6 md:p-12 lg:p-16">
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.6, delay: 0.3 }}
-                                className="max-w-xl"
-                            >
-                                <div className={`inline-flex items-center gap-1.5 flex-shrink-0 text-xs px-3 py-1 rounded-full mb-3 ${
-                                    item.media_type === 'movie'
-                                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                                        : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                }`}>
-                                    {item.media_type === 'movie' ? <FilmIcon className="w-3 h-3" /> : <TvIcon className="w-3 h-3" />}
-                                    <span className="font-bold">{item.media_type === 'movie' ? 'Movie' : 'TV Show'}</span>
-                                </div>
-                                <h1 className="text-4xl md:text-6xl font-black text-white line-clamp-2" style={{ textShadow: '2px 2px 8px rgba(0,0,0,0.7)' }}>
-                                    {item.title}
-                                </h1>
-                                <p className="text-lg text-white/80 mt-4 line-clamp-3" style={{ textShadow: '1px 1px 4px rgba(0,0,0,0.7)' }}>
-                                    {item.overview}
-                                </p>
-                                <Link
-                                    href={`/discover/${item.media_type}/${item.id}`}
-                                    className="inline-block mt-6 px-6 py-3 bg-red-600 text-white font-bold rounded-lg shadow-lg hover:bg-red-700 transition-colors"
-                                >
-                                    View Details
-                                </Link>
-                            </motion.div>
-                        </div>
-                    ))}
-                </div>
-            </motion.div>
+                dragElastic={1}
+                onDragEnd={handleDragEnd}
+            />
 
-            {/* Dots */}
-            <div className="absolute bottom-6 left-0 right-0 z-20 flex justify-center gap-2">
+            <div className="absolute bottom-8 right-8 z-30 flex gap-2">
                 {items.map((_, i) => (
                     <button
                         key={i}
-                        onClick={() => setCurrentIndex(i)}
-                        className={`h-2 w-2 rounded-full transition-all ${
-                            i === currentIndex ? 'w-6 bg-white' : 'bg-white/50'
-                        }`}
-                    />
+                        onClick={() => {
+                            setPage([i, i > index ? 1 : -1]);
+                        }}
+                        className="group relative py-2"
+                    >
+                        <div className={`h-1 rounded-full transition-all duration-300 ${
+                            i === index ? 'w-8 bg-white' : 'w-2 bg-white/40 group-hover:bg-white/70'
+                        }`} />
+                    </button>
                 ))}
             </div>
         </div>

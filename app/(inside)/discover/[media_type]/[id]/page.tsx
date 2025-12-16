@@ -5,114 +5,62 @@ import { getMovieDetails, getSeriesDetails } from '@/lib/actions/cinematic-actio
 import {
     CalendarIcon,
     UserIcon,
-    FilmIcon,
-    TvIcon,
     PlusIcon,
-    SparklesIcon,
-    UserGroupIcon,
     ClockIcon,
-    CheckBadgeIcon,
-    TagIcon
+    TvIcon,
+    ArrowLeftIcon,
+    FilmIcon
 } from '@heroicons/react/24/solid';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
 
-// Type definitions matching your server action returns
-interface Genre {
-    id: number;
-    name: string;
-}
-
-interface CastMember {
-    id: number;
-    name: string;
-    character: string;
-    profile_path: string | null;
-}
-
-// Base structure returned by both getMovieDetails and getSeriesDetails
+// --- TYPES ---
+interface Genre { id: number; name: string; }
+interface CastMember { id: number; name: string; character: string; profile_path: string | null; }
 interface BaseMediaDetails {
-    title: string; // Both return 'title'
-    overview: string;
-    poster_path: string | null;
-    backdrop_path: string | null;
-    release_date: string;
-    genres: Genre[];
-    cast: CastMember[];
+    title: string; overview: string; poster_path: string | null; backdrop_path: string | null;
+    release_date: string; genres: Genre[]; cast: CastMember[];
 }
-
-interface MovieDetails extends BaseMediaDetails {
-    director: string;
-    runtime?: number;
-    status?: string;
-}
-
-interface SeriesDetails extends BaseMediaDetails {
-    creator: string;
-    number_of_seasons?: number;
-    status?: string;
-}
-
+interface MovieDetails extends BaseMediaDetails { director: string; runtime?: number; status?: string; }
+interface SeriesDetails extends BaseMediaDetails { creator: string; number_of_seasons?: number; status?: string; }
 type MediaDetails = MovieDetails | SeriesDetails;
 
-// Define animation styles directly in the component
+// --- STYLES & ANIMATIONS ---
 const CustomStyles = () => (
     <style>
         {`
-            @keyframes fadeIn {
-                from { opacity: 0; }
-                to { opacity: 1; }
-            }
-            @keyframes slideInUp {
-                from { 
-                    opacity: 0;
-                    transform: translateY(20px); 
-                }
-                to { 
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-            }
             @keyframes subtleZoom {
-                from { transform: scale(1.05); }
-                to { transform: scale(1); }
+                0% { transform: scale(1); }
+                100% { transform: scale(1.1); }
             }
-            
-            .animate-fade-in {
-                animation: fadeIn 0.8s ease-out forwards;
+            .animate-slow-zoom {
+                animation: subtleZoom 20s infinite alternate linear;
             }
-            .animate-slide-in-up {
-                opacity: 0;
-                animation: slideInUp 0.7s ease-out forwards;
+            .glass-panel {
+                background: rgba(0, 0, 0, 0.6);
+                backdrop-filter: blur(12px);
+                border: 1px solid rgba(255, 255, 255, 0.1);
             }
-            .animate-subtle-zoom {
-                animation: subtleZoom 15s ease-out forwards;
-            }
-            
-            /* Staggered delays */
-            .delay-100 { animation-delay: 0.1s; }
-            .delay-200 { animation-delay: 0.2s; }
-            .delay-300 { animation-delay: 0.3s; }
-            .delay-400 { animation-delay: 0.4s; }
-            .delay-500 { animation-delay: 0.5s; }
-            .delay-700 { animation-delay: 0.7s; }
-
-            /* Custom text shadow for title */
-            .text-shadow-xl {
-                text-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-            }
-
-            /* Hide scrollbar for cast */
-            .no-scrollbar::-webkit-scrollbar {
-                display: none;
-            }
-            .no-scrollbar {
-                -ms-overflow-style: none;
-                scrollbar-width: none;
+            .text-glow {
+                text-shadow: 0 0 20px rgba(255,255,255,0.3);
             }
         `}
     </style>
+);
+
+// --- HELPER COMPONENTS ---
+const MetaPill = ({ icon, text }: { icon?: React.ReactNode; text: string | number }) => (
+    <div className="flex items-center gap-1.5 text-xs md:text-sm font-medium text-zinc-300 bg-white/10 px-3 py-1.5 rounded-md border border-white/5 hover:bg-white/20 transition-colors cursor-default">
+        {icon && <span className="w-4 h-4 text-zinc-400">{icon}</span>}
+        <span>{text}</span>
+    </div>
+);
+
+const SectionTitle = ({ title }: { title: string }) => (
+    <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-2 border-l-4 border-rose-600 pl-4">
+        {title}
+    </h3>
 );
 
 export default async function CinematicDetailPage({
@@ -123,251 +71,211 @@ export default async function CinematicDetailPage({
     const { media_type, id } = await params;
     const numericId = Number(id);
 
-    if (isNaN(numericId) || (media_type !== 'movie' && media_type !== 'tv')) {
-        notFound();
-    }
+    if (isNaN(numericId) || (media_type !== 'movie' && media_type !== 'tv')) notFound();
 
     let details: MediaDetails;
     try {
-        if (media_type === 'movie') {
-            details = await getMovieDetails(numericId) as MovieDetails;
-        } else {
-            details = await getSeriesDetails(numericId) as SeriesDetails;
-        }
+        if (media_type === 'movie') details = await getMovieDetails(numericId) as MovieDetails;
+        else details = await getSeriesDetails(numericId) as SeriesDetails;
     } catch (error) {
-        console.error("Error fetching details:", error);
+        console.error(error);
         notFound();
     }
 
-    if (!details) {
-        notFound();
-    }
+    if (!details) notFound();
 
-    // Both movie and series have 'title' in your API response
     const title = details.title;
-    const releaseDate = details.release_date;
-    const releaseYear = releaseDate?.split('-')[0];
-
-    // Use type guard to determine if it's a movie or series
+    const releaseYear = details.release_date?.split('-')[0] || 'N/A';
     const directorOrCreator = 'director' in details ? details.director : details.creator;
-
-    // Helper function for Stat Card
-    const StatCard = ({
-                          icon,
-                          title,
-                          value
-                      }: {
-        icon: React.ReactNode;
-        title: string;
-        value: string | number;
-    }) => (
-        <div className="p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 transition-all hover:shadow-lg dark:hover:shadow-zinc-950">
-            <div className="flex items-center gap-3 mb-2">
-                {icon}
-                <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                    {title}
-                </h3>
-            </div>
-            <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 truncate">
-                {value}
-            </p>
-        </div>
-    );
-
-    // Helper for Genre Tags
-    const GenreTags = ({ genres }: { genres: Genre[] }) => (
-        <div className="p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 transition-all hover:shadow-lg dark:hover:shadow-zinc-950">
-            <div className="flex items-center gap-3 mb-4">
-                <TagIcon className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
-                <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                    Genres
-                </h3>
-            </div>
-            <div className="flex flex-wrap gap-2">
-                {genres.map((genre) => (
-                    <span
-                        key={genre.id}
-                        className="px-3 py-1.5 rounded-full text-xs font-medium bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-700 cursor-default"
-                    >
-                        {genre.name}
-                    </span>
-                ))}
-            </div>
-        </div>
-    );
+    const formatRuntime = (mins?: number) => mins ? `${Math.floor(mins / 60)}h ${mins % 60}m` : null;
+    const runtimeString = 'runtime' in details ? formatRuntime(details.runtime) : null;
 
     return (
-        <>
+        <div className="min-h-screen bg-[#050505] text-zinc-100 selection:bg-rose-600/40">
             <CustomStyles />
-            <main className="min-h-screen bg-white dark:bg-[#0a0a0a] text-zinc-900 dark:text-zinc-100 overflow-x-hidden">
-                {/* --- HERO SECTION --- */}
-                <div className="relative h-[90vh] md:h-[85vh] w-full overflow-hidden">
-                    {/* Backdrop Image */}
-                    <div className="absolute inset-0">
-                        {details.backdrop_path ? (
-                            <Image
-                                src={`https://image.tmdb.org/t/p/original${details.backdrop_path}`}
-                                alt={`Backdrop for ${title}`}
-                                fill
-                                className="object-cover animate-subtle-zoom"
-                                priority
-                            />
-                        ) : (
-                            <div className="w-full h-full bg-zinc-900" />
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/90 to-transparent" />
-                        <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a]/30 to-transparent" />
-                    </div>
 
-                    {/* Hero Content */}
-                    <div className="absolute bottom-0 left-0 w-full p-6 md:p-12 lg:p-16">
-                        <div className="flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-8">
-                            {/* Poster */}
-                            <div className="relative h-64 w-44 md:h-72 md:w-48 flex-shrink-0 rounded-xl overflow-hidden shadow-2xl border-2 border-white/10 animate-slide-in-up">
-                                {details.poster_path ? (
-                                    <Image
-                                        src={`https://image.tmdb.org/t/p/w500${details.poster_path}`}
-                                        alt={`Poster for ${title}`}
-                                        fill
-                                        className="object-cover"
-                                    />
-                                ) : (
-                                    <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
-                                        <FilmIcon className="w-12 h-12 text-zinc-600" />
-                                    </div>
-                                )}
-                            </div>
+            {/* --- FIXED BACKGROUND (The "Kick") --- */}
+            <div className="fixed inset-0 z-0 w-full h-full overflow-hidden pointer-events-none">
+                {details.backdrop_path ? (
+                    <Image
+                        src={`https://image.tmdb.org/t/p/original${details.backdrop_path}`}
+                        alt="Background"
+                        fill
+                        className="object-cover opacity-40 animate-slow-zoom"
+                        priority
+                    />
+                ) : (
+                    <div className="w-full h-full bg-zinc-900" />
+                )}
+                {/* Heavy Vignette for focus */}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/80 to-[#050505]/40" />
+                <div className="absolute inset-0 bg-gradient-to-r from-[#050505] via-transparent to-[#050505]" />
+            </div>
 
-                            {/* Text Info */}
-                            <div className="flex-1 space-y-3 text-center md:text-left">
-                                <div className="flex items-center justify-center md:justify-start gap-3 animate-slide-in-up delay-100">
-                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                                        media_type === 'movie'
-                                            ? 'bg-blue-500/20 text-blue-300'
-                                            : 'bg-green-500/20 text-green-300'
-                                    }`}>
-                                        {media_type === 'movie' ? (
-                                            <FilmIcon className="w-4 h-4" />
-                                        ) : (
-                                            <TvIcon className="w-4 h-4" />
-                                        )}
-                                        {media_type === 'movie' ? 'Movie' : 'TV Series'}
-                                    </span>
-                                    {releaseYear && (
-                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-white/80 text-xs font-bold">
-                                            <CalendarIcon className="w-4 h-4" /> {releaseYear}
-                                        </span>
-                                    )}
-                                </div>
+            {/* --- CONTENT LAYER --- */}
+            <div className="relative mt-60 z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
 
-                                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white leading-none tracking-tight text-shadow-xl animate-slide-in-up delay-200">
-                                    {title}
-                                </h1>
-
-                                {directorOrCreator && directorOrCreator !== 'N/A' && (
-                                    <p className="text-lg md:text-xl text-white/70 font-medium flex items-center justify-center md:justify-start gap-2 animate-slide-in-up delay-300">
-                                        <UserIcon className="w-5 h-5 opacity-70" />
-                                        {media_type === 'movie' ? 'Directed by' : 'Created by'}{' '}
-                                        <span className="text-white">{directorOrCreator}</span>
-                                    </p>
-                                )}
-
-                                <div className="pt-4 animate-slide-in-up delay-400">
-                                    <Link
-                                        href="/auth/login"
-                                        className="inline-flex items-center gap-2.5 px-8 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-full font-bold text-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-rose-600/40 active:scale-100 shadow-md shadow-rose-600/20"
-                                    >
-                                        <PlusIcon className="w-6 h-6" />
-                                        Log Entry
-                                    </Link>
-                                </div>
-                            </div>
+                {/* Navbar */}
+                <nav className="mb-8">
+                    <Link href="/" className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors group">
+                        <div className="p-2 rounded-full bg-white/5 group-hover:bg-white/10">
+                            <ArrowLeftIcon className="w-5 h-5" />
                         </div>
+                        <span className="font-medium tracking-wide">Back to Browse</span>
+                    </Link>
+                </nav>
+
+                {/* Responsive Flex Layout */}
+                <div className="flex flex-col lg:flex-row gap-10 lg:gap-16 items-start">
+
+                    {/* LEFT COLUMN: Sticky on Desktop, Static on Mobile */}
+                    <div className="w-full lg:w-1/4 flex-shrink-0 flex flex-col gap-6 lg:sticky lg:top-8">
+                        {/* Poster */}
+                        <div className="relative aspect-[2/3] w-full max-w-sm mx-auto lg:max-w-full rounded-xl overflow-hidden shadow-2xl shadow-black/60 border border-white/10 group">
+                            {details.poster_path ? (
+                                <Image
+                                    src={`https://image.tmdb.org/t/p/w780${details.poster_path}`}
+                                    alt={`Poster for ${title}`}
+                                    fill
+                                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                                    priority
+                                />
+                            ) : (
+                                <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
+                                    <FilmIcon className="w-20 h-20 text-zinc-600" />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Action Button */}
+                        <Link
+                            href="/auth/login"
+                            className="w-full max-w-sm mx-auto lg:max-w-full flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-rose-600/20 transition-all transform hover:-translate-y-1 active:translate-y-0"
+                        >
+                            <PlusIcon className="w-6 h-6" />
+                            <span>Log to Diary</span>
+                        </Link>
                     </div>
-                </div>
 
-                {/* --- DETAILS SECTION --- */}
-                <div className="max-w-6xl mx-auto px-6 py-16 md:py-24 space-y-16">
-                    {/* Stats Grid */}
-                    <section className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 animate-slide-in-up delay-100">
-                        <StatCard
-                            icon={<CalendarIcon className="w-5 h-5 text-blue-500 dark:text-blue-400" />}
-                            title="Release Year"
-                            value={releaseYear || 'N/A'}
-                        />
-                        <StatCard
-                            icon={<CheckBadgeIcon className="w-5 h-5 text-green-500 dark:text-green-400" />}
-                            title="Status"
-                            value={details.status || 'N/A'}
-                        />
-                        {media_type === 'movie' && 'runtime' in details && details.runtime ? (
-                            <StatCard
-                                icon={<ClockIcon className="w-5 h-5 text-amber-500 dark:text-amber-400" />}
-                                title="Runtime"
-                                value={`${details.runtime} min`}
-                            />
-                        ) : media_type === 'tv' && 'number_of_seasons' in details && details.number_of_seasons ? (
-                            <StatCard
-                                icon={<TvIcon className="w-5 h-5 text-green-500 dark:text-green-400" />}
-                                title="Seasons"
-                                value={details.number_of_seasons}
-                            />
-                        ) : (
-                            <div className="hidden md:block"></div>
-                        )}
+                    {/* RIGHT COLUMN: Scrollable Info */}
+                    <div className="flex-1 w-full min-w-0">
 
-                        {/* Genres Card (spans 2 cols on mobile) */}
-                        {details.genres && details.genres.length > 0 && (
-                            <div className="col-span-2">
-                                <GenreTags genres={details.genres} />
+                        {/* Header */}
+                        <div className="mb-10 animate-in slide-in-from-bottom-4 duration-700 fade-in">
+                            <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-white mb-4 text-glow leading-none">
+                                {title}
+                            </h1>
+
+                            <div className="flex flex-wrap items-center gap-3 mb-6">
+                                <span className={`px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wider ${
+                                    media_type === 'movie'
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-green-600 text-white'
+                                }`}>
+                                    {media_type === 'movie' ? 'MOVIE' : 'TV SERIES'}
+                                </span>
+
+                                <MetaPill icon={<CalendarIcon />} text={releaseYear} />
+                                {runtimeString && <MetaPill icon={<ClockIcon />} text={runtimeString} />}
+                                {details.status && <MetaPill text={details.status} />}
                             </div>
-                        )}
-                    </section>
 
-                    {/* Synopsis */}
-                    <section className="animate-slide-in-up delay-200">
-                        <h2 className="text-3xl font-bold mb-6 flex items-center gap-3 border-b border-zinc-200 dark:border-zinc-800 pb-4">
-                            <SparklesIcon className="w-7 h-7 text-amber-500" /> Synopsis
-                        </h2>
-                        <p className="text-lg leading-relaxed text-zinc-600 dark:text-zinc-300 prose dark:prose-invert max-w-none">
-                            {details.overview || "No synopsis available."}
-                        </p>
-                    </section>
-
-                    {/* Top Cast */}
-                    {details.cast && details.cast.length > 0 && (
-                        <section className="animate-slide-in-up delay-300">
-                            <h2 className="text-3xl font-bold mb-6 flex items-center gap-3 border-b border-zinc-200 dark:border-zinc-800 pb-4">
-                                <UserGroupIcon className="w-7 h-7 text-blue-500" /> Top Cast
-                            </h2>
-                            <div className="flex gap-4 overflow-x-auto py-4 -mx-6 px-6 no-scrollbar">
-                                {details.cast.map((person) => (
-                                    <div key={person.id} className="flex-shrink-0 w-36 text-center group">
-                                        <div className="relative w-36 h-48 rounded-lg overflow-hidden mb-2 shadow-lg border border-zinc-200 dark:border-zinc-800">
-                                            {person.profile_path ? (
-                                                <Image
-                                                    src={`https://image.tmdb.org/t/p/w185${person.profile_path}`}
-                                                    alt={person.name}
-                                                    fill
-                                                    className="object-cover transform transition-transform duration-300 group-hover:scale-105"
-                                                />
-                                            ) : (
-                                                <div className="w-full h-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-                                                    <UserIcon className="w-10 h-10 text-zinc-400 dark:text-zinc-600" />
-                                                </div>
-                                            )}
-                                        </div>
-                                        <p className="font-bold text-sm truncate">{person.name}</p>
-                                        <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">
-                                            {person.character}
-                                        </p>
-                                    </div>
+                            <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-zinc-400 font-medium">
+                                {details.genres.map((g, i) => (
+                                    <span key={g.id} className="text-zinc-300 hover:text-rose-500 transition-colors cursor-default">
+                                        {g.name}
+                                        {i < details.genres.length - 1 && <span className="ml-4 text-zinc-600">/</span>}
+                                    </span>
                                 ))}
                             </div>
-                        </section>
-                    )}
+                        </div>
+
+                        {/* Synopsis & Director */}
+                        <div className="glass-panel p-6 md:p-8 rounded-2xl mb-12 relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                                <FilmIcon className="w-24 h-24 text-white" />
+                            </div>
+
+                            {directorOrCreator && (
+                                <div className="flex items-center gap-4 mb-6 pb-6 border-b border-white/10">
+                                    <div className="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center border border-zinc-700">
+                                        <UserIcon className="w-6 h-6 text-zinc-400" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs uppercase tracking-wider text-zinc-500 font-bold mb-0.5">
+                                            {media_type === 'movie' ? 'Directed by' : 'Created by'}
+                                        </p>
+                                        <p className="text-lg font-bold text-white leading-none">{directorOrCreator}</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            <h3 className="text-zinc-500 font-bold uppercase tracking-widest text-xs mb-3">Synopsis</h3>
+                            <p className="text-lg leading-relaxed text-zinc-200 font-light">
+                                {details.overview || "No synopsis available."}
+                            </p>
+                        </div>
+
+                        {/* THE "WILD" CAST GRID */}
+                        {details.cast && details.cast.length > 0 && (
+                            <div className="animate-in slide-in-from-bottom-8 duration-700 fade-in delay-200">
+                                <SectionTitle title="Top Cast" />
+
+                                {/* RESPONSIVE GRID LOGIC:
+                                   - Mobile: 2 columns (big enough to see)
+                                   - Tablet: 3 columns
+                                   - Desktop: 4 columns
+                                */}
+                                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                                    {details.cast.slice(0, 12).map((actor) => (
+                                        <div key={actor.id} className="group relative aspect-[3/4] rounded-xl overflow-hidden bg-zinc-900 cursor-pointer shadow-lg hover:shadow-2xl hover:shadow-rose-900/20 transition-all duration-300">
+                                            {/* Actor Image - High Res */}
+                                            {actor.profile_path ? (
+                                                <Image
+                                                    src={`https://image.tmdb.org/t/p/w500${actor.profile_path}`}
+                                                    alt={actor.name}
+                                                    fill
+                                                    className="object-cover transition-transform duration-700 group-hover:scale-110"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full flex flex-col items-center justify-center text-zinc-600">
+                                                    <UserIcon className="w-12 h-12" />
+                                                </div>
+                                            )}
+
+                                            {/* Hover Gradient Overlay */}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                                            {/* Info Slide-Up Animation */}
+                                            <div className="absolute bottom-0 left-0 w-full p-4 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out bg-gradient-to-t from-black/90 to-transparent">
+                                                <p className="text-white font-bold text-base leading-tight">
+                                                    {actor.name}
+                                                </p>
+                                                <p className="text-rose-500 text-xs font-bold uppercase tracking-wider mt-1 truncate">
+                                                    {actor.character}
+                                                </p>
+                                            </div>
+
+                                            {/* Static Name Label (Visible when NOT hovering for mobile usability) */}
+                                            <div className="absolute bottom-0 left-0 w-full p-3 bg-gradient-to-t from-black/80 to-transparent md:hidden">
+                                                <p className="text-white text-sm font-bold truncate">{actor.name}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {details.cast.length > 12 && (
+                                    <div className="mt-8 text-center">
+                                        <button className="text-sm font-bold text-zinc-500 hover:text-white uppercase tracking-widest transition-colors">
+                                            View Full Cast +
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
-            </main>
-        </>
+            </div>
+        </div>
     );
 }
