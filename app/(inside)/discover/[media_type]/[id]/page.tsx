@@ -2,10 +2,9 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { getMovieDetails, getSeriesDetails } from '@/lib/actions/cinematic-actions';
-import { ArrowLeftIcon, StarIcon, PlusIcon, FilmIcon } from '@heroicons/react/24/solid';
-// Import the new components
+import { PlusIcon, FilmIcon, StarIcon } from '@heroicons/react/24/solid';
 import { ShareButton, TrailerButton, BackdropGallery } from './media-interactive';
-import BackButton from "./BackButton";
+import BackButton from './BackButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,32 +42,42 @@ export default async function SimpleDetailPage({
     const seasonsString = details.number_of_seasons ? `${details.number_of_seasons} Seasons` : null;
     const rating = details.vote_average ? details.vote_average.toFixed(1) : 'NR';
 
+    // FIX: Determine if we actually have a backdrop to render
+    const hasBackdrop = !!(details.backdrop_path || (details.images?.backdrops?.length > 0));
+
     return (
         <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
 
-            {/* Header with Functional Share Button */}
+            {/* Header */}
             <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 sticky top-0 z-50 backdrop-blur-sm bg-opacity-90 dark:bg-opacity-90">
                 <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
                     <BackButton />
-
                     <div className="flex items-center gap-2">
                         <ShareButton />
                     </div>
                 </div>
             </header>
 
-            {/* Backdrop Section (Auto-Scroll + Soft Hover) */}
-            {/* We pass the images array fetched from the API update */}
+            {/* Backdrop Section */}
+            {/* Only render if we have images, otherwise this component returns null anyway,
+                but we use 'hasBackdrop' variable to control layout below */}
             <BackdropGallery
                 images={details.images?.backdrops || []}
                 fallbackPath={details.backdrop_path}
             />
 
+            {/* If no backdrop, add a spacer so content doesn't hit the header immediately */}
+            {!hasBackdrop && <div className="h-10 w-full" />}
+
             <main className="pb-24">
-                <div className="relative z-10 max-w-7xl mx-auto px-6 -mt-48">
+                {/* FIX: Conditional Margin.
+                    If backdrop exists: -mt-48 (Overlap effect).
+                    If NO backdrop: mt-8 (Standard spacing). */}
+                <div className={`relative z-10 max-w-7xl mx-auto px-6 ${hasBackdrop ? '-mt-48' : 'mt-8'}`}>
 
                     <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 mb-24">
-                        {/* Poster - Added Soft Hover Effect */}
+
+                        {/* Poster Column */}
                         <div className="lg:col-span-2">
                             <div className="relative aspect-[2/3] w-full max-w-md mx-auto overflow-hidden bg-zinc-200 dark:bg-zinc-900 shadow-2xl group border-4 border-white dark:border-zinc-800 rounded-sm">
                                 {details.poster_path ? (
@@ -77,7 +86,6 @@ export default async function SimpleDetailPage({
                                             src={`https://image.tmdb.org/t/p/w500${details.poster_path}`}
                                             alt={title}
                                             fill
-                                            // Soft, graceful hover using ease-in-out and longer duration
                                             className="object-cover transition-transform duration-700 ease-in-out group-hover:scale-105"
                                             priority
                                         />
@@ -91,7 +99,12 @@ export default async function SimpleDetailPage({
                             </div>
                         </div>
 
-                        <div className="lg:col-span-3 space-y-8 lg:mt-56">
+                        {/* Info Column */}
+                        {/* FIX: Conditional Margin.
+                            If backdrop exists: lg:mt-56 (Push down to clear image area).
+                            If NO backdrop: lg:mt-0 (Align to top with poster). */}
+                        <div className={`lg:col-span-3 space-y-8 ${hasBackdrop ? 'lg:mt-56' : 'lg:mt-0'}`}>
+
                             <div className="space-y-3">
                                 <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-light tracking-tight text-zinc-900 dark:text-zinc-100 leading-tight">
                                     {title}
@@ -130,10 +143,9 @@ export default async function SimpleDetailPage({
                                 </div>
                             )}
 
-                            {/* Actions with Functional Trailer Button */}
+                            {/* Actions */}
                             <div className="flex flex-wrap items-center gap-3">
                                 <TrailerButton videos={details.videos?.results || []} />
-
                                 <Link
                                     href={`/log?item=${id}&type=${media_type}`}
                                     className="px-8 py-3 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all font-medium"
