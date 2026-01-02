@@ -3,34 +3,31 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { motion, AnimatePresence, PanInfo } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { CinematicSearchResult } from '@/lib/actions/cinematic-actions';
 import {
     FilmIcon,
     TvIcon,
+    PlayIcon,
+    InformationCircleIcon,
     ChevronLeftIcon,
     ChevronRightIcon
 } from '@heroicons/react/24/solid';
 
-const AUTO_SCROLL_INTERVAL = 6000;
-
-const contentVariants = {
-    initial: { opacity: 0, y: 20 },
-    animate: { opacity: 1, y: 0 },
-    exit: { opacity: 0, y: -20 }
-};
+const AUTO_SCROLL_INTERVAL = 8000;
 
 export default function TrendingHero({ items }: { items: CinematicSearchResult[] }) {
-    const [[page, direction], setPage] = useState([0, 0]);
-    const [isHovered, setIsHovered] = useState(false);
+    const [index, setIndex] = useState(0);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-    const index = ((page % items.length) + items.length) % items.length;
+    // Safe items check
+    if (!items || items.length === 0) return null;
+
     const currentItem = items[index];
 
     const paginate = useCallback((newDirection: number) => {
-        setPage([page + newDirection, newDirection]);
-    }, [page]);
+        setIndex((prev) => (prev + newDirection + items.length) % items.length);
+    }, [items.length]);
 
     const startAutoScroll = useCallback(() => {
         if (intervalRef.current) clearInterval(intervalRef.current);
@@ -39,145 +36,162 @@ export default function TrendingHero({ items }: { items: CinematicSearchResult[]
         }, AUTO_SCROLL_INTERVAL);
     }, [paginate]);
 
-    const stopAutoScroll = () => {
-        if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-
     useEffect(() => {
-        if (!isHovered) {
-            startAutoScroll();
-        }
-        return () => stopAutoScroll();
-    }, [isHovered, startAutoScroll]);
+        startAutoScroll();
+        return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+    }, [startAutoScroll]);
 
-    const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-        const swipe = Math.abs(info.offset.x) * info.velocity.x;
-
-        if (swipe < -10000) {
-            paginate(1);
-        } else if (swipe > 10000) {
-            paginate(-1);
-        }
+    const handleManualNavigate = (dir: number) => {
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        paginate(dir);
+        startAutoScroll();
     };
 
     return (
-        <div
-            className="relative w-full h-[65vh] md:h-[85vh] overflow-hidden bg-black group"
-            onMouseEnter={() => { setIsHovered(true); stopAutoScroll(); }}
-            onMouseLeave={() => { setIsHovered(false); startAutoScroll(); }}
-        >
-            <AnimatePresence initial={false}>
+        <section className="relative w-full h-[60vh] md:h-[80vh] overflow-hidden bg-zinc-950 group border-b border-zinc-800">
+
+            {/* --- BACKGROUND LAYER --- */}
+            <AnimatePresence initial={false} mode="popLayout">
                 <motion.div
-                    key={page}
-                    initial={{ opacity: 0, scale: 1.1 }}
+                    key={currentItem.id}
+                    className="absolute inset-0 z-0"
+                    initial={{ opacity: 0, scale: 1.05 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 0.7 }}
-                    className="absolute inset-0 z-0"
+                    transition={{ duration: 1.2, ease: "easeInOut" }}
                 >
                     <Image
                         src={`https://image.tmdb.org/t/p/original${currentItem.backdrop_path}`}
                         alt={currentItem.title}
                         fill
-                        className="object-cover opacity-60"
+                        className="object-cover"
                         priority
                     />
 
-                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-                    <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/20 to-transparent" />
+                    {/* OPTIMIZED VIGNETTE: Only covers bottom 60% to let top shine */}
+                    <div className="absolute inset-x-0 bottom-0 h-[60%] bg-gradient-to-t from-zinc-950 via-zinc-900/80 to-transparent" />
+
+                    {/* Subtle left gradient for desktop text legibility */}
+                    <div className="absolute inset-y-0 left-0 w-[40%] bg-gradient-to-r from-zinc-950/60 to-transparent hidden md:block" />
                 </motion.div>
             </AnimatePresence>
 
-            <div className="absolute inset-0 z-10 flex flex-col justify-end pb-12 md:pb-24 px-6 md:px-16">
-                <AnimatePresence mode='wait' custom={direction}>
-                    <motion.div
-                        key={page}
-                        custom={direction}
-                        variants={contentVariants}
-                        initial="initial"
-                        animate="animate"
-                        exit="exit"
-                        transition={{ duration: 0.4, ease: "easeOut" }}
-                        className="max-w-3xl"
-                    >
-                        <div className="flex items-center gap-2 mb-4">
-                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-md ${
-                                currentItem.media_type === 'movie'
-                                    ? 'bg-blue-500/20 text-blue-100 border border-blue-500/30'
-                                    : 'bg-green-500/20 text-green-100 border border-green-500/30'
-                            }`}>
-                                {currentItem.media_type === 'movie' ? <FilmIcon className="w-3 h-3" /> : <TvIcon className="w-3 h-3" />}
-                                {currentItem.media_type === 'movie' ? 'Movie' : 'Series'}
-                            </span>
-                            <span className="text-white/60 text-xs font-medium uppercase tracking-widest border border-white/20 px-2 py-1 rounded-full">
-                                Trending
-                            </span>
-                        </div>
-
-                        <h1 className="text-4xl md:text-7xl font-black text-white leading-tight drop-shadow-lg mb-4">
-                            {currentItem.title}
-                        </h1>
-
-                        <p className="text-white/90 text-sm md:text-lg line-clamp-3 md:line-clamp-2 max-w-xl leading-relaxed mb-8 drop-shadow-md">
-                            {currentItem.overview}
-                        </p>
-
-                        <div className="flex items-center gap-4">
-                            <Link
-                                href={`/discover/${currentItem.media_type}/${currentItem.id}`}
-                                className="px-8 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-all transform hover:scale-105 shadow-xl shadow-red-900/20 flex items-center gap-2"
+            {/* --- CONTENT LAYER --- */}
+            <div className="absolute inset-0 z-10 flex flex-col justify-end pb-12 md:pb-20 px-4 md:px-12">
+                <div className="max-w-3xl w-full">
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={currentItem.id}
+                            initial="hidden"
+                            animate="visible"
+                            exit="hidden"
+                            variants={{
+                                visible: { transition: { staggerChildren: 0.05 } }
+                            }}
+                            className="space-y-3 md:space-y-5"
+                        >
+                            {/* 1. Meta Badges (Compact) */}
+                            <motion.div
+                                variants={{
+                                    hidden: { opacity: 0, y: 10 },
+                                    visible: { opacity: 1, y: 0 }
+                                }}
+                                className="flex items-center gap-2"
                             >
-                                <span>Watch Now</span>
-                            </Link>
-                            <button className="px-8 py-3 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white font-semibold rounded-lg transition-all border border-white/10">
-                                + My List
-                            </button>
-                        </div>
-                    </motion.div>
-                </AnimatePresence>
+                                {/* Media Type */}
+                                <div className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] md:text-xs font-bold uppercase tracking-wider backdrop-blur-md border ${
+                                    currentItem.media_type === 'movie'
+                                        ? 'bg-blue-500/20 text-blue-100 border-blue-500/30'
+                                        : 'bg-green-500/20 text-green-100 border-green-500/30'
+                                }`}>
+                                    {currentItem.media_type === 'movie' ? <FilmIcon className="w-3 h-3" /> : <TvIcon className="w-3 h-3" />}
+                                    <span>{currentItem.media_type === 'movie' ? 'Movie' : 'TV'}</span>
+                                </div>
+
+                                <div className="h-3 w-px bg-white/30" />
+
+                                {/* Year */}
+                                {currentItem.release_date && (
+                                    <span className="text-zinc-300 text-[10px] md:text-xs font-semibold">
+                                        {currentItem.release_date.split('-')[0]}
+                                    </span>
+                                )}
+                            </motion.div>
+
+                            {/* 2. Title (Scaled Down) */}
+                            <motion.h1
+                                variants={{
+                                    hidden: { opacity: 0, y: 10 },
+                                    visible: { opacity: 1, y: 0 }
+                                }}
+                                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white leading-[0.95] tracking-tight drop-shadow-lg"
+                            >
+                                {currentItem.title}
+                            </motion.h1>
+
+                            {/* 3. Description (Constrained width & lines) */}
+                            <motion.p
+                                variants={{
+                                    hidden: { opacity: 0, y: 10 },
+                                    visible: { opacity: 1, y: 0 }
+                                }}
+                                className="text-zinc-300 text-xs sm:text-sm md:text-base font-medium leading-relaxed line-clamp-2 md:line-clamp-3 max-w-lg drop-shadow-md"
+                            >
+                                {currentItem.overview}
+                            </motion.p>
+
+                            {/* 4. Actions (Compact Buttons) */}
+                            <motion.div
+                                variants={{
+                                    hidden: { opacity: 0, y: 10 },
+                                    visible: { opacity: 1, y: 0 }
+                                }}
+                                className="flex items-center gap-3 pt-2"
+                            >
+                                <Link
+                                    href={`/discover/${currentItem.media_type}/${currentItem.id}`}
+                                    className="flex items-center gap-2 px-5 py-2.5 md:px-7 md:py-3 bg-rose-600 hover:bg-rose-700 text-white text-xs md:text-sm font-bold rounded-lg transition-all shadow-lg shadow-rose-900/20 active:scale-95"
+                                >
+                                    <PlayIcon className="w-4 h-4 md:w-5 md:h-5" />
+                                    <span>View Details</span>
+                                </Link>
+                            </motion.div>
+                        </motion.div>
+                    </AnimatePresence>
+                </div>
             </div>
 
-            <div className="absolute inset-0 z-20 pointer-events-none flex justify-between items-center px-4">
-                <button
-                    onClick={() => paginate(-1)}
-                    className="pointer-events-auto p-3 rounded-full bg-black/20 hover:bg-black/60 text-white/70 hover:text-white backdrop-blur-sm transition-all opacity-0 group-hover:opacity-100 -translate-x-4 group-hover:translate-x-0"
-                    aria-label="Previous Slide"
-                >
+            {/* --- CONTROLS --- */}
+
+            {/* Arrows (Hidden on Mobile to save space, visible on hover desktop) */}
+            <div className="hidden md:flex absolute inset-0 z-20 pointer-events-none justify-between items-center px-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <button onClick={() => handleManualNavigate(-1)} className="pointer-events-auto p-2 rounded-full bg-black/40 text-white backdrop-blur-sm hover:bg-black/60 transition-colors">
                     <ChevronLeftIcon className="w-8 h-8" />
                 </button>
-
-                <button
-                    onClick={() => paginate(1)}
-                    className="pointer-events-auto p-3 rounded-full bg-black/20 hover:bg-black/60 text-white/70 hover:text-white backdrop-blur-sm transition-all opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0"
-                    aria-label="Next Slide"
-                >
+                <button onClick={() => handleManualNavigate(1)} className="pointer-events-auto p-2 rounded-full bg-black/40 text-white backdrop-blur-sm hover:bg-black/60 transition-colors">
                     <ChevronRightIcon className="w-8 h-8" />
                 </button>
             </div>
 
-            <motion.div
-                className="absolute inset-0 z-30 md:hidden"
-                drag="x"
-                dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={1}
-                onDragEnd={handleDragEnd}
-            />
-
-            <div className="absolute bottom-8 right-8 z-30 flex gap-2">
+            {/* Indicators */}
+            <div className="absolute bottom-6 right-6 z-30 flex gap-1.5">
                 {items.map((_, i) => (
                     <button
                         key={i}
                         onClick={() => {
-                            setPage([i, i > index ? 1 : -1]);
+                            if (intervalRef.current) clearInterval(intervalRef.current);
+                            setIndex(i);
+                            startAutoScroll();
                         }}
-                        className="group relative py-2"
-                    >
-                        <div className={`h-1 rounded-full transition-all duration-300 ${
-                            i === index ? 'w-8 bg-white' : 'w-2 bg-white/40 group-hover:bg-white/70'
-                        }`} />
-                    </button>
+                        className={`h-1 rounded-full transition-all duration-500 ${
+                            i === index
+                                ? 'w-6 bg-rose-500'
+                                : 'w-1.5 bg-white/30 hover:bg-white/60'
+                        }`}
+                        aria-label={`Go to slide ${i + 1}`}
+                    />
                 ))}
             </div>
-        </div>
+        </section>
     );
 }

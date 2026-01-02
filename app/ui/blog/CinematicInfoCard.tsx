@@ -2,27 +2,31 @@
 
 import { useState, useTransition, useEffect } from 'react';
 import Image from 'next/image';
-// ✨ 1. IMPORT from your 'cinematic-actions' library
+import Link from 'next/link'; // ✨ Import Link for navigation
 import { getMovieDetails, getSeriesDetails } from '@/lib/actions/cinematic-actions';
-import { UserGroupIcon, XMarkIcon, FilmIcon, TvIcon } from '@heroicons/react/24/solid'; // ✨ 2. Added TvIcon
+import {
+    XMarkIcon,
+    FilmIcon,
+    TvIcon,
+    ArrowRightIcon,
+    StarIcon
+} from '@heroicons/react/24/solid';
 import LoadingSpinner from '@/app/ui/loading-spinner';
-import { Movie, Series } from '@/lib/definitions'; // ✨ 3. Imported Movie and Series
+import { Movie, Series } from '@/lib/definitions';
 
-// ✨ 4. Created a unified type for API details
+// Simplified API Details (Just enough for a teaser)
 type ApiDetails = {
     overview: string;
-    cast: { name: string; profile_path: string; character: string }[];
-    genres: { id: number; name: string }[];
-    director?: string;
-    creator?: string;
+    vote_average?: number;
+    runtime?: number; // minutes
     number_of_seasons?: number;
+    genres: { id: number; name: string }[];
 };
 
-// ✨ 5. Updated Props
 interface CinematicInfoCardProps {
     tmdbId: number;
-    initialData: Movie | Series; // Now accepts Movie or Series
-    mediaType: 'movie' | 'tv';  // This prop is required
+    initialData: Movie | Series;
+    mediaType: 'movie' | 'tv';
     isOpen?: boolean;
     onClose?: () => void;
 }
@@ -41,178 +45,165 @@ export default function CinematicInfoCard({
 
     const isModalOpen = isControlled ? isOpen : internalIsOpen;
 
-    // ✨ 6. Updated useEffect to fetch based on mediaType
+    // --- Data Fetching (Keep it simple) ---
     useEffect(() => {
         if (isModalOpen && !apiDetails) {
             startTransition(async () => {
                 try {
                     if (mediaType === 'movie') {
-                        const movieDetails = await getMovieDetails(tmdbId);
-                        setApiDetails(movieDetails);
-                    } else if (mediaType === 'tv') {
-                        const seriesDetails = await getSeriesDetails(tmdbId);
-                        setApiDetails(seriesDetails);
+                        const data = await getMovieDetails(tmdbId);
+                        setApiDetails(data);
+                    } else {
+                        const data = await getSeriesDetails(tmdbId);
+                        setApiDetails(data);
                     }
                 } catch (error) {
-                    console.error("Failed to fetch cinematic details from API:", error);
+                    console.error("Failed to fetch teaser details:", error);
                 }
             });
-        } else if (!isModalOpen) {
-            setApiDetails(null);
         }
-    }, [isModalOpen, tmdbId, apiDetails, startTransition, mediaType]);
-
-    const handleOpen = () => {
-        if (!isControlled) {
-            setInternalIsOpen(true);
-        }
-    };
+    }, [isModalOpen, tmdbId, mediaType, apiDetails]);
 
     const handleClose = () => {
-        if (isControlled) {
-            onClose();
-        } else {
-            setInternalIsOpen(false);
-        }
+        if (isControlled && onClose) onClose();
+        else setInternalIsOpen(false);
     };
 
-    // ✨ 7. Unified displayDetails
-    const displayDetails = {
-        ...initialData,
-        ...apiDetails
-    };
+    // Merge Data
+    const displayDetails = { ...initialData, ...apiDetails };
+    const backdropUrl = displayDetails.backdrop_url || displayDetails.poster_url;
+
+    // Construct the Deep Link
+    const deepLinkUrl = `/discover/${mediaType}/${tmdbId}`;
 
     return (
         <>
-            {/* --- Uncontrolled Button (Uses initialData) --- */}
-            {!isControlled && (
-                <div className="my-6 relative ">
-                    <button
-                        onClick={handleOpen}
-                        className="group relative w-full overflow-hidden rounded-2xl bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/40 p-4 md:p-6 text-left shadow-lg ring-2 ring-blue-100/40 backdrop-blur-sm transition-all duration-500 hover:scale-[1.01] hover:shadow-xl hover:ring-blue-300/60 dark:from-slate-900/95 dark:via-blue-950/30 dark:to-indigo-950/40 dark:ring-blue-800/40 dark:hover:ring-blue-500/60"
+            {/* Modal Overlay */}
+            {isModalOpen && (
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+                    onClick={handleClose}
+                >
+                    {/* The "Teaser Ticket" Card */}
+                    <div
+                        className="relative w-full max-w-lg overflow-hidden rounded-3xl bg-zinc-900 shadow-2xl ring-1 ring-white/10 animate-in zoom-in-95 duration-300"
+                        onClick={(e) => e.stopPropagation()}
                     >
-                        {/* ... (rest of the button styling) ... */}
-                        <div className="relative flex flex-col md:flex-row items-center md:items-start gap-4 md:gap-6">
-                            {initialData.poster_url && (
-                                <div className="relative flex-shrink-0">
-                                    <div className="overflow-hidden rounded-xl shadow-lg ring-2 ring-white/40 transition-all duration-500 group-hover:scale-105 group-hover:ring-blue-200/60 dark:ring-slate-700/40 dark:group-hover:ring-blue-400/40">
-                                        <Image src={initialData.poster_url} alt={`Poster for ${initialData.title}`} width={80} height={120} className="md:w-24 md:h-36 object-cover" />
-                                    </div>
-                                    <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-blue-500/20 via-indigo-500/20 to-purple-500/20 opacity-0 blur transition-opacity duration-500 group-hover:opacity-40" />
-                                    {/* ✨ 8. Conditional Icon on button */}
-                                    <div className={`absolute -bottom-1 -right-1 rounded-full p-1.5 shadow-md ring-2 ring-white dark:ring-slate-800 ${mediaType === 'movie' ? 'bg-blue-600 dark:bg-blue-500' : 'bg-green-600 dark:bg-green-500'}`}>
-                                        {mediaType === 'movie' ? <FilmIcon className="h-3 w-3 text-white" /> : <TvIcon className="h-3 w-3 text-white" />}
-                                    </div>
-                                </div>
-                            )}
-                            <div className="flex-grow text-center md:text-left">
-                                <div className="mb-2">
-                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-100/80 via-orange-100/60 to-amber-100/80 px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-amber-800 ring-1 ring-amber-200/50 dark:from-amber-900/40 dark:via-orange-900/30 dark:to-amber-900/40 dark:text-amber-300 dark:ring-amber-700/30">
-                                        <FilmIcon className="h-2.5 w-2.5" /> In this post
-                                    </span>
-                                </div>
-                                <h3 className="mb-2 text-2xl md:text-3xl font-bold leading-tight tracking-tight text-slate-900 transition-colors duration-500 group-hover:text-blue-700 dark:text-slate-100 dark:group-hover:text-blue-400">{initialData.title || 'N/A'}</h3>
-                                <p className="mb-3 md:mb-4 text-sm md:text-base text-slate-600 dark:text-slate-400">Released: <span className="font-semibold">{initialData.release_date || 'N/A'}</span></p>
-                                {/* ... (rest of the button) ... */}
+                        {/* 1. Cinematic Header (Backdrop) */}
+                        <div className="relative h-48 sm:h-56 w-full">
+                            <Image
+                                src={backdropUrl || '/placeholder-backdrop.jpg'}
+                                alt="Backdrop"
+                                fill
+                                className="object-cover opacity-60"
+                                unoptimized
+                            />
+                            {/* Gradient Overlay for Text Readability */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-zinc-900/40 to-transparent" />
+
+                            {/* Close Button */}
+                            <button
+                                onClick={handleClose}
+                                className="absolute top-4 right-4 p-2 rounded-full bg-black/40 text-white/70 hover:bg-black/60 hover:text-white backdrop-blur-md transition-colors"
+                            >
+                                <XMarkIcon className="w-5 h-5" />
+                            </button>
+
+                            {/* Floating Badge */}
+                            <div className="absolute top-4 left-4">
+                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide backdrop-blur-md border ${
+                                    mediaType === 'movie'
+                                        ? 'bg-blue-500/20 border-blue-500/30 text-blue-100'
+                                        : 'bg-green-500/20 border-green-500/30 text-green-100'
+                                }`}>
+                                    {mediaType === 'movie' ? <FilmIcon className="w-3 h-3" /> : <TvIcon className="w-3 h-3" />}
+                                    {mediaType === 'movie' ? 'Movie' : 'Series'}
+                                </span>
                             </div>
                         </div>
-                    </button>
-                    {/* ... */}
-                </div>
-            )}
 
-            {/* --- Modal --- */}
-            {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-2 md:p-4 backdrop-blur-xl animate-fade-in" onClick={handleClose}>
-                    <div className="relative flex flex-col w-full max-w-6xl max-h-[95vh] md:max-h-[90vh] transform rounded-2xl md:rounded-3xl bg-white/96 shadow-2xl ring-2 ring-black/10 backdrop-blur-2xl transition-all dark:bg-slate-900/96 dark:ring-white/10" onClick={(e) => e.stopPropagation()}>
-                        <button onClick={handleClose} className="absolute right-3 top-3 md:right-6 md:top-6 z-20 rounded-full bg-slate-100/90 p-2 md:p-3 text-slate-500 transition-all duration-200 hover:bg-slate-200 hover:text-slate-900 hover:scale-110 dark:bg-slate-800/90 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-white">
-                            <XMarkIcon className="h-5 w-5 md:h-6 md:w-6" />
-                        </button>
-                        <div className="flex-grow overflow-y-auto p-4 md:p-8">
-                            <div className="mb-6 md:mb-8 text-center">
-                                {/* ✨ 9. Conditional Header */}
-                                <div className={`inline-flex items-center gap-2 rounded-full px-3 md:px-4 py-1.5 md:py-2 ${
-                                    mediaType === 'movie'
-                                        ? 'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30'
-                                        : 'bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30'
-                                }`}>
-                                    {mediaType === 'movie' ? (
-                                        <FilmIcon className="h-4 w-4 md:h-5 md:w-5 text-blue-600 dark:text-blue-400" />
-                                    ) : (
-                                        <TvIcon className="h-4 w-4 md:h-5 md:w-5 text-green-600 dark:text-green-400" />
-                                    )}
-                                    <span className={`text-xs md:text-sm font-semibold uppercase tracking-wide ${
-                                        mediaType === 'movie'
-                                            ? 'text-blue-700 dark:text-blue-300'
-                                            : 'text-green-700 dark:text-green-300'
-                                    }`}>
-                                        {mediaType === 'movie' ? 'Featured Movie Details' : 'Featured Series Details'}
-                                    </span>
+                        {/* 2. Content Body */}
+                        <div className="relative px-6 pb-6 -mt-12 flex flex-col gap-4">
+
+                            {/* Row: Poster + Title */}
+                            <div className="flex gap-4">
+                                {/* Poster (Elevated) */}
+                                <div className="shrink-0 relative w-24 h-36 rounded-lg overflow-hidden shadow-2xl ring-2 ring-zinc-800 bg-zinc-800">
+                                    <Image
+                                        src={displayDetails.poster_url || '/placeholder.jpg'}
+                                        alt="Poster"
+                                        fill
+                                        className="object-cover"
+                                        unoptimized
+                                    />
                                 </div>
-                            </div>
-                            <div className="grid grid-cols-1 gap-6 md:gap-8 lg:grid-cols-3">
-                                <div className="lg:col-span-1">
-                                    {displayDetails.poster_url && (
-                                        <div className="group relative mb-4 md:mb-6 overflow-hidden rounded-xl md:rounded-2xl shadow-xl ring-2 md:ring-4 ring-black/10 dark:ring-white/10 max-w-xs mx-auto lg:max-w-none">
-                                            <Image src={displayDetails.poster_url.replace('w500', 'w780')} alt={`Poster for ${displayDetails.title}`} width={300} height={450} className="w-full object-cover" />
-                                        </div>
-                                    )}
-                                    <div className="space-y-3 md:space-y-4">
-                                        {/* ✨ 10. Conditional Director/Creator Field */}
-                                        <div className="rounded-lg md:rounded-xl bg-slate-50 p-3 md:p-4 dark:bg-slate-800/50">
-                                            <h4 className="font-bold text-blue-700 dark:text-blue-400 mb-1 text-sm md:text-base">
-                                                {mediaType === 'movie' ? 'Director' : 'Creator'}
-                                            </h4>
-                                            <p className="text-slate-800 dark:text-slate-200 text-sm md:text-base">
-                                                {displayDetails.director || displayDetails.creator || 'N/A'}
-                                            </p>
-                                        </div>
-                                        {/* ✨ 11. Added Seasons Field */}
-                                        {displayDetails.number_of_seasons && (
-                                            <div className="rounded-lg md:rounded-xl bg-slate-50 p-3 md:p-4 dark:bg-slate-800/50">
-                                                <h4 className="font-bold text-blue-700 dark:text-blue-400 mb-1 text-sm md:text-base">Seasons</h4>
-                                                <p className="text-slate-800 dark:text-slate-200 text-sm md:text-base">{displayDetails.number_of_seasons}</p>
-                                            </div>
-                                        )}
-                                        {displayDetails.genres && (
-                                            <div className="space-y-2">
-                                                <h4 className="font-bold text-blue-700 dark:text-blue-400 text-sm md:text-base">Genres</h4>
-                                                <div className="flex flex-wrap gap-1.5 md:gap-2">
-                                                    {displayDetails.genres.map((genre) => (<span key={genre.id} className="text-xs px-2 md:px-3 py-1 md:py-1.5 bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 dark:from-blue-900/50 dark:to-indigo-900/50 dark:text-blue-300 rounded-full font-semibold">{genre.name}</span>))}
+
+                                {/* Header Info */}
+                                <div className="flex-1 pt-14">
+                                    <h2 className="text-2xl font-black text-white leading-tight mb-1 line-clamp-2">
+                                        {displayDetails.title}
+                                    </h2>
+                                    <div className="flex flex-wrap items-center gap-2 text-sm text-zinc-400">
+                                        <span>{displayDetails.release_date?.split('-')[0]}</span>
+                                        {displayDetails.vote_average && (
+                                            <>
+                                                <span className="w-1 h-1 rounded-full bg-zinc-600" />
+                                                <div className="flex items-center gap-1 text-yellow-500 font-bold">
+                                                    <StarIcon className="w-3.5 h-3.5" />
+                                                    {displayDetails.vote_average.toFixed(1)}
                                                 </div>
-                                            </div>
+                                            </>
+                                        )}
+                                        {displayDetails.number_of_seasons && (
+                                            <>
+                                                <span className="w-1 h-1 rounded-full bg-zinc-600" />
+                                                <span>{displayDetails.number_of_seasons} Seasons</span>
+                                            </>
                                         )}
                                     </div>
                                 </div>
-                                <div className="lg:col-span-2">
-                                    <h3 className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 dark:text-slate-100 mb-2">{displayDetails.title || 'N/A'}</h3>
-                                    <p className="text-lg md:text-xl text-slate-500 dark:text-slate-400 mb-6 md:mb-8">Released: {displayDetails.release_date || 'N/A'}</p>
-                                    {isPending ? (<div className="flex justify-center items-center h-32 md:h-64"><LoadingSpinner /></div>) : (
-                                        <div className="space-y-6 md:space-y-8">
-                                            {displayDetails.overview && (<div><h4 className="text-xl md:text-2xl font-bold text-blue-700 dark:text-blue-400 mb-3 md:mb-4">Synopsis</h4><p className="text-base md:text-lg leading-relaxed text-slate-700 dark:text-slate-300">{displayDetails.overview}</p></div>)}
-                                            {displayDetails.cast && displayDetails.cast.length > 0 && (
-                                                <div>
-                                                    <h4 className="text-xl md:text-2xl font-bold text-blue-700 dark:text-blue-400 mb-4 md:mb-6">Main Cast</h4>
-                                                    <div className="grid grid-cols-1 gap-3 md:gap-4 sm:grid-cols-2">
-                                                        {displayDetails.cast.slice(0, 8).map((actor) => (
-                                                            <div key={actor.name} className="flex items-center gap-3 md:gap-4 p-2.5 md:p-3 rounded-lg md:rounded-xl bg-slate-50/80 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                                                                {actor.profile_path ? (<div className="flex-shrink-0"><Image src={`https://image.tmdb.org/t/p/w185${actor.profile_path}`} alt={actor.name} width={48} height={48} className="w-12 h-12 md:w-14 md:h-14 rounded-full object-cover ring-2 ring-white dark:ring-slate-700" /></div>) : (<div className="flex h-12 w-12 md:h-14 md:w-14 items-center justify-center rounded-full bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-400 flex-shrink-0"><UserGroupIcon className="h-6 w-6 md:h-7 md:w-7" /></div>)}
-                                                                <div className="min-w-0 flex-1"><p className="font-bold text-slate-900 dark:text-slate-100 truncate text-sm md:text-base">{actor.name}</p><p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 truncate">{actor.character}</p></div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
+                            </div>
+
+                            {/* 3. Short Synopsis */}
+                            <div className="min-h-[80px]">
+                                {isPending ? (
+                                    <div className="flex justify-center py-4"><LoadingSpinner /></div>
+                                ) : (
+                                    <p className="text-sm text-zinc-300 leading-relaxed line-clamp-3">
+                                        {displayDetails.overview || "No synopsis available."}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* 4. Genres Chips */}
+                            {!isPending && displayDetails.genres && (
+                                <div className="flex flex-wrap gap-2">
+                                    {displayDetails.genres.slice(0, 3).map(g => (
+                                        <span key={g.id} className="text-xs px-2.5 py-1 rounded-md bg-white/5 border border-white/5 text-zinc-300">
+                                            {g.name}
+                                        </span>
+                                    ))}
+                                    {displayDetails.genres.length > 3 && (
+                                        <span className="text-xs px-2.5 py-1 text-zinc-500">+{displayDetails.genres.length - 3}</span>
                                     )}
                                 </div>
+                            )}
+
+                            {/* 5. Big Call-To-Action Button */}
+                            <div className="mt-2 pt-4 border-t border-white/5">
+                                <Link
+                                    href={deepLinkUrl}
+                                    className="group w-full flex items-center justify-center gap-2 bg-white text-black font-bold py-3.5 rounded-xl hover:bg-indigo-500 hover:text-white transition-all duration-300"
+                                >
+                                    <span>Full Details & Cast</span>
+                                    <ArrowRightIcon className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                </Link>
                             </div>
+
                         </div>
                     </div>
                 </div>
             )}
-            {/* ... (keep the style tag) ... */}
-            <style jsx global>{`@keyframes fadeIn {from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); }}.animate-fade-in {animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;}`}</style>
         </>
     );
 }
