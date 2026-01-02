@@ -243,7 +243,7 @@ export async function searchCinematic(query: string): Promise<CinematicSearchRes
 
     try {
         const res = await fetch(
-            `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&include_adult=false`
+            `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&include_adult=true`
         );
 
         if (!res.ok) return [];
@@ -261,55 +261,40 @@ export async function searchCinematic(query: string): Promise<CinematicSearchRes
 
 export async function getMovieDetails(movieId: number) {
     const supabase = await createClient();
-
-    // 1. Check DB Cache
-    const { data: cached } = await supabase
-        .from('movies')
-        .select('*')
-        .eq('tmdb_id', movieId)
-        .maybeSingle();
-
-    if (cached && cached.overview) {
-        return {
-            title: cached.title,
-            overview: cached.overview,
-            poster_path: cached.poster_url?.replace('https://image.tmdb.org/t/p/w500', ''),
-            backdrop_path: cached.backdrop_url?.replace('https://image.tmdb.org/t/p/original', ''),
-            release_date: cached.release_date,
-            director: cached.director,
-            genres: cached.genres,
-            cast: cached.cast
-        };
-    }
-
-    // 2. Fetch TMDB
     const TMDB_API_KEY = process.env.TMDB_API_KEY;
     if (!TMDB_API_KEY) throw new Error("TMDB API Key not configured.");
 
+    // 1. Fetch TMDB with appended videos/images/credits (Single efficient call)
     try {
-        const [movieRes, creditsRes] = await Promise.all([
-            fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${TMDB_API_KEY}`),
-            fetch(`https://api.themoviedb.org/3/movie/${movieId}/credits?api_key=${TMDB_API_KEY}`)
-        ]);
+        const res = await fetch(
+            `https://api.themoviedb.org/3/movie/${movieId}?api_key=${TMDB_API_KEY}&append_to_response=videos,images,credits`,
+            { next: { revalidate: 3600 } }
+        );
 
-        if (!movieRes.ok || !creditsRes.ok) throw new Error("Failed to fetch movie details");
+        if (!res.ok) throw new Error("Failed to fetch movie details");
 
-        const movie = await movieRes.json() as TmdbItemDetails;
-        const credits = await creditsRes.json() as TmdbCreditsResponse;
+        const data = await res.json();
 
-        const director = credits.crew.find((person) => person.job === 'Director')?.name || 'N/A';
+        const director = data.credits?.crew?.find((p: any) => p.job === 'Director')?.name || 'N/A';
+
         const details = {
-            title: movie.title!,
-            overview: movie.overview,
-            poster_path: movie.poster_path,
-            backdrop_path: movie.backdrop_path,
-            release_date: movie.release_date!,
-            cast: credits.cast.slice(0, 10),
+            title: data.title,
+            overview: data.overview,
+            poster_path: data.poster_path,
+            backdrop_path: data.backdrop_path,
+            release_date: data.release_date,
+            cast: data.credits?.cast?.slice(0, 12) || [],
             director,
-            genres: movie.genres
+            genres: data.genres,
+            runtime: data.runtime,
+            tagline: data.tagline,
+            vote_average: data.vote_average,
+            // PASS THROUGH VIDEOS AND IMAGES
+            videos: data.videos,
+            images: data.images
         };
 
-        // 3. Upsert Cache
+        // 2. Cache essential data to Supabase (Optional: Fire and forget)
         supabase.from('movies').upsert({
             tmdb_id: movieId,
             title: details.title,
@@ -319,10 +304,11 @@ export async function getMovieDetails(movieId: number) {
             director: details.director,
             overview: details.overview,
             genres: details.genres,
-            "cast": details.cast
-        }).then(({ error }) => { if (error) console.error("Movie cache error:", error); });
+            cast: details.cast
+        }).then(({ error }) => { if (error) console.error("Cache error:", error); });
 
         return details;
+
     } catch (error) {
         console.error("TMDB Fetch Error:", error);
         throw new Error("Could not fetch movie details.");
@@ -331,57 +317,40 @@ export async function getMovieDetails(movieId: number) {
 
 export async function getSeriesDetails(seriesId: number) {
     const supabase = await createClient();
-
-    // 1. Check DB Cache
-    const { data: cached } = await supabase
-        .from('series')
-        .select('*')
-        .eq('tmdb_id', seriesId)
-        .maybeSingle();
-
-    if (cached && cached.overview) {
-        return {
-            title: cached.title,
-            overview: cached.overview,
-            poster_path: cached.poster_url?.replace('https://image.tmdb.org/t/p/w500', ''),
-            backdrop_path: cached.backdrop_url?.replace('https://image.tmdb.org/t/p/original', ''),
-            release_date: cached.release_date,
-            creator: cached.creator,
-            number_of_seasons: cached.number_of_seasons,
-            genres: cached.genres,
-            cast: cached.cast
-        };
-    }
-
-    // 2. Fetch TMDB
     const TMDB_API_KEY = process.env.TMDB_API_KEY;
     if (!TMDB_API_KEY) throw new Error("TMDB API Key not configured.");
 
     try {
-        const [seriesRes, creditsRes] = await Promise.all([
-            fetch(`https://api.themoviedb.org/3/tv/${seriesId}?api_key=${TMDB_API_KEY}`),
-            fetch(`https://api.themoviedb.org/3/tv/${seriesId}/aggregate_credits?api_key=${TMDB_API_KEY}`)
-        ]);
+        // Fetch with append_to_response
+        const res = await fetch(
+            `https://api.themoviedb.org/3/tv/${seriesId}?api_key=${TMDB_API_KEY}&append_to_response=videos,images,aggregate_credits`,
+            { next: { revalidate: 3600 } }
+        );
 
-        if (!seriesRes.ok || !creditsRes.ok) throw new Error("Failed to fetch TV details");
+        if (!res.ok) throw new Error("Failed to fetch TV details");
 
-        const series = await seriesRes.json() as TmdbItemDetails;
-        const credits = await creditsRes.json() as TmdbCreditsResponse;
+        const data = await res.json();
 
-        const creator = series.created_by?.[0]?.name || 'N/A';
+        const creator = data.created_by?.[0]?.name || 'N/A';
+
         const details = {
-            title: series.name!,
-            overview: series.overview,
-            poster_path: series.poster_path,
-            backdrop_path: series.backdrop_path,
-            release_date: series.first_air_date!,
-            cast: credits.cast.slice(0, 10),
+            title: data.name,
+            overview: data.overview,
+            poster_path: data.poster_path,
+            backdrop_path: data.backdrop_path,
+            release_date: data.first_air_date,
+            cast: data.aggregate_credits?.cast?.slice(0, 12) || [],
             creator: creator,
-            genres: series.genres,
-            number_of_seasons: series.number_of_seasons
+            genres: data.genres,
+            number_of_seasons: data.number_of_seasons,
+            status: data.status,
+            tagline: data.tagline,
+            vote_average: data.vote_average,
+            // PASS THROUGH VIDEOS AND IMAGES
+            videos: data.videos,
+            images: data.images
         };
 
-        // 3. Upsert Cache
         supabase.from('series').upsert({
             tmdb_id: seriesId,
             title: details.title,
@@ -392,10 +361,11 @@ export async function getSeriesDetails(seriesId: number) {
             number_of_seasons: details.number_of_seasons,
             overview: details.overview,
             genres: details.genres,
-            "cast": details.cast
-        }).then(({ error }) => { if (error) console.error("Series cache error:", error); });
+            cast: details.cast
+        }).then(({ error }) => { if (error) console.error("Cache error:", error); });
 
         return details;
+
     } catch (error) {
         console.error("TMDB TV Fetch Error:", error);
         throw new Error("Could not fetch series details.");
