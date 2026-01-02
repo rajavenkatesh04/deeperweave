@@ -1,15 +1,17 @@
-// next.config.js
+import type { NextConfig } from "next";
 
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-
+const nextConfig: NextConfig = {
     experimental: {
         serverActions: {
-            bodySizeLimit: '5mb', // Increase the limit from 1MB to 5MB
+            bodySizeLimit: '5mb',
         },
     },
 
     images: {
+        // This forces all <Image> components to behave like standard <img> tags
+        // and bypasses Vercel's Image Optimization server entirely.
+        unoptimized: true,
+
         remotePatterns: [
             {
                 protocol: 'https',
@@ -36,14 +38,6 @@ const nextConfig = {
                 pathname: '**',
             },
             {
-                protocol: 'https',
-                hostname: 'jyjynjpznlvezjhnuwhi.supabase.co',
-                port: '',
-                pathname: '/storage/v1/object/public/profile_pics/**',
-            },
-            {
-                // ✨ UPDATED RULE: This now allows images from ANY public bucket
-                // in your Supabase storage, including profile_pics and post_banners.
                 protocol: 'https',
                 hostname: 'jyjynjpznlvezjhnuwhi.supabase.co',
                 port: '',
