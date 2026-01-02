@@ -1,22 +1,16 @@
 import type { Metadata } from "next";
-import { Cal_Sans } from "next/font/google";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next"
 import {ThemeProvider} from "next-themes";
 import {Toaster} from "sonner";
-
-const calSans = Cal_Sans({
-    weight: ['400'],
-    subsets: ['latin'],
-    fallback: ['system-ui', 'arial'],
-});
+import {googleSansCode, interFont, josefinSans} from "@/app/ui/fonts";
 
 export const metadata: Metadata = {
     title: {
         template: '%s | DeeperWeave',
         default: 'DeeperWeave',
     },
-    description: 'The heart of your blogs',
+    description: 'Track Movies, Write blogs, Discover Content.',
     metadataBase: new URL('https://DeeperWeave.com/'),
 };
 
@@ -27,8 +21,8 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
-        <meta name="apple-mobile-web-app-title" content="Liv" />
-        <body className={`${calSans.className} antialiased bg-white text-gray-900 dark:bg-zinc-950 dark:text-zinc-100`}>
+        <meta name="apple-mobile-web-app-title" content="DeeperWeave" />
+        <body className={`${googleSansCode.className} antialiased bg-white text-gray-900 dark:bg-zinc-950 dark:text-zinc-100`}>
         <ThemeProvider
             attribute="class"
             defaultTheme="system"

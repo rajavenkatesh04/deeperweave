@@ -225,6 +225,7 @@ export async function logEntry(prevState: LogEntryState, formData: FormData): Pr
     revalidatePath(`/profile/${userData.profile.username}/timeline`);
     // ✨ FIX: Return success message instead of redirecting
     // The redirect will be handled by the form's useEffect
+    redirect(`/profile/${userData.profile.username}/timeline`);
     return { message: 'Success' };
 }
 
@@ -378,6 +379,7 @@ export async function updateTimelineEntry(prevState: UpdateEntryState, formData:
 
     // --- 8. Revalidate and Redirect ---
     revalidatePath(`/profile/${userData.profile.username}/timeline`);
+    redirect(`/profile/${userData.profile.username}/timeline`)
     // ✨ FIX: Return success message
     return { message: 'Success' };
 }
