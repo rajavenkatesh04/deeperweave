@@ -4,23 +4,21 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { XMarkIcon, CalendarIcon, MapPinIcon } from '@heroicons/react/24/solid';
+import { XMarkIcon, CalendarIcon, MapPinIcon, ArrowRightIcon } from '@heroicons/react/24/solid';
 import { getProfileCardData } from '@/lib/actions/profile-actions';
 import LoadingSpinner from '@/app/ui/loading-spinner';
 import { UserProfile } from '@/lib/definitions';
 
-// This is the data we FETCH
 type ProfileData = {
-    profile: UserProfile; // UserProfile already contains created_at
+    profile: UserProfile;
     followerCount: number;
     followingCount: number;
 };
 
-// This is the basic info PASSED IN from the card
 type BaseUser = {
     id: string;
     username: string;
-    profile_pic_url?: string | null; // Optional, accepts null or undefined
+    profile_pic_url?: string | null;
 };
 
 export default function UserProfilePopover({
@@ -34,14 +32,12 @@ export default function UserProfilePopover({
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        // Fetch the full profile data when the popover opens
         async function fetchData() {
             setIsLoading(true);
             try {
-                // getProfileCardData returns { profile, followerCount, followingCount }
                 const result = await getProfileCardData(user.username);
                 if (result.profile) {
-                    setData(result as ProfileData); // The 'profile' object inside has created_at
+                    setData(result as ProfileData);
                 }
             } catch (error) {
                 console.error("Failed to fetch profile card data:", error);
@@ -49,14 +45,11 @@ export default function UserProfilePopover({
                 setIsLoading(false);
             }
         }
-
         fetchData();
     }, [user.username]);
 
-    // This logic is correct. It accesses created_at from the fetched data.
-    // FIX: Changed data?.profil to data?.profile
     const memberSince = data?.profile
-        ? new Date(data.profile.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
+        ? new Date(data.profile.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })
         : null;
 
     return (
@@ -65,101 +58,125 @@ export default function UserProfilePopover({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
                 onClick={onClose}
             >
                 <motion.div
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.9, opacity: 0 }}
+                    initial={{ scale: 0.95, opacity: 0, y: 10 }}
+                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                    exit={{ scale: 0.95, opacity: 0, y: 10 }}
                     transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                    className="relative bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl max-w-sm w-full border dark:border-zinc-800"
+                    className="relative bg-white dark:bg-zinc-950 rounded-2xl shadow-2xl max-w-sm w-full border border-zinc-200 dark:border-zinc-800 overflow-hidden"
                     onClick={(e) => e.stopPropagation()}
                 >
+                    {/* Close Button */}
                     <button
                         onClick={onClose}
-                        className="absolute top-3 right-3 z-10 p-1 rounded-full text-gray-400 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+                        className="absolute top-3 right-3 z-20 p-1.5 rounded-full bg-black/20 hover:bg-black/40 text-white backdrop-blur-sm transition-colors"
                     >
-                        <XMarkIcon className="w-6 h-6" />
+                        <XMarkIcon className="w-4 h-4" />
                     </button>
 
-                    {/* Header with PFP and Names */}
-                    <div className="p-6 flex items-center gap-4 border-b dark:border-zinc-800">
-                        <Image
-                            src={user.profile_pic_url || '/default-avatar.png'}
-                            alt={user.username}
-                            width={64}
-                            height={64}
-                            className="rounded-full h-16 w-16 object-cover ring-2 ring-white dark:ring-zinc-900"
-                        />
-                        <div className="min-w-0">
-                            <h3 className="text-xl font-bold text-gray-900 dark:text-white truncate">
-                                {data?.profile.display_name || user.username}
-                            </h3>
-                            <p className="text-sm text-gray-500 dark:text-zinc-400">
-                                @{user.username}
-                            </p>
-                        </div>
+                    {/* Banner Image */}
+                    <div className="relative h-24 w-full bg-zinc-100 dark:bg-zinc-900">
+                        {user.profile_pic_url && (
+                            <Image
+                                src={user.profile_pic_url}
+                                alt="Banner"
+                                fill
+                                className="object-cover opacity-60 blur-xl scale-110"
+                            />
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white dark:to-zinc-950/80" />
                     </div>
 
-                    {/* Body Content */}
-                    <div className="p-6">
-                        {isLoading ? (
-                            <div className="h-24 flex items-center justify-center">
-                                <LoadingSpinner />
+                    <div className="px-6 pb-6 -mt-10 relative z-10">
+                        {/* Avatar */}
+                        <div className="relative inline-block">
+                            <div className="h-20 w-20 rounded-full p-1 bg-white dark:bg-zinc-950 shadow-lg">
+                                <Image
+                                    src={user.profile_pic_url || '/default-avatar.png'}
+                                    alt={user.username}
+                                    width={72}
+                                    height={72}
+                                    className="rounded-full object-cover w-full h-full bg-zinc-100 dark:bg-zinc-900"
+                                />
                             </div>
-                        ) : data ? (
-                            <div className="space-y-4">
-                                {/* Bio */}
-                                {data.profile.bio && (
-                                    <p className="text-sm text-gray-700 dark:text-zinc-300 italic">
-                                        &ldquo;{data.profile.bio}&rdquo;
-                                    </p>
-                                )}
+                        </div>
 
-                                {/* Stats */}
-                                <div className="flex items-center gap-6">
-                                    <div className="text-sm">
-                                        <span className="font-bold text-gray-900 dark:text-white">{data.followerCount}</span>
-                                        <span className="text-gray-500 dark:text-zinc-400"> Followers</span>
-                                    </div>
-                                    <div className="text-sm">
-                                        <span className="font-bold text-gray-900 dark:text-white">{data.followingCount}</span>
-                                        <span className="text-gray-500 dark:text-zinc-400"> Following</span>
-                                    </div>
-                                </div>
-
-                                {/* Info */}
-                                <div className="flex flex-col gap-2 pt-4 border-t border-gray-100 dark:border-zinc-800">
-                                    {data.profile.country && (
-                                        <div className="text-sm text-gray-500 dark:text-zinc-400 flex items-center gap-1.5">
-                                            <MapPinIcon className="w-4 h-4" />
-                                            {data.profile.country}
-                                        </div>
-                                    )}
-                                    {/* FIX: Uncommented this block */}
-                                    {memberSince && (
-                                        <div className="text-sm text-gray-500 dark:text-zinc-400 flex items-center gap-1.5">
-                                            <CalendarIcon className="w-4 h-4" />
-                                            Member since {memberSince}
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* View Profile Button */}
-                                <Link
-                                    href={`/profile/${user.username}`}
-                                    onClick={onClose}
-                                    className="block w-full text-center px-4 py-2 rounded-lg bg-rose-600 text-white font-semibold shadow-sm hover:bg-rose-700 transition-all"
-                                >
-                                    View Profile
-                                </Link>
-                            </div>
-                        ) : (
-                            <p className="text-sm text-center text-gray-500 dark:text-zinc-400">
-                                Could not load profile information.
+                        {/* Name & Bio */}
+                        <div className="mt-3">
+                            <h3 className="text-xl font-bold text-zinc-900 dark:text-white truncate">
+                                {data?.profile.display_name || user.username}
+                            </h3>
+                            <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium">
+                                @{user.username}
                             </p>
-                        )}
+
+                            {isLoading ? (
+                                <div className="py-6 flex justify-center"><LoadingSpinner /></div>
+                            ) : data ? (
+                                <div className="mt-4 space-y-5">
+                                    {/* Bio */}
+                                    {data.profile.bio ? (
+                                        <p className="text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed">
+                                            {data.profile.bio}
+                                        </p>
+                                    ) : (
+                                        <p className="text-sm text-zinc-400 italic">No bio available.</p>
+                                    )}
+
+                                    {/* Stats Row */}
+                                    <div className="flex items-center gap-6 border-y border-zinc-100 dark:border-zinc-800 py-3">
+                                        <div className="flex flex-col">
+                                            <span className="font-bold text-lg text-zinc-900 dark:text-white leading-none">
+                                                {data.followerCount}
+                                            </span>
+                                            <span className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mt-1">
+                                                Followers
+                                            </span>
+                                        </div>
+                                        <div className="w-px h-8 bg-zinc-100 dark:bg-zinc-800" />
+                                        <div className="flex flex-col">
+                                            <span className="font-bold text-lg text-zinc-900 dark:text-white leading-none">
+                                                {data.followingCount}
+                                            </span>
+                                            <span className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mt-1">
+                                                Following
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Metadata Footer */}
+                                    <div className="flex items-center justify-between pt-1">
+                                        <div className="space-y-1.5">
+                                            {data.profile.country && (
+                                                <div className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+                                                    <MapPinIcon className="w-3.5 h-3.5" />
+                                                    {data.profile.country}
+                                                </div>
+                                            )}
+                                            {memberSince && (
+                                                <div className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+                                                    <CalendarIcon className="w-3.5 h-3.5" />
+                                                    Joined {memberSince}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <Link
+                                            href={`/profile/${user.username}`}
+                                            onClick={onClose}
+                                            className="flex items-center gap-2 px-4 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-full text-xs font-bold hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors"
+                                        >
+                                            View Profile <ArrowRightIcon className="w-3 h-3" />
+                                        </Link>
+                                    </div>
+                                </div>
+                            ) : (
+                                <p className="mt-4 text-sm text-zinc-500">Failed to load details.</p>
+                            )}
+                        </div>
                     </div>
                 </motion.div>
             </motion.div>

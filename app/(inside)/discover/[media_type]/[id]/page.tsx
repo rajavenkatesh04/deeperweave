@@ -5,6 +5,7 @@ import { getMovieDetails, getSeriesDetails } from '@/lib/actions/cinematic-actio
 import { ArrowLeftIcon, StarIcon, PlusIcon, FilmIcon } from '@heroicons/react/24/solid';
 // Import the new components
 import { ShareButton, TrailerButton, BackdropGallery } from './media-interactive';
+import BackButton from "./BackButton";
 
 export const dynamic = 'force-dynamic';
 
@@ -48,13 +49,7 @@ export default async function SimpleDetailPage({
             {/* Header with Functional Share Button */}
             <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 sticky top-0 z-50 backdrop-blur-sm bg-opacity-90 dark:bg-opacity-90">
                 <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-                    <Link
-                        href="/discover"
-                        className="inline-flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
-                    >
-                        <ArrowLeftIcon className="w-4 h-4" />
-                        Back
-                    </Link>
+                    <BackButton />
 
                     <div className="flex items-center gap-2">
                         <ShareButton />
