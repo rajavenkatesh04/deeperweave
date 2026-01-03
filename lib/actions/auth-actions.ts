@@ -50,15 +50,31 @@ export async function login(prevState: AuthState, formData: FormData): Promise<A
         return { message: error?.message || 'Authentication failed. Please check your credentials.' };
     }
 
-    // --- THIS IS THE KEY ---
-    // After a successful login, we immediately check if the user's profile is complete.
+    // Check profile completion
     const isProfileComplete = await checkProfileCompletion(data.user.id);
 
-    // Now, we redirect to the correct page based on the result.
     if (isProfileComplete) {
-        redirect('/profile'); // User is fully set up, go to profile.
+        // 👇 1. Check for intent parameters from the form
+        const item = formData.get('post_login_item');
+        const type = formData.get('post_login_type');
+
+        // 👇 2. If intent exists, fetch username and redirect to create page
+        if (item && type) {
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('username')
+                .eq('id', data.user.id)
+                .single();
+
+            if (profile?.username) {
+                redirect(`/profile/${profile.username}/timeline/create?item=${item}&type=${type}`);
+            }
+        }
+
+        // Default redirect
+        redirect('/profile');
     } else {
-        redirect('/onboarding'); // User is new, start the onboarding flow.
+        redirect('/onboarding');
     }
 }
 

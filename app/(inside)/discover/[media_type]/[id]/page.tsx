@@ -164,7 +164,7 @@ export default async function SimpleDetailPage({
                                     </Link>
                                 ) : (
                                     <Link
-                                        href="/auth/login"
+                                        href={`/auth/login?item=${id}&type=${media_type}`}
                                         className="px-8 py-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-200 transition-all font-medium"
                                     >
                                         <span className="flex items-center gap-2">

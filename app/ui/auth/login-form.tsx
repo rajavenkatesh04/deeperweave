@@ -22,7 +22,7 @@ function LoginButton() {
     );
 }
 
-export default function LoginForm() {
+export default function LoginForm({ item, type }: { item?: string; type?: string }) {
     const initialState: AuthState = { message: null, errors: {} };
     const [state, dispatch] = useActionState(login, initialState);
     const [showPassword, setShowPassword] = useState(false);
@@ -115,6 +115,10 @@ export default function LoginForm() {
 
                             {/* Form */}
                             <form action={dispatch} className="space-y-6">
+
+                                {/* These hidden inputs pass the values to the server action */}
+                                {item && <input type="hidden" name="post_login_item" value={item} />}
+                                {type && <input type="hidden" name="post_login_type" value={type} />}
 
                                 <div className="space-y-2">
                                     <label htmlFor="email" className="block text-xs font-semibold uppercase tracking-wider text-zinc-500">
