@@ -3,11 +3,12 @@
 import { useState, useEffect, useActionState, ChangeEvent } from 'react';
 import { useFormStatus } from 'react-dom';
 import { completeProfile, OnboardingState } from '@/lib/actions/profile-actions';
-import {Movie, UserProfile} from '@/lib/definitions';
+import { UserProfile } from '@/lib/definitions';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeftIcon, ArrowRightIcon, CheckIcon } from '@heroicons/react/20/solid';
+import { ArrowLeftIcon, ArrowRightIcon, UserIcon, TicketIcon, GlobeAmericasIcon, CheckIcon } from '@heroicons/react/24/outline';
 import LoadingSpinner from '@/app/ui/loading-spinner';
 import Link from 'next/link';
+import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
 
 // --- Helper Data ---
 const countries = [
@@ -38,7 +39,7 @@ type Step2Props = StepProps & {
     handleDateChange: (date: string) => void;
 };
 
-// --- Custom Date Picker Component ---
+// --- Custom Date Picker (Redesigned) ---
 function CustomDatePicker({ value, onChange }: { value: string; onChange: (date: string) => void; }) {
     const [day, setDay] = useState('');
     const [month, setMonth] = useState('');
@@ -62,87 +63,57 @@ function CustomDatePicker({ value, onChange }: { value: string; onChange: (date:
     const days = Array.from({ length: 31 }, (_, i) => String(i + 1));
     const months = Array.from({ length: 12 }, (_, i) => ({
         value: String(i + 1),
-        label: new Date(0, i).toLocaleString('default', { month: 'long' }),
+        label: new Date(0, i).toLocaleString('default', { month: 'short' }),
     }));
     const currentYear = new Date().getFullYear();
     const startYear = currentYear - 18;
     const years = Array.from({ length: 100 }, (_, i) => String(startYear - i));
 
-    const inputClasses = "block w-full rounded-xl border-2 border-white/20 bg-black/30 py-3 px-3 text-white shadow-sm focus:border-orange-500 focus:ring-2 focus:ring-orange-500/50 transition-all hover:border-orange-500/70 appearance-none";
+    // Style: Bottom border, no background, sharp focus
+    const selectClasses = "block w-full h-12 border-b border-zinc-200 bg-transparent px-0 text-sm focus:border-zinc-900 focus:outline-none dark:border-zinc-800 dark:focus:border-zinc-100 transition-colors cursor-pointer appearance-none text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400";
 
     return (
-        <div className="grid grid-cols-3 gap-3">
-            <select
-                value={day}
-                onChange={(e) => {
-                    setDay(e.target.value);
-                    handleChange(e.target.value, month, year);
-                }}
-                className={inputClasses}
-            >
-                <option value="">Day</option>
-                {days.map(d => <option key={d} value={d}>{d}</option>)}
-            </select>
-            <select
-                value={month}
-                onChange={(e) => {
-                    setMonth(e.target.value);
-                    handleChange(day, e.target.value, year);
-                }}
-                className={inputClasses}
-            >
-                <option value="">Month</option>
-                {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-            </select>
-            <select
-                value={year}
-                onChange={(e) => {
-                    setYear(e.target.value);
-                    handleChange(day, month, e.target.value);
-                }}
-                className={inputClasses}
-            >
-                <option value="">Year</option>
-                {years.map(y => <option key={y} value={y}>{y}</option>)}
-            </select>
+        <div className="grid grid-cols-3 gap-4">
+            <div className="relative">
+                <select value={day} onChange={(e) => { setDay(e.target.value); handleChange(e.target.value, month, year); }} className={selectClasses}>
+                    <option value="" disabled>Day</option>
+                    {days.map(d => <option key={d} value={d} className="bg-white dark:bg-zinc-900">{d}</option>)}
+                </select>
+            </div>
+            <div className="relative">
+                <select value={month} onChange={(e) => { setMonth(e.target.value); handleChange(day, e.target.value, year); }} className={selectClasses}>
+                    <option value="" disabled>Month</option>
+                    {months.map(m => <option key={m.value} value={m.value} className="bg-white dark:bg-zinc-900">{m.label}</option>)}
+                </select>
+            </div>
+            <div className="relative">
+                <select value={year} onChange={(e) => { setYear(e.target.value); handleChange(day, month, e.target.value); }} className={selectClasses}>
+                    <option value="" disabled>Year</option>
+                    {years.map(y => <option key={y} value={y} className="bg-white dark:bg-zinc-900">{y}</option>)}
+                </select>
+            </div>
         </div>
     );
 }
 
-
-// --- UI Sub-components ---
+// --- Minimal Stepper ---
 function Stepper({ currentStep }: { currentStep: number }) {
     const steps = ['Identity', 'Details', 'Location'];
     return (
-        <div className="relative flex justify-between mb-12 px-4">
-            <div className="absolute top-5 left-0 right-0 h-0.5 bg-white/10 -z-10">
-                <motion.div
-                    className="h-full bg-gradient-to-r from-amber-500 to-orange-600"
-                    initial={{ width: '0%' }}
-                    animate={{ width: `${((currentStep - 1) / (steps.length - 1)) * 100}%` }}
-                    transition={{ duration: 0.5, ease: 'easeInOut' }}
-                />
-            </div>
+        <div className="flex items-center gap-2 mb-10">
             {steps.map((name, index) => {
                 const stepNumber = index + 1;
                 const isActive = currentStep === stepNumber;
                 const isCompleted = currentStep > stepNumber;
                 return (
-                    <div key={name} className="relative flex flex-col items-center gap-2 z-10">
-                        <motion.div
-                            className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
-                                isCompleted
-                                    ? 'bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-md'
-                                    : isActive
-                                        ? 'bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg ring-4 ring-orange-500/30'
-                                        : 'bg-black/20 text-zinc-300 border-2 border-white/20'
-                            }`}
-                            animate={isActive ? { scale: [1, 1.05, 1] } : {}}
-                            transition={{ duration: 0.8, repeat: Infinity, ease: 'easeInOut' }}
-                        >
-                            {isCompleted ? <CheckIcon className="w-5 h-5" /> : stepNumber}
-                        </motion.div>
-                        <span className={`text-xs font-medium ${isActive ? 'text-orange-400' : 'text-zinc-400'}`}>
+                    <div key={name} className="flex-1">
+                        <div className={`h-1 w-full rounded-full transition-all duration-500 ${
+                            isActive ? 'bg-zinc-900 dark:bg-zinc-100' :
+                                isCompleted ? 'bg-zinc-400 dark:bg-zinc-600' : 'bg-zinc-200 dark:bg-zinc-800'
+                        }`} />
+                        <span className={`text-[10px] uppercase tracking-wider font-bold mt-2 block text-center transition-colors ${
+                            isActive ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-300 dark:text-zinc-600'
+                        }`}>
                             {name}
                         </span>
                     </div>
@@ -152,23 +123,19 @@ function Stepper({ currentStep }: { currentStep: number }) {
     );
 }
 
+// --- Submit Button (Monotone) ---
 function SubmitButton() {
     const { pending } = useFormStatus();
     return (
-        <motion.button
+        <button
             type="submit"
             disabled={pending}
-            className="relative flex h-12 w-full items-center justify-center rounded-xl bg-gradient-to-r from-amber-500 via-orange-600 to-orange-700 px-6 text-base font-semibold text-white shadow-lg overflow-hidden group disabled:cursor-not-allowed disabled:opacity-60"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            className="flex w-full h-12 items-center justify-center bg-zinc-900 text-white text-sm font-bold hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
         >
-            <span className="relative z-10 flex items-center gap-2">
-                {pending ? <LoadingSpinner /> : 'Complete Profile'}
-            </span>
-        </motion.button>
+            {pending ? <><LoadingSpinner className="mr-2 h-4 w-4"/>Finishing...</> : <span>Complete Profile</span>}
+        </button>
     );
 }
-
 
 // --- Main Form Component ---
 export function OnboardingForm({ profile, randomMovie }: { profile: UserProfile | null; randomMovie: { backdrop_url: string; title: string } | null }) {
@@ -209,7 +176,7 @@ export function OnboardingForm({ profile, randomMovie }: { profile: UserProfile 
         try {
             const today = new Date();
             const birthDate = new Date(date);
-            if (isNaN(birthDate.getTime())) return null; // Invalid date
+            if (isNaN(birthDate.getTime())) return null;
             let age = today.getFullYear() - birthDate.getFullYear();
             const monthDiff = today.getMonth() - birthDate.getMonth();
             if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
@@ -250,66 +217,100 @@ export function OnboardingForm({ profile, randomMovie }: { profile: UserProfile 
             const formEl = e.target as HTMLFormElement;
             const formDataToDispatch = new FormData(formEl);
             dispatch(formDataToDispatch);
-        }, 2500);
+        }, 1500);
     };
 
     const animationVariants = {
-        enter: (d: number) => ({ x: d > 0 ? '100%' : '-100%', opacity: 0 }),
+        enter: (d: number) => ({ x: d > 0 ? 20 : -20, opacity: 0 }),
         center: { x: 0, opacity: 1 },
-        exit: (d: number) => ({ x: d < 0 ? '100%' : '-100%', opacity: 0 }),
+        exit: (d: number) => ({ x: d < 0 ? 20 : -20, opacity: 0 }),
     };
 
-    const backgroundStyle = randomMovie?.backdrop_url
-        ? { backgroundImage: `url(${randomMovie.backdrop_url})` }
-        : { backgroundColor: '#111827' }; // Fallback dark gray
-
+    // If submitting, show the Intro/Success screen style
     if (isSubmitting) {
-        return <IntroScreen displayName={formData.display_name} backgroundStyle={backgroundStyle} />;
+        return <IntroScreen displayName={formData.display_name} />;
     }
 
     return (
-        <main
-            className="min-h-screen w-full bg-cover bg-center bg-no-repeat"
-            style={backgroundStyle}
-        >
-            <div className="min-h-screen w-full bg-black/75 md:grid md:grid-cols-2 relative overflow-hidden backdrop-blur-[2px]">
-                {/* Left Panel - Content */}
-                <div className="hidden md:flex flex-col justify-between p-12 relative z-10">
-                    <Link href="/" className="flex items-center gap-2 group">
-                        <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:rotate-12" />
-                        <span className="text-xl font-bold text-white">
-                        Deeper Weave
-                    </span>
-                    </Link>
-                    <div className="space-y-4">
-                        <h1 className="text-5xl font-bold text-white leading-tight">Complete your profile</h1>
-                        <p className="text-zinc-300 text-lg">Help us personalize your experience and connect you with the right community.</p>
-                    </div>
-                    <div className="text-sm text-zinc-400">
-                        © {new Date().getFullYear()} Deeper Weave
+        <div className="min-h-screen flex items-center justify-center p-4 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 relative">
+
+            {/* Split Layout Container */}
+            <div className="w-full max-w-5xl grid md:grid-cols-2 bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 shadow-sm md:shadow-2xl overflow-hidden min-h-[600px]">
+
+                {/* Left Column: Visual/Thematic Area */}
+                <div className="hidden md:flex flex-col items-center justify-center bg-zinc-950 text-white p-12 border-r border-zinc-200 dark:border-zinc-800 relative overflow-hidden">
+
+                    {/* Dynamic Background Image (Monotone) */}
+                    {randomMovie?.backdrop_url && (
+                        <div className="absolute inset-0 opacity-40 grayscale mix-blend-overlay"
+                             style={{ backgroundImage: `url(${randomMovie.backdrop_url})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+                        />
+                    )}
+
+                    {/* Film Grain Texture */}
+                    <div className="absolute inset-0 opacity-10"
+                         style={{
+                             backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+                         }}
+                    />
+                    <div className="absolute inset-0 bg-radial-gradient from-transparent to-black/90 opacity-90" />
+
+                    <div className="relative z-10 text-center space-y-8 max-w-sm">
+                        <div className="mx-auto w-40 h-40 flex items-center justify-center rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
+                            <UserIcon className="w-20 h-20 text-zinc-200" />
+                        </div>
+
+                        <div className="space-y-4">
+                            <h2 className={`${PlayWriteNewZealandFont.className} text-5xl font-bold text-white tracking-tight`}>
+                                The Protagonist.
+                            </h2>
+                            <p className="text-sm font-medium text-zinc-400 italic">
+                                "Every story needs a hero. Tell us yours."
+                            </p>
+                        </div>
                     </div>
                 </div>
 
-                {/* Right Panel - Form */}
-                <div className="flex flex-col justify-center p-4 sm:p-8 min-h-screen relative z-10">
-                    <div className="md:hidden text-center mb-6">
-                        <Link href="/" className="inline-flex items-center gap-2 group">
-                            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg" />
-                            <span className="text-xl font-bold text-white">
-                            Deeper Weave
-                        </span>
-                        </Link>
+                {/* Right Column: Form */}
+                <div className="flex flex-col h-full">
+
+                    {/* Mobile Header */}
+                    <div className="md:hidden relative bg-zinc-950 text-white py-10 px-6 text-center border-b border-zinc-800 overflow-hidden shrink-0">
+                        {/* Mobile Grain */}
+                        <div className="absolute inset-0 opacity-10"
+                             style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
+                        />
+                        <div className="relative z-10">
+                            <h2 className={`${PlayWriteNewZealandFont.className} text-2xl font-bold text-white mb-1`}>
+                                The Protagonist.
+                            </h2>
+                            <p className="text-[10px] text-zinc-400 uppercase tracking-widest">
+                                Profile Creation
+                            </p>
+                        </div>
                     </div>
 
-                    <div className="w-full max-w-md mx-auto bg-black/30 backdrop-blur-lg rounded-2xl p-6 sm:p-8 border border-white/20 shadow-2xl">
-                        <Stepper currentStep={currentStep} />
+                    <div className="p-8 md:p-12 flex-1 flex flex-col">
+                        <div className="mb-8">
+                            <Stepper currentStep={currentStep} />
+                            <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
+                                {currentStep === 1 && "Who are you?"}
+                                {currentStep === 2 && "The Details."}
+                                {currentStep === 3 && "The Setting."}
+                            </h1>
+                            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+                                {currentStep === 1 && "Establish your identity in the weave."}
+                                {currentStep === 2 && "A bit of backstory for the audience."}
+                                {currentStep === 3 && "Where does this story take place?"}
+                            </p>
+                        </div>
 
-                        <form onSubmit={handleSubmit}>
+                        <form onSubmit={handleSubmit} className="flex-1 flex flex-col">
                             {Object.entries(formData).map(([key, value]) => (
                                 <input key={key} type="hidden" name={key} value={value ?? ''} />
                             ))}
 
-                            <div className="min-h-[380px] relative">
+                            <div className="flex-1 relative">
                                 <AnimatePresence initial={false} custom={direction} mode="wait">
                                     <motion.div
                                         key={currentStep}
@@ -318,7 +319,7 @@ export function OnboardingForm({ profile, randomMovie }: { profile: UserProfile 
                                         initial="enter"
                                         animate="center"
                                         exit="exit"
-                                        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                                        transition={{ duration: 0.3, ease: "easeInOut" }}
                                     >
                                         {currentStep === 1 && <Step1 formData={formData} handleInputChange={handleInputChange} />}
                                         {currentStep === 2 && <Step2 formData={formData} handleInputChange={handleInputChange} calculateAge={calculateAge} handleDateChange={handleDateChange} />}
@@ -327,36 +328,34 @@ export function OnboardingForm({ profile, randomMovie }: { profile: UserProfile 
                                 </AnimatePresence>
                             </div>
 
-                            <div className="mt-6">
-                                <div className="min-h-[24px] text-center mb-4 text-sm text-red-400">
+                            <div className="mt-8 pt-6 border-t border-zinc-100 dark:border-zinc-800">
+                                <div className="min-h-[24px] text-center mb-4 text-xs font-medium text-red-600 dark:text-red-400">
                                     {state.message && <p>{state.message}</p>}
                                     {state.errors && Object.values(state.errors).flat().map((error, i) => <p key={i}>{error}</p>)}
                                 </div>
-                                <div className="flex items-center justify-between gap-3">
-                                    <motion.button
+
+                                <div className="flex gap-4">
+                                    <button
                                         type="button"
                                         onClick={handlePrevious}
                                         disabled={currentStep === 1}
-                                        className="flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-medium text-zinc-100 bg-white/10 border-2 border-white/20 transition-all hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-40 shadow-sm"
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
+                                        className="flex-1 h-12 flex items-center justify-center gap-2 text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                                     >
                                         <ArrowLeftIcon className="h-4 w-4" />
                                         <span>Back</span>
-                                    </motion.button>
+                                    </button>
+
                                     {currentStep < 3 ? (
-                                        <motion.button
+                                        <button
                                             type="button"
                                             onClick={handleNext}
-                                            className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-5 py-3 text-sm font-medium text-white shadow-lg transition-all hover:shadow-xl"
-                                            whileHover={{ scale: 1.02 }}
-                                            whileTap={{ scale: 0.98 }}
+                                            className="flex-[2] h-12 flex items-center justify-center gap-2 bg-zinc-900 text-white dark:bg-white dark:text-black text-sm font-bold hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all"
                                         >
-                                            <span>{currentStep === 1 && formData.display_name ? `Next, ${formData.display_name.split(' ')[0]}` : "Continue"}</span>
+                                            <span>Continue</span>
                                             <ArrowRightIcon className="h-4 w-4" />
-                                        </motion.button>
+                                        </button>
                                     ) : (
-                                        <div className="flex-1">
+                                        <div className="flex-[2]">
                                             <SubmitButton />
                                         </div>
                                     )}
@@ -366,77 +365,60 @@ export function OnboardingForm({ profile, randomMovie }: { profile: UserProfile 
                     </div>
                 </div>
             </div>
-        </main>
+        </div>
     );
 }
 
-// --- Intro Screen ---
-function IntroScreen({ displayName, backgroundStyle }: { displayName: string; backgroundStyle: React.CSSProperties }) {
+// --- Intro/Processing Screen ---
+function IntroScreen({ displayName }: { displayName: string }) {
     return (
-        <div
-            className="flex items-center justify-center min-h-screen bg-cover bg-center bg-no-repeat"
-            style={backgroundStyle}
-        >
-            <div className="flex items-center justify-center min-h-screen w-full bg-black/80 text-white">
+        <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-white relative overflow-hidden">
+            {/* Fullscreen Grain */}
+            <div className="absolute inset-0 opacity-10"
+                 style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
+            />
+            <div className="relative z-10 text-center p-8 max-w-lg">
+                <LoadingSpinner className="mx-auto mb-8 h-8 w-8 text-white" />
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.8, ease: "easeOut" }}
-                    className="text-center p-8"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8 }}
                 >
-                    <motion.h1
-                        className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent mb-4"
-                        initial={{ y: 50, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.5, duration: 0.8, type: "spring" }}
-                    >
-                        Welcome, {displayName}!
-                    </motion.h1>
-                    <motion.p
-                        className="text-lg md:text-xl text-zinc-300 mb-8"
-                        initial={{ y: 30, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.8, duration: 0.8 }}
-                    >
-                        Crafting your personalized space...
-                    </motion.p>
-                    <LoadingSpinner />
+                    <h1 className="text-3xl md:text-4xl font-light tracking-tight mb-4">
+                        Welcome to the cast, <span className="font-bold">{displayName}</span>.
+                    </h1>
+                    <p className="text-zinc-400 text-sm tracking-widest uppercase">
+                        Preparing your timeline...
+                    </p>
                 </motion.div>
             </div>
         </div>
     );
 }
 
-
-// --- Step Components (Updated Styles for dark bg) ---
+// --- Step Components (Redesigned) ---
 const Step1 = ({ formData, handleInputChange }: StepProps) => (
-    <div className="space-y-6 px-2">
-        <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-white mb-2">Your Identity</h2>
-            <p className="text-zinc-300">Choose how you&apos;ll be known in the community.</p>
-        </div>
-        <div>
-            <label htmlFor="username" className="mb-2 block text-sm font-semibold text-zinc-200">
+    <div className="space-y-6 pt-2">
+        <div className="space-y-2">
+            <label htmlFor="username" className="block text-xs font-semibold uppercase tracking-wider text-zinc-500">
                 Username
             </label>
-            <div className="relative group">
-                <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-lg font-semibold bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text text-transparent">
-                    @
-                </span>
+            <div className="relative">
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 text-zinc-400 font-medium">@</span>
                 <input
                     id="username"
                     name="username"
                     type="text"
                     value={formData.username}
                     onChange={handleInputChange}
-                    placeholder="your_unique_username"
-                    className="block w-full rounded-xl border-2 border-white/20 bg-black/30 py-3 pl-10 pr-4 text-white shadow-sm focus:border-orange-500 focus:ring-2 focus:ring-orange-500/50 transition-all group-hover:border-orange-500/70"
+                    placeholder="username"
+                    className="block w-full h-12 border-b border-zinc-200 bg-transparent pl-5 pr-0 text-sm placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none dark:border-zinc-800 dark:focus:border-zinc-100 transition-colors"
                     required
                 />
             </div>
         </div>
-        <div>
-            <label htmlFor="display_name" className="mb-2 block text-sm font-semibold text-zinc-200">
+        <div className="space-y-2">
+            <label htmlFor="display_name" className="block text-xs font-semibold uppercase tracking-wider text-zinc-500">
                 Display Name
             </label>
             <input
@@ -445,8 +427,8 @@ const Step1 = ({ formData, handleInputChange }: StepProps) => (
                 type="text"
                 value={formData.display_name}
                 onChange={handleInputChange}
-                placeholder="Your Full Name"
-                className="block w-full rounded-xl border-2 border-white/20 bg-black/30 py-3 px-4 text-white shadow-sm focus:border-orange-500 focus:ring-2 focus:ring-orange-500/50 transition-all hover:border-orange-500/70"
+                placeholder="Full Name"
+                className="block w-full h-12 border-b border-zinc-200 bg-transparent px-0 text-sm placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none dark:border-zinc-800 dark:focus:border-zinc-100 transition-colors"
                 required
             />
         </div>
@@ -457,36 +439,25 @@ const Step2 = ({ formData, handleInputChange, calculateAge, handleDateChange }: 
     const age = calculateAge(formData.date_of_birth);
 
     return (
-        <div className="space-y-6 px-2">
-            <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold text-white mb-2">Personal Details</h2>
-                <p className="text-zinc-300">Help us understand you better.</p>
-            </div>
-            <div>
-                <label htmlFor="date_of_birth" className="mb-3 block text-sm font-semibold text-zinc-200">
+        <div className="space-y-8 pt-2">
+            <div className="space-y-2">
+                <label htmlFor="date_of_birth" className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-2">
                     Date of Birth
                 </label>
                 <CustomDatePicker
                     value={formData.date_of_birth}
                     onChange={handleDateChange}
                 />
-                <div className="min-h-[24px] mt-2 text-center">
-                    {age !== null && age >= 18 ? (
-                        <motion.p
-                            key={age}
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="text-sm font-medium text-orange-400"
-                        >
-                            You&apos;re {age} years young!
-                        </motion.p>
-                    ) : (
-                        <p className="text-sm text-red-400 font-semibold tracking-wider">You must be 18 or older to join.</p>
+                <div className="h-6 mt-1">
+                    {age !== null && (
+                        <p className={`text-xs ${age >= 18 ? 'text-zinc-500 dark:text-zinc-400' : 'text-red-500'}`}>
+                            {age >= 18 ? `${age} years old` : 'Must be 18+ to join.'}
+                        </p>
                     )}
                 </div>
             </div>
-            <div>
-                <label htmlFor="gender" className="mb-2 block text-sm font-semibold text-zinc-200">
+            <div className="space-y-2">
+                <label htmlFor="gender" className="block text-xs font-semibold uppercase tracking-wider text-zinc-500">
                     Gender
                 </label>
                 <select
@@ -494,14 +465,14 @@ const Step2 = ({ formData, handleInputChange, calculateAge, handleDateChange }: 
                     name="gender"
                     value={formData.gender}
                     onChange={handleInputChange}
-                    className="block w-full rounded-xl border-2 border-white/20 bg-black/30 py-3 px-4 text-white shadow-sm focus:border-orange-500 focus:ring-2 focus:ring-orange-500/50 transition-all hover:border-orange-500/70 appearance-none"
+                    className="block w-full h-12 border-b border-zinc-200 bg-transparent px-0 text-sm focus:border-zinc-900 focus:outline-none dark:border-zinc-800 dark:focus:border-zinc-100 transition-colors cursor-pointer appearance-none text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400"
                     required
                 >
                     <option value="" disabled>Select gender</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="non-binary">Non-binary</option>
-                    <option value="prefer_not_to_say">Prefer not to say</option>
+                    <option value="male" className="bg-white dark:bg-zinc-900">Male</option>
+                    <option value="female" className="bg-white dark:bg-zinc-900">Female</option>
+                    <option value="non-binary" className="bg-white dark:bg-zinc-900">Non-binary</option>
+                    <option value="prefer_not_to_say" className="bg-white dark:bg-zinc-900">Prefer not to say</option>
                 </select>
             </div>
         </div>
@@ -509,30 +480,28 @@ const Step2 = ({ formData, handleInputChange, calculateAge, handleDateChange }: 
 };
 
 const Step3 = ({ formData, handleInputChange }: StepProps) => (
-    <div className="space-y-6 px-2">
-        <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-white mb-2">Your Location</h2>
-            <p className="text-zinc-300">Where are you from?</p>
-        </div>
-        <div>
-            <label htmlFor="country" className="mb-2 block text-sm font-semibold text-zinc-200">
-                Country
+    <div className="space-y-6 pt-2">
+        <div className="space-y-2">
+            <label htmlFor="country" className="block text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                Location
             </label>
-            <select
-                id="country"
-                name="country"
-                value={formData.country}
-                onChange={handleInputChange}
-                className="block w-full rounded-xl border-2 border-white/20 bg-black/30 py-3 px-4 text-white shadow-sm focus:border-orange-500 focus:ring-2 focus:ring-orange-500/50 transition-all hover:border-orange-500/70 appearance-none"
-                required
-            >
-                <option value="" disabled>Select your country</option>
-                {countries.map(c => (
-                    <option key={c.code} value={c.code}>
-                        {c.flag} {c.name}
-                    </option>
-                ))}
-            </select>
+            <div className="relative">
+                <select
+                    id="country"
+                    name="country"
+                    value={formData.country}
+                    onChange={handleInputChange}
+                    className="block w-full h-12 border-b border-zinc-200 bg-transparent px-0 text-sm focus:border-zinc-900 focus:outline-none dark:border-zinc-800 dark:focus:border-zinc-100 transition-colors cursor-pointer appearance-none text-zinc-900 dark:text-zinc-100"
+                    required
+                >
+                    <option value="" disabled>Select Country</option>
+                    {countries.map(c => (
+                        <option key={c.code} value={c.code} className="bg-white dark:bg-zinc-900">
+                            {c.flag} {c.name}
+                        </option>
+                    ))}
+                </select>
+            </div>
         </div>
     </div>
 );
