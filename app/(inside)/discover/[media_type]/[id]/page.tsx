@@ -5,6 +5,7 @@ import { getMovieDetails, getSeriesDetails } from '@/lib/actions/cinematic-actio
 import { PlusIcon, FilmIcon, StarIcon } from '@heroicons/react/24/solid';
 import { ShareButton, TrailerButton, BackdropGallery } from './media-interactive';
 import BackButton from './BackButton';
+import { getUserProfile } from '@/lib/data/user-data';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +21,9 @@ export default async function SimpleDetailPage({
     const numericId = Number(id);
 
     if (isNaN(numericId) || (media_type !== 'movie' && media_type !== 'tv')) notFound();
+
+    const userResult = await getUserProfile();
+    const currentUser = userResult?.profile;
 
     let details: any;
     try {
@@ -146,15 +150,28 @@ export default async function SimpleDetailPage({
                             {/* Actions */}
                             <div className="flex flex-wrap items-center gap-3">
                                 <TrailerButton videos={details.videos?.results || []} />
-                                <Link
-                                    href={`/log?item=${id}&type=${media_type}`}
-                                    className="px-8 py-3 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all font-medium"
-                                >
-                                    <span className="flex items-center gap-2">
-                                        <PlusIcon className="w-4 h-4" />
-                                        Log Entry
-                                    </span>
-                                </Link>
+
+                                {/* 👇 3. Render Link only if user is logged in, using their username */}
+                                {currentUser ? (
+                                    <Link
+                                        href={`/profile/${currentUser.username}/timeline/create?item=${id}&type=${media_type}`}
+                                        className="px-8 py-3 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all font-medium"
+                                    >
+                                        <span className="flex items-center gap-2">
+                                            <PlusIcon className="w-4 h-4" />
+                                            Log Entry
+                                        </span>
+                                    </Link>
+                                ) : (
+                                    <Link
+                                        href="/auth/login"
+                                        className="px-8 py-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-200 transition-all font-medium"
+                                    >
+                                        <span className="flex items-center gap-2">
+                                            Log In to Add
+                                        </span>
+                                    </Link>
+                                )}
                             </div>
 
                             {/* Overview */}

@@ -5,7 +5,12 @@ import { useFormStatus } from 'react-dom';
 import Image from 'next/image';
 import Link from 'next/link';
 import { logEntry, type LogEntryState } from '@/lib/actions/timeline-actions';
-import { searchCinematic, type CinematicSearchResult } from '@/lib/actions/cinematic-actions';
+import {
+    searchCinematic,
+    type CinematicSearchResult,
+    getSeriesDetails,
+    getMovieDetails
+} from '@/lib/actions/cinematic-actions';
 import { searchProfiles } from '@/lib/actions/profile-actions';
 import { type ProfileSearchResult } from '@/lib/definitions';
 import { PlayWriteNewZealandFont } from "@/app/ui/fonts"; // Ensure this import exists
@@ -134,7 +139,66 @@ function SubmitButton() {
 
 // --- Main Component ---
 
-export default function TimeLineEntryForm({ username }: { username: string }) {
+export default function TimeLineEntryForm({
+                                               username,
+                                               initialId,
+                                               initialType
+                                           }: {
+    username: string;
+    initialId?: string;
+    initialType?: string;
+}) {
+
+    useEffect(() => {
+        const fetchInitialItem = async () => {
+            // Only run if we have params and haven't selected anything yet
+            if (initialId && initialType && !selectedItem && !searchQuery) {
+                try {
+                    const numericId = parseInt(initialId);
+                    let fetchedDetails;
+                    let normalizedItem: CinematicSearchResult;
+
+                    if (initialType === 'movie') {
+                        fetchedDetails = await getMovieDetails(numericId); //
+                        normalizedItem = {
+                            id: numericId,
+                            title: fetchedDetails.title,
+                            release_date: fetchedDetails.release_date,
+                            poster_path: fetchedDetails.poster_path,
+                            backdrop_path: fetchedDetails.backdrop_path,
+                            overview: fetchedDetails.overview,
+                            media_type: 'movie'
+                        };
+                    } else if (initialType === 'tv') {
+                        fetchedDetails = await getSeriesDetails(numericId); //
+                        normalizedItem = {
+                            id: numericId,
+                            title: fetchedDetails.title, // Action returns 'title' for series too
+                            release_date: fetchedDetails.release_date,
+                            poster_path: fetchedDetails.poster_path,
+                            backdrop_path: fetchedDetails.backdrop_path,
+                            overview: fetchedDetails.overview,
+                            media_type: 'tv'
+                        };
+                    } else {
+                        return;
+                    }
+
+                    // Set the form state
+                    if (normalizedItem) {
+                        setSelectedItem(normalizedItem);
+                        setSearchQuery(normalizedItem.title);
+                        justSelectedItem.current = true; // Prevent search debounce loop
+                    }
+                } catch (error) {
+                    console.error("Failed to pre-fill item:", error);
+                }
+            }
+        };
+
+        fetchInitialItem();
+    }, [initialId, initialType]); // Run when these props change (mostly on mount)
+
     const initialState: LogEntryState = { message: null, errors: {} };
     const [state, formAction] = useActionState(logEntry, initialState);
 
