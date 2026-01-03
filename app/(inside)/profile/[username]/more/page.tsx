@@ -1,37 +1,31 @@
 // app/profile/settings/page.tsx
-'use client';
-
-import { useState, useEffect } from "react";
 import { redirect } from "next/navigation";
 import Link from 'next/link';
-import { createClient } from '@/utils/supabase/client';
-import { UserProfile } from '@/lib/definitions';
-import { logout } from '@/lib/actions/auth-actions';
+import { getUserProfile } from '@/lib/data/user-data';
 import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
+import SignOutButton from "@/app/ui/auth/SignOutButton";
 import {
     EnvelopeIcon,
     CakeIcon,
     SparklesIcon,
     UserCircleIcon,
     BellAlertIcon,
-    Cog6ToothIcon,
     PowerIcon,
     TrashIcon,
     ShieldCheckIcon,
     CpuChipIcon,
     FingerPrintIcon
 } from '@heroicons/react/24/outline';
-import LoadingSpinner from "@/app/ui/loading-spinner";
 
 // ============================================================================
-// REUSABLE UI: TECHNICAL ROW
+// REUSABLE UI: INFO ROW
 // ============================================================================
-function TechnicalRow({
-                          icon: Icon,
-                          label,
-                          value,
-                          isMono = false
-                      }: {
+function InfoRow({
+                     icon: Icon,
+                     label,
+                     value,
+                     isMono = false
+                 }: {
     icon: any;
     label: string;
     value: string | null | undefined;
@@ -47,7 +41,7 @@ function TechnicalRow({
                     {label}
                 </p>
                 <p className={`text-sm text-zinc-900 dark:text-zinc-100 break-all ${isMono ? 'font-mono' : ''}`}>
-                    {value || 'N/A'}
+                    {value || 'Not set'}
                 </p>
             </div>
         </div>
@@ -55,177 +49,100 @@ function TechnicalRow({
 }
 
 // ============================================================================
-// CARD 1: IDENTITY
+// MAIN PAGE (SERVER COMPONENT)
 // ============================================================================
-function IdentityCard({
-                          profile,
-                          email
-                      }: {
-    profile: UserProfile;
-    email: string;
-}) {
+export default async function SettingsPage() {
+    // 1. Fetch Data
+    const userData = await getUserProfile();
+
+    if (!userData || !userData.user) {
+        redirect("/auth/login");
+    }
+
+    const { user, profile } = userData;
+
+    // 2. Format Birthday
     const formattedBirthday = profile?.date_of_birth
         ? new Date(profile.date_of_birth).toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
             day: 'numeric'
-        }).toUpperCase()
+        })
         : null;
-
-    return (
-        <section className="bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 overflow-hidden">
-            {/* Header */}
-            <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 flex items-center gap-2">
-                <FingerPrintIcon className="w-4 h-4 text-zinc-500" />
-                <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-600 dark:text-zinc-400">
-                    Identity Matrix
-                </h3>
-            </div>
-
-            {/* Content Grid */}
-            <div className="flex flex-col">
-                <TechnicalRow icon={EnvelopeIcon} label="Email Protocol" value={email} isMono />
-                <TechnicalRow icon={UserCircleIcon} label="Gender Param" value={profile.gender} />
-                <TechnicalRow icon={CakeIcon} label="Inception Date" value={formattedBirthday} isMono />
-                <TechnicalRow icon={SparklesIcon} label="Sub Level" value={profile.subscription_status || 'FREE TIER'} />
-            </div>
-        </section>
-    );
-}
-
-// ============================================================================
-// CARD 2: SYSTEM NAVIGATION
-// ============================================================================
-function SystemNavCard() {
-    const links = [
-        { href: '/profile/notifications', icon: BellAlertIcon, label: 'Incoming Signals' },
-        { href: '/profile/settings', icon: Cog6ToothIcon, label: 'System Config' },
-    ];
-
-    return (
-        <section className="bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 overflow-hidden">
-            <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 flex items-center gap-2">
-                <CpuChipIcon className="w-4 h-4 text-zinc-500" />
-                <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-600 dark:text-zinc-400">
-                    System Controls
-                </h3>
-            </div>
-
-            <div className="p-2 space-y-1">
-                {links.map((link) => (
-                    <Link
-                        key={link.href}
-                        href={link.href}
-                        className="group flex items-center gap-3 px-4 py-3 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-all border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800"
-                    >
-                        <link.icon className="w-5 h-5 text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors" />
-                        <span className="text-sm font-bold uppercase tracking-wide text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100">
-              {link.label}
-            </span>
-                    </Link>
-                ))}
-
-                <div className="h-px bg-zinc-100 dark:bg-zinc-800 my-2" />
-
-                <form action={logout}>
-                    <button className="w-full group flex items-center gap-3 px-4 py-3 hover:bg-red-50 dark:hover:bg-red-900/10 transition-all border border-transparent hover:border-red-200 dark:hover:border-red-900/30">
-                        <PowerIcon className="w-5 h-5 text-zinc-400 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors" />
-                        <span className="text-sm font-bold uppercase tracking-wide text-zinc-600 dark:text-zinc-400 group-hover:text-red-600 dark:group-hover:text-red-400">
-              LOGOUT
-            </span>
-                    </button>
-                </form>
-            </div>
-        </section>
-    );
-}
-
-// ============================================================================
-// CARD 3: DANGER ZONE
-// ============================================================================
-function DangerZone() {
-    return (
-        <section className="border border-red-200 dark:border-red-900/30 bg-red-50/50 dark:bg-red-950/10 overflow-hidden">
-            <div className="px-6 py-4 border-b border-red-200 dark:border-red-900/30 flex items-center gap-2">
-                <ShieldCheckIcon className="w-4 h-4 text-red-500" />
-                <h3 className="text-xs font-bold uppercase tracking-widest text-red-600 dark:text-red-400">
-                    Critical Zone
-                </h3>
-            </div>
-
-            <div className="p-6 flex flex-col items-start gap-4">
-                <p className="text-sm text-zinc-600 dark:text-zinc-400 font-mono">
-                    // WARNING: This action is irreversible. All data will be purged.
-                </p>
-                <Link
-                    href="/profile/delete-account"
-                    className="flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold uppercase tracking-widest transition-all shadow-sm hover:shadow-md active:scale-95"
-                >
-                    <TrashIcon className="w-4 h-4" />
-                    Delete Account
-                </Link>
-            </div>
-        </section>
-    );
-}
-
-// ============================================================================
-// MAIN PAGE
-// ============================================================================
-export default function SettingsPage() {
-    const [userData, setUserData] = useState<{ user: any; profile: UserProfile } | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        async function loadData() {
-            const supabase = createClient();
-            const { data: { user } } = await supabase.auth.getUser();
-
-            if (!user) return redirect("/auth/login");
-
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', user.id)
-                .single();
-
-            if (profile) setUserData({ user, profile });
-            setIsLoading(false);
-        }
-
-        loadData();
-    }, []);
-
-    if (isLoading || !userData) {
-        return (
-            <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
-                <LoadingSpinner className="w-8 h-8 text-zinc-900 dark:text-zinc-100" />
-                <p className="text-xs font-mono uppercase tracking-widest text-zinc-500 animate-pulse">
-                    Initializing...
-                </p>
-            </div>
-        );
-    }
 
     return (
         <main className="w-full bg-zinc-50 dark:bg-zinc-950 min-h-screen pb-20">
             {/* Header */}
-            <div className="w-full border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-black py-8 md:py-12 px-6">
+            <div className="w-full border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-black py-10 px-6">
                 <div className="max-w-4xl mx-auto">
-                    <h1 className={`${PlayWriteNewZealandFont.className} text-4xl md:text-5xl font-bold text-zinc-900 dark:text-zinc-100 mb-2`}>
-                        Configuration
+                    <h1 className={`${PlayWriteNewZealandFont.className} text-4xl md:text-5xl font-bold text-zinc-900 dark:text-zinc-100 mb-3`}>
+                        Settings
                     </h1>
-                    <p className="text-sm font-mono text-zinc-500 uppercase tracking-wide">
-                        User_ID: {userData.user.id.slice(0, 8)}...
+                    <p className="text-sm text-zinc-500">
+                        Manage your account details and preferences.
                     </p>
                 </div>
             </div>
 
-            {/* Content */}
             <div className="max-w-4xl mx-auto px-4 md:px-6 py-8 space-y-8">
-                <SystemNavCard />
-                <IdentityCard profile={userData.profile} email={userData.user.email} />
-                <DangerZone />
+
+                {/* 1. ACCOUNT CONTROLS */}
+                <section className="bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 overflow-hidden rounded-sm">
+                    <div className="p-2">
+                        <SignOutButton className="w-full group flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800 text-left rounded-sm">
+                            <PowerIcon className="w-5 h-5 text-zinc-400 group-hover:text-red-600 transition-colors" />
+                            <span className="text-sm font-bold text-zinc-600 dark:text-zinc-400 group-hover:text-red-600 transition-colors">
+                Log Out
+            </span>
+                        </SignOutButton>
+                    </div>
+                </section>
+
+                {/* 2. PERSONAL INFORMATION */}
+                <section className="bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 overflow-hidden rounded-sm">
+                    <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 flex items-center gap-2">
+                        <FingerPrintIcon className="w-4 h-4 text-zinc-500" />
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-600 dark:text-zinc-400">
+                            Personal Information
+                        </h3>
+                    </div>
+
+                    <div className="flex flex-col">
+                        <InfoRow icon={EnvelopeIcon} label="Email Address" value={user.email} />
+                        <InfoRow icon={UserCircleIcon} label="Gender" value={profile?.gender} />
+                        <InfoRow icon={CakeIcon} label="Birthday" value={formattedBirthday} />
+                        <InfoRow icon={SparklesIcon} label="Plan" value={profile?.subscription_status || 'Free'} />
+                    </div>
+                </section>
+
+                {/* 3. DANGER ZONE */}
+                <section className="border border-red-200 dark:border-red-900/30 bg-white dark:bg-black overflow-hidden rounded-sm">
+                    <div className="px-6 py-4 border-b border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-900/10 flex items-center gap-2">
+                        <ShieldCheckIcon className="w-4 h-4 text-red-600" />
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-red-600 dark:text-red-400">
+                            Danger Zone
+                        </h3>
+                    </div>
+
+                    <div className="p-6">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                            <div>
+                                <h4 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Delete Account</h4>
+                                <p className="text-xs text-zinc-500 mt-1 max-w-sm">
+                                    This will permanently remove your profile, posts, and all associated data. You cannot undo this action.
+                                </p>
+                            </div>
+                            <Link
+                                href="/profile/delete-account"
+                                className="shrink-0 flex items-center gap-2 px-4 py-2 bg-white dark:bg-black border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-xs font-bold uppercase tracking-widest hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors rounded-sm"
+                            >
+                                <TrashIcon className="w-4 h-4" />
+                                Delete Account
+                            </Link>
+                        </div>
+                    </div>
+                </section>
+
             </div>
         </main>
     );
