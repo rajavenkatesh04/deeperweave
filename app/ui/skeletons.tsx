@@ -88,7 +88,7 @@ export function FavoriteFilmsSkeleton() {
 
 /**
  * A detailed skeleton for a single blog post card.
- * It matches the dimensions and layout of the real PostCard component.
+ * It matches the dimensions and layout of the real BlogCard component.
  */
 export function PostCardSkeleton() {
     return (

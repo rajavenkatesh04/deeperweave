@@ -4,6 +4,7 @@ import { getUserProfile } from '@/lib/data/user-data';
 import DesktopNavLinks from '@/app/ui/SideBar/DesktopNavLinks';
 import MobileNavLinks from '@/app/ui/SideBar/MobileNavLinks';
 import UserProfile from "@/app/ui/SideBar/user-profile";
+import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
 
 export default async function Navigation() {
     const userData = await getUserProfile();
@@ -12,46 +13,62 @@ export default async function Navigation() {
     return (
         <>
             {/* ====== DESKTOP SIDEBAR ====== */}
-            {/* Visible only on screens md and larger */}
-            <div className="hidden h-full flex-col bg-gray-50 px-3 py-4 dark:bg-zinc-900 md:flex md:w-64">
-                <Link
-                    className="mb-4 flex h-20 items-center justify-start rounded-md bg-gradient-to-r from-red-500 to-red-800 p-4 lg:h-32"
-                    href="/"
-                >
-                    <div className="w-full text-white">
-                        <p className="text-xl font-bold lg:text-2xl">DeeperWeave</p>
-                    </div>
-                </Link>
+            <div className="hidden h-screen sticky top-0 flex-col border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-black md:flex md:w-72 overflow-hidden">
 
-                {/* Growable nav links section */}
-                <div className="flex grow flex-col justify-between">
+                {/* Texture Background */}
+                <div className="absolute inset-0 opacity-[0.03] pointer-events-none z-0"
+                     style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
+                />
+
+                {/* Logo Section */}
+                <div className="relative z-10 flex-none h-24 flex items-center px-6 border-b border-zinc-200 dark:border-zinc-800">
+                    <Link href="/" className="group flex items-center gap-3">
+                        <div className="w-8 h-8 bg-black dark:bg-white flex items-center justify-center text-white dark:text-black font-bold text-xs">
+                            DW
+                        </div>
+                        <div className="flex flex-col">
+                            <p className={`${PlayWriteNewZealandFont.className} text-xl font-bold text-zinc-900 dark:text-zinc-100 leading-none`}>
+                                Deeper Weave
+                            </p>
+                            <span className="text-[9px] uppercase tracking-[0.2em] text-zinc-400 mt-1 group-hover:text-red-500 transition-colors">
+                                Cinematic Log
+                            </span>
+                        </div>
+                    </Link>
+                </div>
+
+                {/* Nav Links */}
+                <div className="relative z-10 flex-1 py-8 px-4 overflow-y-auto">
                     <DesktopNavLinks />
+                </div>
 
-                    {/* User profile section at the bottom */}
-                    <div className="border-t border-gray-200 pt-2 dark:border-zinc-800">
-                        <UserProfile user={{ profile, email: userData?.user?.email }} />
-                    </div>
+                {/* User Profile */}
+                <div className="relative z-10 flex-none p-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 backdrop-blur-sm">
+                    <UserProfile user={{ profile, email: userData?.user?.email }} />
                 </div>
             </div>
 
             {/* ====== MOBILE BOTTOM BAR ====== */}
-            {/* Hidden on md and larger screens */}
-            <div className="fixed bottom-0 left-0 right-0 z-50 flex h-16 items-center justify-around border-t border-gray-200 bg-white/80 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/80 md:hidden">
-                <MobileNavLinks />
+            <div className="fixed bottom-0 left-0 right-0 z-50 h-16 bg-white/90 dark:bg-black/90 backdrop-blur-xl border-t border-zinc-200 dark:border-zinc-800 md:hidden pb-safe">
+                <div className="flex h-full items-center justify-around px-2">
+                    <MobileNavLinks />
 
-                {/* Profile link for mobile */}
-                <Link
-                    href={profile ? "/profile" : "/auth/login"}
-                    className="flex flex-col items-center justify-center gap-1 text-xs text-gray-600 dark:text-zinc-400"
-                >
-                    <Image
-                        src={profile?.profile_pic_url || '/placeholder-user.jpg'}
-                        alt={'Profile'}
-                        className="h-7 w-7 rounded-full object-cover"
-                        width={28}
-                        height={28}
-                    />
-                </Link>
+                    {/* Mobile Profile Link */}
+                    <Link
+                        href={profile ? "/profile" : "/auth/login"}
+                        className="flex flex-col items-center justify-center w-16 h-full gap-1 group"
+                    >
+                        <div className="relative h-6 w-6 overflow-hidden bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-sm rotate-45 group-hover:rotate-0 transition-transform duration-300">
+                            <Image
+                                src={profile?.profile_pic_url || '/placeholder-user.jpg'}
+                                alt={'Profile'}
+                                className="object-cover"
+                                fill
+                            />
+                        </div>
+                        {/* <span className="text-[9px] uppercase tracking-widest text-zinc-400">You</span> */}
+                    </Link>
+                </div>
             </div>
         </>
     );

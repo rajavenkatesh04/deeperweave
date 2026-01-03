@@ -2,11 +2,11 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { PlusIcon } from '@heroicons/react/24/solid';
-import { CalendarDaysIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, ChevronDownIcon, ClockIcon, FilmIcon, ArchiveBoxXMarkIcon } from '@heroicons/react/24/outline';
 import { motion, AnimatePresence } from 'framer-motion';
 import TimelineEntryCard from './TimelineEntryCard';
-import {TimelineEntry} from "@/lib/definitions";
+import { TimelineEntry } from "@/lib/definitions";
+import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -39,32 +39,50 @@ export default function TimelineDisplay({
     };
 
     return (
-        <section className="-mx-4 sm:mx-0">
+        <section className="relative min-h-[50vh] pb-12">
+
+            {/* --- HEADER SECTION --- */}
             {timelineEntries.length > 0 ? (
                 <>
-                    <div className="mb-4 sm:mb-6 md:mb-8 px-2 sm:px-0 flex justify-between items-center">
+                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 px-2 sm:px-0">
                         <div>
-                            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-1 sm:mb-2">
+                            <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-zinc-500 mb-2">
+                                <ClockIcon className="w-4 h-4" />
+                                <span>Temporal Log</span>
+                            </div>
+                            <h2 className={`${PlayWriteNewZealandFont.className} text-4xl md:text-5xl font-bold text-zinc-900 dark:text-zinc-100 leading-none`}>
                                 Watch History
                             </h2>
-                            <p className="text-sm md:text-base text-gray-600 dark:text-zinc-400">
-                                {timelineEntries.length} {timelineEntries.length === 1 ? 'entry' : 'entries'} logged
-                            </p>
                         </div>
-                        {isOwnProfile && (
-                            <Link href={`/profile/${username}/timeline/create`} passHref>
-                                <motion.button
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-rose-600 text-white rounded-lg shadow-sm hover:bg-rose-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 dark:focus:ring-offset-zinc-900"
-                                >
-                                    <PlusIcon className="h-5 w-5" />
-                                    <span className="text-sm font-semibold hidden sm:inline">Log Entry</span>
-                                </motion.button>
-                            </Link>
-                        )}
+
+                        <div className="flex items-center gap-6">
+                            {/* Entry Counter */}
+                            <div className="hidden md:block text-right border-r border-zinc-200 dark:border-zinc-800 pr-6">
+                                <p className="text-[9px] font-mono uppercase tracking-widest text-zinc-400">
+                                    Total Entries
+                                </p>
+                                <p className="text-2xl font-black text-zinc-900 dark:text-zinc-100 leading-none font-mono">
+                                    {timelineEntries.length.toString().padStart(3, '0')}
+                                </p>
+                            </div>
+
+                            {/* Create Button */}
+                            {isOwnProfile && (
+                                <Link href={`/profile/${username}/timeline/create`} passHref>
+                                    <motion.button
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        className="flex items-center gap-2 px-6 py-3 bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black rounded-sm shadow-md transition-all"
+                                    >
+                                        <PlusIcon className="h-4 w-4" />
+                                        <span className="text-xs font-bold uppercase tracking-widest">Log Entry</span>
+                                    </motion.button>
+                                </Link>
+                            )}
+                        </div>
                     </div>
 
+                    {/* --- ENTRIES LIST --- */}
                     <motion.div variants={containerVariants} initial="hidden" animate="visible">
                         <AnimatePresence>
                             {visibleEntries.map((entry, index) => (
@@ -79,56 +97,55 @@ export default function TimelineDisplay({
                         </AnimatePresence>
                     </motion.div>
 
+                    {/* --- LOAD MORE BUTTON --- */}
                     {hasMore && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="flex justify-center mt-6 sm:mt-8 md:mt-12"
-                        >
+                        <div className="flex justify-center mt-12 mb-8 relative z-20">
                             <motion.button
                                 onClick={loadMore}
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
-                                className="flex items-center gap-2 sm:gap-3 px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 border-2 border-gray-300 dark:border-zinc-600 text-gray-900 dark:text-white font-semibold rounded-xl shadow-sm hover:shadow-md transition-all text-sm sm:text-base"
+                                className="group flex items-center gap-3 px-8 py-3 bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 text-zinc-900 dark:text-zinc-100 transition-all rounded-sm shadow-sm"
                             >
-                                <span>Show More</span>
-                                <ChevronDownIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-                                <span className="text-xs sm:text-sm text-gray-600 dark:text-zinc-400">
-                                    ({timelineEntries.length - visibleCount} more)
+                                <span className="text-xs font-bold uppercase tracking-widest">Expand Log</span>
+                                <ChevronDownIcon className="w-4 h-4 text-zinc-400 group-hover:translate-y-1 transition-transform" />
+                                <span className="text-[10px] font-mono text-zinc-400 ml-2">
+                                    [{timelineEntries.length - visibleCount} REMAINING]
                                 </span>
                             </motion.button>
-                        </motion.div>
+                        </div>
                     )}
                 </>
             ) : (
+                /* --- EMPTY STATE --- */
                 <motion.div
-                    className="text-center py-12 sm:py-16 md:py-24 px-2 sm:px-4"
+                    className="flex flex-col items-center justify-center py-24 border-2 border-dashed border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/20"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
                 >
-                    <div className="max-w-sm mx-auto">
-                        <div className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 mx-auto mb-3 sm:mb-4 md:mb-6 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
-                            <CalendarDaysIcon className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-gray-400 dark:text-zinc-600" />
-                        </div>
-                        <p className="text-base sm:text-lg md:text-xl text-gray-700 dark:text-zinc-300 font-semibold mb-2">
-                            No entries logged yet
-                        </p>
-                        {isOwnProfile && (
-                            <div className="mt-6">
-                                <Link href={`/profile/${username}/timeline/create`} passHref>
-                                    <motion.button
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
-                                        className="flex items-center mx-auto gap-2 px-5 py-3 bg-rose-600 text-white rounded-lg shadow-sm hover:bg-rose-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 dark:focus:ring-offset-zinc-900"
-                                    >
-                                        <PlusIcon className="h-5 w-5" />
-                                        <span className="text-sm font-semibold">Log Your First Entry</span>
-                                    </motion.button>
-                                </Link>
-                            </div>
-                        )}
+                    <div className="w-20 h-20 border-2 border-zinc-300 dark:border-zinc-700 flex items-center justify-center rotate-45 mb-8 bg-white dark:bg-black">
+                        <ArchiveBoxXMarkIcon className="w-10 h-10 text-zinc-400 dark:text-zinc-600 -rotate-45" />
                     </div>
+
+                    <h3 className="text-xl font-bold uppercase tracking-widest text-zinc-900 dark:text-zinc-100">
+                        Log Empty
+                    </h3>
+                    <p className="text-sm font-mono text-zinc-500 mt-2 mb-8">
+                        // No cinematic data recorded in this sector.
+                    </p>
+
+                    {isOwnProfile && (
+                        <Link href={`/profile/${username}/timeline/create`} passHref>
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                className="flex items-center gap-2 px-8 py-3 bg-zinc-900 dark:bg-white text-white dark:text-black text-xs font-bold uppercase tracking-widest rounded-sm shadow-lg hover:shadow-xl transition-all"
+                            >
+                                <PlusIcon className="h-4 w-4" />
+                                <span>Initialize Log</span>
+                            </motion.button>
+                        </Link>
+                    )}
                 </motion.div>
             )}
         </section>

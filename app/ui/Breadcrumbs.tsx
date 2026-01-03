@@ -1,6 +1,5 @@
 import { clsx } from 'clsx';
 import Link from 'next/link';
-import { ChevronRightIcon } from '@heroicons/react/24/outline';
 
 interface Breadcrumb {
     label: string;
@@ -14,28 +13,33 @@ export default function Breadcrumbs({
     breadcrumbs: Breadcrumb[];
 }) {
     return (
-        <nav aria-label="Breadcrumb" className="mb-4 block">
-            <ol className="flex items-center space-x-2 text-sm">
+        <nav aria-label="Breadcrumb" className="mb-6 block">
+            <ol className="flex items-center flex-wrap">
                 {breadcrumbs.map((breadcrumb, index) => (
                     <li
                         key={breadcrumb.href}
-                        aria-current={breadcrumb.active ? 'page' : undefined} // Improved accessibility
+                        aria-current={breadcrumb.active ? 'page' : undefined}
                         className="flex items-center"
                     >
                         <Link
                             href={breadcrumb.href}
                             className={clsx(
-                                'transition-colors duration-200',
+                                'font-mono text-[10px] md:text-xs uppercase tracking-[0.15em] transition-all duration-200',
                                 breadcrumb.active
-                                    ? 'font-semibold text-pink-600 dark:text-pink-400' // Active link in pink
-                                    : 'text-gray-600 hover:text-pink-600 dark:text-zinc-400 dark:hover:text-pink-400', // Inactive link, pink on hover
+                                    // Active: Sharp contrast, bold, with a technical underline
+                                    ? 'text-zinc-900 dark:text-zinc-100 font-bold border-b-2 border-zinc-900 dark:border-zinc-100'
+                                    // Inactive: Dimmed, fades in on hover
+                                    : 'text-zinc-400 hover:text-zinc-900 dark:text-zinc-600 dark:hover:text-zinc-300 no-underline'
                             )}
                         >
                             {breadcrumb.label}
                         </Link>
 
+                        {/* Separator: A simple technical slash instead of an icon */}
                         {index < breadcrumbs.length - 1 ? (
-                            <ChevronRightIcon className="ml-2 h-4 w-4 text-gray-400 dark:text-zinc-600" />
+                            <span className="mx-3 text-zinc-300 dark:text-zinc-800 font-mono text-[10px] select-none">
+                                /
+                            </span>
                         ) : null}
                     </li>
                 ))}

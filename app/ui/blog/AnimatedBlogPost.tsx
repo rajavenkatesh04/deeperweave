@@ -1,319 +1,98 @@
 'use client';
 
 import { motion, Variants, AnimatePresence } from "framer-motion";
-import { Eye, Calendar, ArrowUp, Star, StarHalf, AlertTriangle } from "lucide-react";
+import { Eye, Calendar, ArrowUp, FilmIcon, TvIcon, ArrowUpRightIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-// ✨ 1. Renamed the import to match the component name
 import CinematicInfoCard from "@/app/ui/blog/CinematicInfoCard";
 import LikeButton from "@/app/ui/blog/LikeButton";
 import CommentsSection from "@/app/ui/blog/CommentsSection";
-// ✨ 2. Imported the 'Series' type
 import { Post, Movie, Series, CommentWithAuthor, UserProfile } from "@/lib/definitions";
 import DOMPurify from 'isomorphic-dompurify';
 import { useState } from 'react';
+import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
+import { SpoilerBadge, NsfwBadge, PremiumBadge } from "@/app/ui/blog/badges";
+import {LockClosedIcon} from "@heroicons/react/24/solid";
 
-// Animation variants
+// --- ANIMATION VARIANTS ---
 const pageVariants: Variants = {
     initial: { opacity: 0 },
-    animate: {
-        opacity: 1,
-        transition: {
-            duration: 0.6,
-            staggerChildren: 0.1
-        }
-    }
-};
-
-const heroVariants: Variants = {
-    initial: {
-        opacity: 0,
-        scale: 1.1
-    },
-    animate: {
-        opacity: 1,
-        scale: 1,
-        transition: {
-            duration: 1.2,
-            ease: [0.25, 0.46, 0.45, 0.94]
-        }
-    }
-};
-
-const titleVariants: Variants = {
-    initial: {
-        opacity: 0,
-        y: 50
-    },
-    animate: {
-        opacity: 1,
-        y: 0,
-        transition: {
-            duration: 0.8,
-            delay: 0.3,
-            ease: [0.25, 0.46, 0.45, 0.94]
-        }
-    }
-};
-
-const pillVariants: Variants = {
-    initial: {
-        opacity: 0,
-        y: 30,
-        scale: 0.9
-    },
-    animate: {
-        opacity: 1,
-        y: 0,
-        scale: 1,
-        transition: {
-            duration: 0.6,
-            delay: 0.5,
-            ease: "backOut"
-        }
-    },
-    hover: {
-        scale: 1.05,
-        backgroundColor: "rgba(0, 0, 0, 0.4)",
-        transition: { duration: 0.2 }
-    }
+    animate: { opacity: 1, transition: { duration: 0.6, ease: "easeOut" } }
 };
 
 const contentVariants: Variants = {
-    initial: {
-        opacity: 0,
-        y: 60
-    },
-    animate: {
-        opacity: 1,
-        y: 0,
-        transition: {
-            duration: 0.8,
-            delay: 0.4,
-            ease: [0.25, 0.46, 0.45, 0.94]
-        }
-    }
+    initial: { opacity: 0, y: 40 },
+    animate: { opacity: 1, y: 0, transition: { duration: 0.6, delay: 0.2, ease: "easeOut" } }
 };
 
-const separatorVariants: Variants = {
-    initial: {
-        width: 0,
-        opacity: 0
-    },
-    animate: {
-        width: "6rem",
-        opacity: 1,
-        transition: {
-            duration: 0.8,
-            delay: 0.6,
-            ease: "easeOut"
-        }
-    }
-};
-
-// NSFW Warning Screen Variants
-const nsfwOverlayVariants: Variants = {
-    initial: { opacity: 0 },
-    animate: { opacity: 1 },
-    exit: {
-        opacity: 0,
-        scale: 0.95,
-        transition: { duration: 0.5, ease: "easeInOut" }
-    }
-};
-
-const nsfwContentVariants: Variants = {
-    initial: { scale: 0.8, opacity: 0 },
-    animate: {
-        scale: 1,
-        opacity: 1,
-        transition: {
-            delay: 0.2,
-            duration: 0.6,
-            ease: "backOut"
-        }
-    }
-};
-
-// Rating Component
-const StarRating = ({ rating }: { rating: number }) => {
-    return (
-        <motion.div
-            className="flex items-center gap-1"
-            initial={{ opacity: 0, scale: 0 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.8, duration: 0.5 }}
-        >
-            {[1, 2, 3, 4, 5].map((starValue) => {
-                let starIcon;
-                if (rating >= starValue) {
-                    starIcon = <Star size={16} className="text-yellow-400 fill-yellow-400" />;
-                } else if (rating >= starValue - 0.5) {
-                    starIcon = <StarHalf size={16} className="text-yellow-400 fill-yellow-400" />;
-                } else {
-                    starIcon = <Star size={16} className="text-gray-300 dark:text-gray-600" />;
-                }
-
-                return (
-                    <motion.div
-                        key={starValue}
-                        initial={{ opacity: 0, rotate: -180 }}
-                        animate={{ opacity: 1, rotate: 0 }}
-                        transition={{
-                            delay: 0.8 + (starValue * 0.1),
-                            duration: 0.5,
-                            ease: "backOut"
-                        }}
-                        whileHover={{ scale: 1.2, rotate: 15 }}
-                    >
-                        {starIcon}
-                    </motion.div>
-                );
-            })}
-            <span className="ml-2 text-sm font-medium text-white/90">
-                {rating}/5
-            </span>
-        </motion.div>
-    );
-};
-
-// NSFW Warning Screen Component
+// --- 1. NSFW OVERLAY (System Lock Style) ---
 const NSFWWarning = ({ onAccept, onReject }: { onAccept: () => void, onReject: () => void }) => {
     return (
         <AnimatePresence>
             <motion.div
-                className="fixed inset-0 bg-black/95 backdrop-blur-sm flex items-center justify-center z-[100] p-4"
-                variants={nsfwOverlayVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
+                className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950 p-6"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
             >
-                {/* Background effects */}
-                <div className="absolute inset-0 overflow-hidden">
-                    <motion.div
-                        className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-br from-red-500/20 to-pink-500/20 rounded-full"
-                        animate={{ rotate: [0, 360], scale: [1, 1.2, 1] }}
-                        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                    />
-                    <motion.div
-                        className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-gradient-to-tr from-orange-500/20 to-red-500/20 rounded-full"
-                        animate={{ rotate: [360, 0], scale: [1.2, 1, 1.2] }}
-                        transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-                    />
-                </div>
+                {/* Red Noise Background */}
+                <div className="absolute inset-0 opacity-10 pointer-events-none"
+                     style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
+                />
+                <div className="absolute inset-0 bg-red-900/10 pointer-events-none mix-blend-overlay" />
 
-                <motion.div
-                    className="relative w-full max-w-md p-6 sm:p-8 bg-white/10 backdrop-blur-md rounded-3xl border border-white/20 text-center text-white shadow-2xl"
-                    variants={nsfwContentVariants}
-                >
-                    {/* Warning Icon */}
-                    <motion.div
-                        className="flex justify-center mb-6"
-                        initial={{ scale: 0, rotate: -180 }}
-                        animate={{ scale: 1, rotate: 0 }}
-                        transition={{ delay: 0.4, duration: 0.8, ease: "backOut" }}
-                    >
-                        <div className="p-4 bg-red-500/20 rounded-full">
-                            <AlertTriangle size={48} className="text-red-400" />
-                        </div>
-                    </motion.div>
+                <div className="relative z-10 max-w-md w-full border border-red-900 bg-black p-8 text-center shadow-2xl shadow-red-900/20">
+                    <div className="mx-auto w-16 h-16 border border-red-800 bg-red-950/30 flex items-center justify-center mb-6">
+                        <LockClosedIcon className="w-8 h-8 text-red-500" />
+                    </div>
 
-                    {/* Title */}
-                    <motion.h2
-                        className="text-2xl sm:text-3xl font-bold mb-4 bg-gradient-to-r from-red-400 to-pink-400 bg-clip-text text-transparent"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.6 }}
-                    >
-                        Content Warning
-                    </motion.h2>
+                    <h2 className="text-xl font-bold text-red-500 uppercase tracking-[0.2em] mb-2 font-mono">
+                        Restricted Access
+                    </h2>
+                    <p className="text-red-400/60 mb-8 font-mono text-xs uppercase tracking-wide">
+                        // Content Flag: NSFW // Viewer Discretion Advised
+                    </p>
 
-                    <motion.p
-                        className="text-gray-300 mb-8 text-base sm:text-lg leading-relaxed"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.7 }}
-                    >
-                        Warning: May cause blushing, giggling, or browser history issues.
-                    </motion.p>
-
-                    <motion.div
-                        className="flex flex-col sm:flex-row gap-4 justify-center"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.8 }}
-                    >
-                        <motion.button
+                    <div className="flex flex-col gap-3">
+                        <button
                             onClick={onAccept}
-                            className="px-8 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white font-semibold rounded-full hover:from-red-600 hover:to-pink-600 transition-all duration-200 shadow-lg"
-                            whileHover={{ scale: 1.05, boxShadow: "0 10px 25px -3px rgba(239, 68, 68, 0.4)" }}
-                            whileTap={{ scale: 0.95 }}
+                            className="w-full py-4 bg-red-700 hover:bg-red-600 text-white font-bold uppercase tracking-widest text-xs transition-colors border border-transparent"
                         >
-                            Initiate Docking
-                        </motion.button>
-
-                        <motion.button
+                            Override Lock
+                        </button>
+                        <button
                             onClick={onReject}
-                            className="px-8 py-3 bg-gray-600 text-white font-semibold rounded-full hover:bg-gray-700 transition-all duration-200"
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
+                            className="w-full py-4 bg-transparent hover:bg-red-900/20 text-red-500 border border-red-900/50 font-bold uppercase tracking-widest text-xs transition-colors"
                         >
-                            Abort Mission
-                        </motion.button>
-                    </motion.div>
-                </motion.div>
+                            Abort
+                        </button>
+                    </div>
+                </div>
             </motion.div>
         </AnimatePresence>
     );
 };
 
-// ScrollToTop Component
+// --- 2. SCROLL TO TOP (Technical) ---
 const ScrollToTop = () => {
     return (
         <motion.button
-            className="fixed bottom-8 right-8 z-50 p-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-full shadow-lg hover:shadow-xl"
-            whileHover={{
-                scale: 1.1,
-                boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
-            }}
-            whileTap={{ scale: 0.95 }}
+            className="fixed bottom-8 right-8 z-50 p-3 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-black border border-zinc-700 shadow-xl hover:bg-zinc-700 transition-colors"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            initial={{ opacity: 0, y: 100 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.5, type: "spring", stiffness: 260, damping: 20 }}
+            whileHover={{ y: -4 }}
         >
             <ArrowUp size={20} />
         </motion.button>
     );
 };
 
-// FloatingStats Component
-const FloatingStats = ({ viewCount }: { viewCount: number }) => {
-    return (
-        <motion.div
-            className="flex items-center gap-2 text-sm text-white/90"
-            whileHover={{ scale: 1.05 }}
-            transition={{ type: "spring", stiffness: 400, damping: 10 }}
-        >
-            <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-            >
-                <Eye size={16} />
-            </motion.div>
-            <span className="font-medium">
-                {viewCount.toLocaleString()} views
-            </span>
-        </motion.div>
-    );
-};
-
-// ✨ 3. UPDATED Props Interface
 interface AnimatedBlogPostProps {
     post: Post;
     author: Pick<UserProfile, 'username' | 'display_name' | 'profile_pic_url'>;
     movie?: Movie | null;
-    series?: Series | null; // <-- ADDED
+    series?: Series | null;
     likeCount: number;
     userHasLiked: boolean;
     comments: CommentWithAuthor[];
@@ -326,7 +105,7 @@ export default function AnimatedBlogPost({
                                              post,
                                              author,
                                              movie,
-                                             series, // <-- ADDED
+                                             series,
                                              likeCount,
                                              userHasLiked,
                                              comments,
@@ -336,221 +115,213 @@ export default function AnimatedBlogPost({
                                          }: AnimatedBlogPostProps) {
 
     const [nsfwAccepted, setNsfwAccepted] = useState(!nsfw);
-    const sanitizedHtml = DOMPurify.sanitize(post.content_html);
+    const [isCinematicModalOpen, setIsCinematicModalOpen] = useState(false); // State for modal
 
-    // ✨ 4. Create unified variables
+    const sanitizedHtml = DOMPurify.sanitize(post.content_html);
     const cinematicItem = movie || series;
     const mediaType = movie ? 'movie' : 'tv';
 
-    const handleNsfwAccept = () => {
-        setNsfwAccepted(true);
-    };
-
-    const handleNsfwReject = () => {
-        window.history.back();
-    };
+    const handleNsfwAccept = () => setNsfwAccepted(true);
+    const handleNsfwReject = () => window.history.back();
 
     if (nsfw && !nsfwAccepted) {
         return <NSFWWarning onAccept={handleNsfwAccept} onReject={handleNsfwReject} />;
     }
 
+    // Format Date: "2026.01.02"
+    const dateObj = new Date(post.created_at);
+    const dateStr = `${dateObj.getFullYear()}.${String(dateObj.getMonth() + 1).padStart(2, '0')}.${String(dateObj.getDate()).padStart(2, '0')}`;
+
     return (
         <motion.article
-            className="min-h-screen bg-white dark:bg-black relative overflow-hidden"
+            className="min-h-screen bg-zinc-50 dark:bg-zinc-950 relative pb-32"
             variants={pageVariants}
             initial="initial"
             animate="animate"
         >
-            {/* ... (Floating background elements) ... */}
-            <div className="fixed inset-0 overflow-hidden pointer-events-none">
-                <motion.div
-                    className="absolute -top-24 -right-24 w-96 h-96 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full"
-                    animate={{ rotate: [0, 360], scale: [1, 1.2, 1] }}
-                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                />
-                <motion.div
-                    className="absolute -bottom-24 -left-24 w-96 h-96 bg-gradient-to-tr from-purple-500/10 to-pink-500/10 rounded-full"
-                    animate={{ rotate: [360, 0], scale: [1.2, 1, 1.2] }}
-                    transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-                />
-            </div>
+            {/* Global Grain */}
+            <div className="absolute inset-0 opacity-[0.03] pointer-events-none fixed z-50"
+                 style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
+            />
 
-            {/* ... (Hero Banner Section) ... */}
-            <motion.div
-                className="relative w-full h-[70vh] min-h-[500px] max-h-[800px] overflow-hidden"
-                variants={heroVariants}
-            >
+            {/* --- HERO SECTION --- */}
+            <div className="relative w-full h-[65vh] min-h-[500px] overflow-hidden bg-zinc-900 border-b border-zinc-800">
                 {post.banner_url ? (
                     <>
-                        <motion.div
-                            className="absolute inset-0 z-0"
-                            initial={{ scale: 1.2, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            transition={{ duration: 1.5, ease: "easeOut" }}
-                        >
-                            <Image
-                                src={post.banner_url}
-                                alt={`Banner for ${post.title}`}
-                                fill
-                                className="object-cover"
-                                priority
-                            />
-                        </motion.div>
-                        <motion.div
-                            className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/60 z-1"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ duration: 1, delay: 0.3 }}
+                        <Image
+                            src={post.banner_url}
+                            alt={`Banner for ${post.title}`}
+                            fill
+                            className="object-cover opacity-50 grayscale hover:grayscale-0 transition-all duration-1000"
+                            priority
                         />
-                        <motion.div
-                            className="absolute bottom-0 left-0 w-full h-1/3 bg-gradient-to-t from-white dark:from-black to-transparent z-2"
-                            initial={{ opacity: 0, y: 50 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.8, delay: 0.5 }}
-                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent" />
                     </>
                 ) : (
-                    <motion.div
-                        className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-zinc-800 dark:to-zinc-700 z-0"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.8 }}
-                    />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-10">
+                        <span className={`${PlayWriteNewZealandFont.className} text-9xl text-white`}>
+                            Log.
+                        </span>
+                    </div>
                 )}
-                <div className="absolute top-8 right-8 z-10 flex flex-col gap-4 items-end">
-                    <motion.div
-                        initial={{ opacity: 0, x: 50 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 1, duration: 0.6 }}
-                    >
-                        <FloatingStats viewCount={post.view_count} />
-                    </motion.div>
-                    {rating && rating > 0 && (
-                        <StarRating rating={rating} />
-                    )}
-                </div>
-                <header className="absolute bottom-0 left-0 z-10 w-full p-6 md:p-8">
-                    <div className="max-w-4xl mx-auto">
-                        <motion.h1
-                            className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 leading-tight"
-                            variants={titleVariants}
-                        >
+
+                {/* Hero Content */}
+                <div className="absolute bottom-0 left-0 w-full p-6 md:p-12 z-20">
+                    <div className="max-w-4xl mx-auto space-y-6">
+
+                        {/* Meta Top Line */}
+                        <div className="flex flex-wrap items-center gap-4 text-[10px] font-mono uppercase tracking-widest text-zinc-400">
+                            <span className="bg-zinc-800 px-2 py-1 rounded-sm text-zinc-200 border border-zinc-700">
+                                Log ID: {post.id.slice(0, 8)}
+                            </span>
+                            <span>{dateStr}</span>
+                            <span className="w-px h-3 bg-zinc-600" />
+                            <div className="flex items-center gap-2">
+                                {post.is_premium && <PremiumBadge />}
+                                {post.is_nsfw && <NsfwBadge />}
+                                {post.has_spoilers && <SpoilerBadge />}
+                            </div>
+                        </div>
+
+                        {/* Title */}
+                        <h1 className={`${PlayWriteNewZealandFont.className} text-4xl md:text-6xl lg:text-7xl font-bold text-white leading-[0.9] drop-shadow-2xl`}>
                             {post.title}
-                        </motion.h1>
-                        <motion.div
-                            className="flex items-center gap-4 bg-black/20 backdrop-blur-sm rounded-full py-3 px-5 w-fit border border-white/10"
-                            variants={pillVariants}
-                            whileHover="hover"
-                        >
-                            <Link href={`/profile/${author.username}`}>
-                                <motion.div
-                                    whileHover={{ scale: 1.1 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                                >
+                        </h1>
+
+                        {/* Rating (if applicable) */}
+                        {rating && rating > 0 && (
+                            <div className="flex items-center gap-1">
+                                {[...Array(5)].map((_, i) => (
+                                    <div key={i} className={`h-1 w-8 ${i < rating ? 'bg-amber-500' : 'bg-zinc-800'}`} />
+                                ))}
+                                <span className="ml-2 text-amber-500 font-mono text-xs font-bold">{rating}/5</span>
+                            </div>
+                        )}
+
+                        {/* Author Link */}
+                        <div className="pt-6 border-t border-white/10 w-full max-w-lg">
+                            <Link href={`/profile/${author.username}`} className="group flex items-center gap-4">
+                                <div className="relative w-12 h-12 border border-zinc-700 bg-zinc-800 grayscale group-hover:grayscale-0 transition-all">
                                     <Image
                                         src={author.profile_pic_url || '/placeholder-user.jpg'}
                                         alt={author.display_name}
-                                        width={48}
-                                        height={48}
-                                        className="h-12 w-12 rounded-full object-cover border-2 border-white/30 hover:border-white/50 transition-all duration-200"
+                                        fill
+                                        className="object-cover"
                                     />
-                                </motion.div>
-                            </Link>
-                            <div className="text-left">
-                                <motion.p
-                                    className="font-semibold text-white"
-                                    whileHover={{ scale: 1.05 }}
-                                >
-                                    <Link href={`/profile/${author.username}`} className="hover:underline">
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-white font-bold text-sm uppercase tracking-wide group-hover:text-amber-500 transition-colors">
                                         {author.display_name}
-                                    </Link>
-                                </motion.p>
-                                <motion.div
-                                    className="flex items-center gap-2 text-sm text-white/80"
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    transition={{ delay: 0.7 }}
-                                >
-                                    <Calendar size={14} />
-                                    <span>
-                                        {new Date(post.created_at).toLocaleDateString('en-US', { dateStyle: 'long' })}
                                     </span>
-                                </motion.div>
-                            </div>
-                        </motion.div>
+                                    <span className="text-zinc-500 text-xs font-mono">@{author.username}</span>
+                                </div>
+                            </Link>
+                        </div>
                     </div>
-                </header>
-            </motion.div>
+                </div>
+            </div>
 
-            {/* Main Content */}
+            {/* --- BODY CONTENT --- */}
             <motion.div
-                className="relative max-w-4xl mx-auto px-4 md:px-6 z-10"
+                className="relative max-w-4xl mx-auto px-6 md:px-12 -mt-16 z-30"
                 variants={contentVariants}
             >
-                <div className="flex justify-center -mt-6 mb-12">
-                    <motion.div
-                        className="h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
-                        variants={separatorVariants}
+                <div className="bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 p-8 md:p-16 shadow-2xl">
+
+                    {/* The Actual Text */}
+                    <div
+                        className="prose prose-lg dark:prose-invert max-w-none prose-headings:font-bold prose-headings:tracking-tight prose-a:text-zinc-900 dark:prose-a:text-white prose-a:font-bold prose-a:underline prose-a:decoration-zinc-400 font-light leading-relaxed text-zinc-800 dark:text-zinc-300"
+                        dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
                     />
+
+                    {/* --- REFERENCE MATERIAL (The Movie/Series Card) --- */}
+                    {post.type === 'review' && cinematicItem && (
+                        <div className="mt-16 pt-8 border-t border-dashed border-zinc-200 dark:border-zinc-800">
+                            <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-400 mb-6">
+                                [ Reference Material ]
+                            </h3>
+
+                            {/* Trigger Card */}
+                            <div
+                                onClick={() => setIsCinematicModalOpen(true)}
+                                className="group cursor-pointer flex flex-col md:flex-row gap-6 p-4 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-900 dark:hover:border-zinc-100 bg-zinc-50 dark:bg-zinc-900/30 transition-all duration-300"
+                            >
+                                <div className="relative w-24 h-36 shrink-0 bg-zinc-200 dark:bg-zinc-800 shadow-sm group-hover:shadow-xl transition-all">
+                                    {cinematicItem.poster_url ? (
+                                        <Image
+                                            src={cinematicItem.poster_url}
+                                            alt={cinematicItem.title}
+                                            fill
+                                            className="object-cover grayscale group-hover:grayscale-0 transition-all"
+                                        />
+                                    ) : (
+                                        <div className="flex items-center justify-center h-full"><FilmIcon className="w-8 h-8 text-zinc-400"/></div>
+                                    )}
+                                </div>
+                                <div className="flex-1 flex flex-col justify-center">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className="px-2 py-0.5 bg-black text-white text-[10px] font-bold uppercase">
+                                            {mediaType === 'movie' ? 'Film' : 'Series'}
+                                        </span>
+                                        <span className="text-xs font-mono text-zinc-500">
+                                            {new Date(cinematicItem.release_date).getFullYear()}
+                                        </span>
+                                    </div>
+                                    <h4 className={`${PlayWriteNewZealandFont.className} text-2xl font-bold text-zinc-900 dark:text-zinc-100 group-hover:underline decoration-1 underline-offset-4`}>
+                                        {cinematicItem.title}
+                                    </h4>
+                                    <div className="mt-4 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors">
+                                        <span>View Data Sheet</span>
+                                        <ArrowUpRightIcon className="w-3 h-3" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* The Actual Modal Component */}
+                            <CinematicInfoCard
+                                tmdbId={cinematicItem.tmdb_id}
+                                initialData={cinematicItem}
+                                mediaType={mediaType}
+                                isOpen={isCinematicModalOpen}
+                                onClose={() => setIsCinematicModalOpen(false)}
+                            />
+                        </div>
+                    )}
+
                 </div>
 
-                <motion.div
-                    className="prose prose-lg dark:prose-invert max-w-none mb-8"
-                    initial={{ opacity: 0, y: 40 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8, delay: 0.8 }}
-                    dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
-                />
+                {/* --- FOOTER SECTION --- */}
+                <div className="mt-12 max-w-4xl mx-auto">
 
-                {/* ✨ 5. FIX: This is the corrected component call */}
-                {post.type === 'review' && cinematicItem && (
-                    <motion.div
-                        className="mt-8 relative z-20"
-                        initial={{ opacity: 0, y: 60 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: 1 }}
-                    >
-                        <CinematicInfoCard
-                            tmdbId={cinematicItem.tmdb_id}
-                            initialData={cinematicItem}
-                            mediaType={mediaType}
+                    {/* Engagement Bar */}
+                    <div className="flex items-center justify-between p-6 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 mb-12">
+                        <div className="flex items-center gap-4">
+                            <LikeButton postId={post.id} initialLikes={likeCount} userHasLiked={userHasLiked} />
+                        </div>
+                        <div className="flex items-center gap-2 text-xs font-mono text-zinc-500">
+                            <Eye size={16} />
+                            <span>{post.view_count.toLocaleString()} Views</span>
+                        </div>
+                    </div>
+
+                    {/* Comments */}
+                    <div className="bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 p-8 md:p-12">
+                        <div className="mb-8 flex items-end justify-between border-b border-zinc-100 dark:border-zinc-800 pb-4">
+                            <h3 className={`${PlayWriteNewZealandFont.className} text-3xl font-bold text-zinc-900 dark:text-zinc-100`}>
+                                Discourse.
+                            </h3>
+                            <span className="text-xs font-mono uppercase text-zinc-500">
+                                {comments.length} Records
+                            </span>
+                        </div>
+                        <CommentsSection
+                            postId={post.id}
+                            comments={comments}
+                            currentUserProfile={viewerData?.profile ?? null}
                         />
-                    </motion.div>
-                )}
+                    </div>
+                </div>
 
-                {/* ... (LikeButton and CommentsSection are unchanged) ... */}
-                <motion.div
-                    className="mt-8 pt-6 p-6 border rounded-xl border-gray-200 dark:border-zinc-800 flex items-center justify-between bg-gradient-to-r from-gray-50/50 to-blue-50/50 dark:from-zinc-900/50 dark:to-zinc-800/50 backdrop-blur-sm relative z-10"
-                    initial={{ opacity: 0, y: 40 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 1.1 }}
-                    whileHover={{
-                        scale: 1.02,
-                        boxShadow: "0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
-                    }}
-                >
-                    <LikeButton postId={post.id} initialLikes={likeCount} userHasLiked={userHasLiked} />
-                    <motion.p
-                        className="text-sm font-medium text-gray-500 dark:text-zinc-400 flex items-center gap-2"
-                        whileHover={{ scale: 1.05 }}
-                    >
-                        <Eye size={16} />
-                        {post.view_count.toLocaleString()} views
-                    </motion.p>
-                </motion.div>
-
-                <motion.div
-                    initial={{ opacity: 0, y: 60 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8, delay: 1.3 }}
-                >
-                    <CommentsSection
-                        postId={post.id}
-                        comments={comments}
-                        currentUserProfile={viewerData?.profile ?? null}
-                    />
-                </motion.div>
             </motion.div>
 
             <ScrollToTop />

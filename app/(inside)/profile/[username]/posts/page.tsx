@@ -2,7 +2,7 @@
 import { notFound } from 'next/navigation';
 import { getProfileByUsername } from '@/lib/data/user-data';
 import { getPostsByUserId } from '@/lib/data/blog-data';
-import PostCard from '@/app/ui/blog/PostCard';
+import BlogCard from '@/app/ui/blog/BlogCard';
 
 export default async function ProfilePostsPage({
                                                    params
@@ -24,7 +24,7 @@ export default async function ProfilePostsPage({
             {posts && posts.length > 0 ? (
                 <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
                     {posts.map((post) => (
-                        <PostCard key={post.id} post={post} />
+                        <BlogCard key={post.id} post={post} />
                     ))}
                 </div>
             ) : (

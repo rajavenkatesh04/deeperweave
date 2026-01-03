@@ -16,7 +16,7 @@ export default function DesktopNavLinks() {
     const pathname = usePathname();
 
     return (
-        <nav className="flex flex-col space-y-2">
+        <nav className="flex flex-col space-y-1">
             {links.map((link) => {
                 const LinkIcon = link.icon;
                 const isActive = pathname === link.href;
@@ -26,15 +26,30 @@ export default function DesktopNavLinks() {
                         key={link.name}
                         href={link.href}
                         className={clsx(
-                            'flex items-center gap-3 rounded-md p-3 text-sm font-medium transition-colors hover:bg-red-50 dark:hover:bg-red-900/20',
+                            'group relative flex items-center gap-4 px-4 py-3 text-sm font-medium transition-all duration-200 border-l-2',
                             {
-                                'bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400': isActive,
-                                'text-gray-700 dark:text-zinc-300': !isActive,
+                                // Active State: Black/White bar, bold text
+                                'border-zinc-900 dark:border-zinc-100 bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100': isActive,
+                                // Inactive State: Transparent border, gray text
+                                'border-transparent text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-900/50': !isActive,
                             },
                         )}
                     >
-                        <LinkIcon className="h-6 w-6" />
-                        <p className="hidden lg:block">{link.name}</p>
+                        <LinkIcon className={clsx("h-5 w-5 transition-colors", {
+                            "text-zinc-900 dark:text-zinc-100": isActive,
+                            "text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300": !isActive
+                        })} />
+
+                        <span className="uppercase tracking-widest text-xs font-bold">
+                            {link.name}
+                        </span>
+
+                        {/* Hover Chevron */}
+                        {!isActive && (
+                            <span className="ml-auto opacity-0 -translate-x-2 group-hover:translate-x-0 group-hover:opacity-100 transition-all text-xs text-zinc-400">
+                                →
+                            </span>
+                        )}
                     </Link>
                 );
             })}
