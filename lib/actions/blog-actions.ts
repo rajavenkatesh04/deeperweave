@@ -9,6 +9,7 @@ import { getUserProfile } from '@/lib/data/user-data';
 import { v4 as uuidv4 } from 'uuid';
 // ✨ 2. ADDED IMPORTS from your new "library"
 import { getMovieDetails, getSeriesDetails } from './cinematic-actions';
+import {createNotification, deleteNotification} from "@/lib/actions/notification-actions";
 
 // =====================================================================
 // == NEW ACTION: For Tiptap content image upload
@@ -178,21 +179,96 @@ export async function createPost(prevState: CreatePostState, formData: FormData)
     redirect(`/blog/${slug}`);
 }
 
+
 // =====================================================================
-// == ACTION: For posting comments
+// == SOCIAL ACTIONS (LIKES, UNLIKES, COMMENTS)
 // =====================================================================
 
-// (This function is unchanged)
+// 1. LIKE POST (With Notifications)
+export async function likePost(postId: string) {
+    const supabase = await createClient();
+    const userData = await getUserProfile();
+
+    if (!userData?.user || !userData.profile) {
+        return { error: 'You must be logged in.' };
+    }
+
+    // Insert Like
+    const { error } = await supabase
+        .from('likes')
+        .insert({ post_id: postId, user_id: userData.user.id });
+
+    if (error) {
+        console.error('Like error:', error);
+        return { error: 'Error liking post.' };
+    }
+
+    // Check Author for Notification
+    const { data: post } = await supabase
+        .from('posts')
+        .select('author_id')
+        .eq('id', postId)
+        .single();
+
+    // Send Notification if not liking own post
+    if (post && post.author_id !== userData.user.id) {
+        await createNotification({
+            recipientId: post.author_id,
+            actorId: userData.user.id,
+            actorUsername: userData.profile.username,
+            type: 'like',
+            targetPostId: postId
+        });
+    }
+
+    revalidatePath(`/blog/[slug]`, 'page');
+    return { success: true };
+}
+
+// 2. UNLIKE POST (This was missing!)
+export async function unlikePost(postId: string) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) return { error: 'You must be logged in to unlike a post.' };
+
+    // 1. Remove the Like
+    const { error } = await supabase
+        .from('likes')
+        .delete()
+        .match({ post_id: postId, user_id: user.id });
+
+    if (error) {
+        console.error('Unlike error:', error);
+        return { error: 'There was an error unliking the post.' };
+    }
+
+    // 2. ✨ REMOVE THE NOTIFICATION
+    // We don't need to check who the author is, because if a notification
+    // exists for this user+post+like combo, we want it gone.
+    await deleteNotification({
+        actorId: user.id,
+        type: 'like',
+        targetPostId: postId
+    });
+
+    revalidatePath(`/blog/[slug]`, 'page');
+    return { success: true };
+}
+// 3. POST COMMENT (With Notifications)
 export async function postComment(postId: string, formData: FormData) {
     const supabase = await createClient();
     const userData = await getUserProfile();
+
     if (!userData?.user || !userData.profile) {
         return { error: 'You must be logged in to comment.' };
     }
+
     const content = formData.get('comment') as string;
     if (!content || content.trim().length < 3) {
         return { error: 'Comment must be at least 3 characters.' };
     }
+
     const { error } = await supabase.from('comments').insert({
         post_id: postId,
         author_id: userData.user.id,
@@ -200,45 +276,29 @@ export async function postComment(postId: string, formData: FormData) {
         author_username: userData.profile.username,
         author_profile_pic_url: userData.profile.profile_pic_url,
     });
+
     if (error) {
         console.error('Comment insert error:', error);
         return { error: 'Could not post comment. Please try again.' };
     }
+
+    // Check Author for Notification
+    const { data: post } = await supabase
+        .from('posts')
+        .select('author_id')
+        .eq('id', postId)
+        .single();
+
+    if (post && post.author_id !== userData.user.id) {
+        await createNotification({
+            recipientId: post.author_id,
+            actorId: userData.user.id,
+            actorUsername: userData.profile.username,
+            type: 'comment',
+            targetPostId: postId
+        });
+    }
+
     revalidatePath(`/blog/[slug]`, 'page');
     return { success: 'Comment posted!' };
 }
-
-// =====================================================================
-// == ACTIONS: For likes
-// =====================================================================
-
-// (This function is unchanged)
-export async function likePost(postId: string) {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { error: 'You must be logged in to like a post.' };
-    const { error } = await supabase.from('likes').insert({ post_id: postId, user_id: user.id });
-    if (error) {
-        console.error('Like error:', error);
-        return { error: 'There was an error liking the post.' };
-    }
-    revalidatePath(`/blog/[slug]`, 'page');
-    return { success: true };
-}
-
-// (This function is unchanged)
-export async function unlikePost(postId: string) {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { error: 'You must be logged in to unlike a post.' };
-    const { error } = await supabase.from('likes').delete().match({ post_id: postId, user_id: user.id });
-    if (error) {
-        console.error('Unlike error:', error);
-        return { error: 'There was an error unliking the post.' };
-    }
-    revalidatePath(`/blog/[slug]`, 'page');
-    return { success: true };
-}
-
-// ✨ 3. DELETED the duplicate CrewMember, getMovieDetails, and getSeriesDetails functions
-// They are now correctly imported from cinematic-actions.ts
