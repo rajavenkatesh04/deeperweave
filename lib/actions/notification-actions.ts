@@ -90,11 +90,21 @@ export async function deleteNotification({
 }) {
     const supabase = await createClient();
 
-    await supabase.from('notifications').delete().match({
-        actor_id: actorId,
-        type: type,
-        target_post_id: targetPostId
-    });
+    // We use .match() to find the specific notification unique to this action
+    const { error, count } = await supabase
+        .from('notifications')
+        .delete({ count: 'exact' }) // Request count to verify deletion
+        .match({
+            actor_id: actorId,
+            type: type,
+            target_post_id: targetPostId
+        });
+
+    if (error) {
+        console.error("❌ Failed to delete notification:", error.message);
+    } else {
+        console.log(`✅ Deleted ${count} notification(s) for undo action.`);
+    }
 }
 
 
