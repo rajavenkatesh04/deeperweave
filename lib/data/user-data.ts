@@ -130,24 +130,51 @@ export async function getProfileData(username: string): Promise<ProfileData> {
     noStore();
     const supabase = await createClient();
     const { data: { user: viewer } } = await supabase.auth.getUser();
+
+    // 1. Fetch Profile + Timeline Count
+    // (We removed the join counts for followers here because they are inaccurate)
     const { data: profile } = await supabase
         .from('profiles')
-        .select('*, follower_count:followers!following_id(count), following_count:followers!follower_id(count),timeline_count:timeline_entries!user_id(count)')
+        .select('*, timeline_count:timeline_entries!user_id(count)')
         .eq('username', username)
-        .single<UserProfile & { follower_count: [{ count: number }], following_count: [{ count: number }],timeline_count: [{ count: number }] }>();
-    if (!profile) {
-        return { profile: null, followStatus: 'not_following', followerCount: 0, followingCount: 0, timelineCount: 0 };;
-    }
-    const followerCount = profile.follower_count[0]?.count || 0;
-    const followingCount = profile.following_count[0]?.count || 0;
-    const timelineCount = profile.timeline_count[0]?.count || 0;
+        .single<UserProfile & { timeline_count: [{ count: number }] }>();
 
-    if (!viewer || viewer.id === profile.id) {
-        return { profile, followStatus: 'not_following', followerCount, followingCount, timelineCount };
+    if (!profile) {
+        return { profile: null, followStatus: 'not_following', followerCount: 0, followingCount: 0, timelineCount: 0 };
     }
-    const { data: follow } = await supabase.from('followers').select('status').eq('follower_id', viewer.id).eq('following_id', profile.id).single();
-    const followStatus = follow ? follow.status : 'not_following';
-    return { profile, followStatus: followStatus as 'not_following' | 'pending' | 'accepted', followerCount, followingCount, timelineCount };
+
+    // 2. ✨ PARALLEL FETCH for Accurate Counts (Filtered by 'accepted')
+    const [followerRes, followingRes, followStatusRes] = await Promise.all([
+        // Count Followers (status = accepted)
+        supabase.from('followers')
+            .select('*', { count: 'exact', head: true })
+            .eq('following_id', profile.id)
+            .eq('status', 'accepted'),
+
+        // Count Following (status = accepted)
+        supabase.from('followers')
+            .select('*', { count: 'exact', head: true })
+            .eq('follower_id', profile.id)
+            .eq('status', 'accepted'),
+
+        // Fetch viewer status if logged in
+        viewer && viewer.id !== profile.id
+            ? supabase.from('followers').select('status').eq('follower_id', viewer.id).eq('following_id', profile.id).single()
+            : Promise.resolve({ data: null })
+    ]);
+
+    const followerCount = followerRes.count || 0;
+    const followingCount = followingRes.count || 0;
+    const timelineCount = profile.timeline_count[0]?.count || 0;
+    const followStatus = followStatusRes.data ? followStatusRes.data.status : 'not_following';
+
+    return {
+        profile,
+        followStatus: followStatus as 'not_following' | 'pending' | 'accepted',
+        followerCount,
+        followingCount,
+        timelineCount
+    };
 }
 
 

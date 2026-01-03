@@ -2,13 +2,12 @@
 
 import { createClient } from '@/utils/supabase/server';
 import { unstable_noStore as noStore } from 'next/cache';
-import { CommentWithAuthor, Movie, Series, Post, UserProfile } from "@/lib/definitions"; // ✨ 1. IMPORT Series
+import { CommentWithAuthor, Movie, Series, Post, UserProfile } from "@/lib/definitions";
 
-// ✨ 2. UPDATE TYPES
 export type PostForFeed = Post & {
     author: UserProfile;
     movie: Pick<Movie, 'title' | 'poster_url'> | null;
-    series: Pick<Series, 'title' | 'poster_url'> | null; // ✨ ADDED
+    series: Pick<Series, 'title' | 'poster_url'> | null;
     likes: [{ count: number }];
     comments: [{ count: number }];
 };
@@ -16,11 +15,10 @@ export type PostForFeed = Post & {
 export type PostForPage = Post & {
     author: UserProfile;
     movie: Movie | null;
-    series: Series | null; // ✨ ADDED
+    series: Series | null;
     comments: CommentWithAuthor[];
     likes: [{ count: number }];
 };
-
 
 /**
  * Fetches a paginated list of posts for the main blog feed.
@@ -29,7 +27,6 @@ export async function getPosts(): Promise<PostForFeed[]> {
     noStore();
     const supabase = await createClient();
 
-    // ✨ 3. UPDATE SELECT
     const { data, error } = await supabase
         .from('posts')
         .select(`
@@ -50,7 +47,6 @@ export async function getPosts(): Promise<PostForFeed[]> {
     return data as PostForFeed[];
 }
 
-
 /**
  * Fetches a single, detailed post by its slug.
  */
@@ -59,7 +55,7 @@ export async function getPostBySlug(slug: string) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    // ✨ 4. UPDATE SELECT
+    // ✨ FIX: Use .maybeSingle() instead of .single() to avoid PGRST116 error on 404s
     const { data: post, error } = await supabase
         .from('posts')
         .select(`
@@ -71,20 +67,25 @@ export async function getPostBySlug(slug: string) {
             likes(count)
         `)
         .eq('slug', slug)
-        .single<PostForPage>();
+        .maybeSingle<PostForPage>();
 
-    if (error || !post) {
+    if (error) {
         console.error('Error fetching post by slug:', error);
         return null;
     }
 
+    if (!post) {
+        return null; // Post not found, handled gracefully
+    }
+
     let userHasLiked = false;
     if (user) {
+        // ✨ FIX: Use .maybeSingle() here too for safety
         const { data: like } = await supabase
             .from('likes')
             .select('user_id')
             .match({ post_id: post.id, user_id: user.id })
-            .single();
+            .maybeSingle();
         userHasLiked = !!like;
     }
 
@@ -93,7 +94,6 @@ export async function getPostBySlug(slug: string) {
     return { ...post, likeCount, userHasLiked };
 }
 
-
 /**
  * Fetches all posts created by a specific user.
  */
@@ -101,7 +101,6 @@ export async function getPostsByUserId(userId: string): Promise<PostForFeed[]> {
     noStore();
     const supabase = await createClient();
 
-    // ✨ 5. UPDATE SELECT
     const { data, error } = await supabase
         .from('posts')
         .select(`

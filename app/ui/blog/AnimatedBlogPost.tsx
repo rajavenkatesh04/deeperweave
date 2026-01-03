@@ -1,7 +1,7 @@
 'use client';
 
-import { motion, Variants, AnimatePresence } from "framer-motion";
-import { Eye, ArrowUp, FilmIcon, ArrowUpRightIcon } from "lucide-react";
+import { motion, Variants, AnimatePresence, useScroll, useTransform } from "framer-motion";
+import { Eye, ArrowUp, FilmIcon, ArrowUpRightIcon, ChevronLeft } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import CinematicInfoCard from "@/app/ui/blog/CinematicInfoCard";
@@ -9,10 +9,10 @@ import LikeButton from "@/app/ui/blog/LikeButton";
 import CommentsSection from "@/app/ui/blog/CommentsSection";
 import { Post, Movie, Series, CommentWithAuthor, UserProfile } from "@/lib/definitions";
 import DOMPurify from 'isomorphic-dompurify';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
 import { SpoilerBadge, NsfwBadge, PremiumBadge } from "@/app/ui/blog/badges";
-import { LockClosedIcon } from "@heroicons/react/24/solid";
+import { LockClosedIcon, EyeIcon } from "@heroicons/react/24/outline";
 
 // --- ANIMATION VARIANTS ---
 const pageVariants: Variants = {
@@ -21,342 +21,267 @@ const pageVariants: Variants = {
 };
 
 const contentVariants: Variants = {
-    initial: { opacity: 0, y: 40 },
+    initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0, transition: { duration: 0.6, delay: 0.4, ease: "easeOut" } }
 };
 
-// --- 1. NSFW OVERLAY (System Lock Style) ---
-const NSFWWarning = ({ onAccept, onReject }: { onAccept: () => void, onReject: () => void }) => {
-    return (
-        <AnimatePresence>
-            <motion.div
-                className="fixed inset-0 z-[100] flex items-center justify-center bg-black p-6 font-mono"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-            >
-                {/* Red Noise Background */}
-                <div className="absolute inset-0 opacity-20 pointer-events-none"
-                     style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
-                />
-                <div className="absolute inset-0 bg-red-950/30 pointer-events-none mix-blend-overlay" />
-
-                <div className="relative z-10 max-w-md w-full border border-red-900 bg-black/90 p-12 text-center shadow-[0_0_50px_rgba(127,29,29,0.5)] backdrop-blur-sm">
-                    <div className="mx-auto w-20 h-20 border-2 border-red-600 bg-red-950/50 flex items-center justify-center mb-8 rounded-full animate-pulse">
-                        <LockClosedIcon className="w-10 h-10 text-red-500" />
-                    </div>
-
-                    <h2 className="text-2xl font-bold text-red-500 uppercase tracking-[0.2em] mb-4">
-                        Restricted Access
-                    </h2>
-                    <p className="text-red-400 mb-10 text-xs uppercase tracking-widest leading-relaxed">
-                        // CAUTION: This file contains explicit material.<br/>
-                        // Viewer discretion is mandatory.
-                    </p>
-
-                    <div className="flex flex-col gap-4">
-                        <button
-                            onClick={onAccept}
-                            className="w-full py-4 bg-red-700 hover:bg-red-600 text-white font-bold uppercase tracking-widest text-xs transition-all hover:tracking-[0.2em] border border-transparent shadow-lg"
-                        >
-                            Override Security Protocol
-                        </button>
-                        <button
-                            onClick={onReject}
-                            className="w-full py-4 bg-transparent hover:bg-red-900/10 text-red-600 border border-red-900/50 font-bold uppercase tracking-widest text-xs transition-colors"
-                        >
-                            Abort Sequence
-                        </button>
-                    </div>
-                </div>
-            </motion.div>
-        </AnimatePresence>
-    );
-};
-
-// --- 2. SCROLL TO TOP (Technical) ---
 const ScrollToTop = () => {
     return (
         <motion.button
-            className="fixed bottom-8 right-8 z-40 p-3 bg-zinc-900 text-white dark:bg-white dark:text-black border border-zinc-700 shadow-xl hover:bg-zinc-700 dark:hover:bg-zinc-200 transition-colors"
+            className="fixed bottom-8 right-8 z-40 p-3 bg-white text-black dark:bg-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-800 shadow-2xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            whileHover={{ y: -4 }}
         >
-            <ArrowUp size={20} />
+            <ArrowUp size={18} />
         </motion.button>
     );
 };
 
 interface AnimatedBlogPostProps {
-    post: Post;
-    author: Pick<UserProfile, 'username' | 'display_name' | 'profile_pic_url'>;
-    movie?: Movie | null;
-    series?: Series | null;
+    post: any;
+    author: {
+        username: string;
+        display_name: string | null;
+        profile_pic_url: string | null;
+    };
+    movie?: any;
+    series?: any;
     likeCount: number;
     userHasLiked: boolean;
-    comments: CommentWithAuthor[];
-    viewerData: { profile: UserProfile | null } | null;
+    comments: any[];
+    viewerData: any;
     nsfw: boolean;
     rating?: number;
 }
 
 export default function AnimatedBlogPost({
-                                             post,
-                                             author,
-                                             movie,
-                                             series,
-                                             likeCount,
-                                             userHasLiked,
-                                             comments,
-                                             viewerData,
-                                             nsfw,
-                                             rating
+                                             post, author, movie, series, likeCount, userHasLiked, comments, viewerData, nsfw, rating
                                          }: AnimatedBlogPostProps) {
-
-    const [nsfwAccepted, setNsfwAccepted] = useState(!nsfw);
+    const [showContent, setShowContent] = useState(!nsfw);
     const [isCinematicModalOpen, setIsCinematicModalOpen] = useState(false);
+
+    const { scrollY } = useScroll();
+    const headerTitleOpacity = useTransform(scrollY, [300, 500], [0, 1]);
 
     const sanitizedHtml = DOMPurify.sanitize(post.content_html);
     const cinematicItem = movie || series;
     const mediaType = movie ? 'movie' : 'tv';
 
-    const handleNsfwAccept = () => setNsfwAccepted(true);
-    const handleNsfwReject = () => window.history.back();
+    useEffect(() => {
+        if (post?.title) {
+            document.title = `${post.title} | Deeper Weave`;
+        }
+    }, [post?.title]);
 
-    if (nsfw && !nsfwAccepted) {
-        return <NSFWWarning onAccept={handleNsfwAccept} onReject={handleNsfwReject} />;
-    }
-
-    // Format Date: "2026.01.02"
-    const dateObj = new Date(post.created_at);
-    const dateStr = `${dateObj.getFullYear()}.${String(dateObj.getMonth() + 1).padStart(2, '0')}.${String(dateObj.getDate()).padStart(2, '0')}`;
+    const dateStr = new Date(post.created_at).toLocaleDateString(undefined, { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '.');
 
     return (
         <motion.article
-            className="min-h-screen bg-zinc-50 dark:bg-zinc-950 relative pb-32"
+            className="min-h-screen bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 pb-32 font-sans relative"
             variants={pageVariants}
             initial="initial"
             animate="animate"
         >
-            {/* Global Grain */}
-            <div className="absolute inset-0 opacity-[0.03] pointer-events-none fixed z-50 mix-blend-overlay"
-                 style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
-            />
+            {/* --- STICKY NAV BAR --- */}
+            <nav className="sticky top-0 z-[70] bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-900 h-14 w-full flex items-center px-4 md:px-6">
+                <div className="max-w-6xl mx-auto w-full flex items-center justify-between">
+                    <button
+                        onClick={() => window.history.back()}
+                        className="flex items-center gap-2 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors group"
+                    >
+                        <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+                        <span className="text-[10px] font-bold uppercase tracking-widest hidden sm:block">Archive</span>
+                    </button>
 
-            {/* --- HERO SECTION --- */}
-            {/* Changed from absolute/fixed height to flex column to ensure content is never hidden */}
-            <div className="relative w-full min-h-[70vh] flex flex-col justify-end bg-zinc-900 border-b border-zinc-800">
-                {post.banner_url ? (
-                    <>
-                        <Image
-                            src={post.banner_url}
-                            alt={`Banner for ${post.title}`}
-                            fill
-                            className="object-cover opacity-80 transition-all duration-[1.5s] ease-in-out scale-105 hover:scale-100"
-                            priority
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent" />
-                        <div className="absolute inset-0 bg-gradient-to-b from-black/50 to-transparent opacity-60" />
-                    </>
-                ) : (
-                    <div className="absolute inset-0 flex items-center justify-center bg-zinc-950">
-                        <div className="absolute inset-0 opacity-10" style={{backgroundImage: 'url("/noise.svg")'}} />
-                        <span className={`${PlayWriteNewZealandFont.className} text-[12vw] text-zinc-800 select-none`}>
-                            File.
+                    <motion.div
+                        style={{ opacity: headerTitleOpacity }}
+                        className="flex-1 flex justify-center px-4 overflow-hidden"
+                    >
+                        <span className="text-xs font-bold uppercase tracking-widest truncate text-zinc-500 dark:text-zinc-400">
+                            {post.title}
+                        </span>
+                    </motion.div>
+
+                    <div className="flex items-center gap-4">
+                        <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-600 hidden md:block">
+                            ID: {post.id.slice(0, 8)}
                         </span>
                     </div>
+                </div>
+            </nav>
+
+            {/* --- HERO SECTION --- */}
+            <div className="relative w-full h-[60vh] md:h-[75vh] flex flex-col justify-end overflow-hidden border-b border-zinc-200 dark:border-zinc-900 bg-zinc-100 dark:bg-zinc-950">
+                {post.banner_url ? (
+                    <Image src={post.banner_url} alt="" fill className="object-cover opacity-80 dark:opacity-50 transition-all duration-1000 scale-105" priority />
+                ) : (
+                    <div className="absolute inset-0 flex items-center justify-center opacity-10">
+                        <span className={`${PlayWriteNewZealandFont.className} text-[20vw] text-zinc-900 dark:text-white`}>Archive</span>
+                    </div>
                 )}
+                <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-black via-transparent to-transparent" />
 
-                {/* Hero Content Overlay - Relative + z-index to sit on top of image */}
-                <div className="relative z-20 w-full p-6 md:p-12 mt-32">
-                    <div className="max-w-5xl mx-auto space-y-8">
-
-                        {/* Top Meta Line */}
-                        <div className="flex flex-wrap items-center gap-4 text-[10px] font-mono uppercase tracking-widest text-zinc-400">
-                            <span className="bg-black/50 backdrop-blur-md px-3 py-1 text-white border border-white/20">
-                                REF: {post.id.slice(0, 8)}
+                <div className="relative z-10 w-full max-w-6xl mx-auto px-6 pb-12 md:pb-20">
+                    <div className="space-y-6">
+                        <div className="flex flex-wrap items-center gap-4">
+                            <span className="bg-zinc-900 dark:bg-white text-white dark:text-black px-2 py-1 text-[10px] font-bold uppercase tracking-widest">
+                                ID: {post.id.slice(0, 8)}
                             </span>
-                            <span className="text-white drop-shadow-md">{dateStr}</span>
-                            <span className="w-px h-3 bg-white/50" />
-                            <div className="flex items-center gap-3">
+                            <span className="text-zinc-500 font-mono text-[10px] tracking-widest uppercase">{dateStr}</span>
+                            <div className="flex gap-2">
                                 {post.is_premium && <PremiumBadge />}
                                 {post.is_nsfw && <NsfwBadge />}
                                 {post.has_spoilers && <SpoilerBadge />}
                             </div>
                         </div>
 
-                        {/* Title Block */}
-                        <div className="border-l-4 border-white pl-6 md:pl-8">
-                            <h1 className={`${PlayWriteNewZealandFont.className} text-4xl md:text-6xl lg:text-8xl font-bold text-white leading-[0.9] drop-shadow-2xl`}>
-                                {post.title}
-                            </h1>
-                        </div>
+                        <h1 className={`${PlayWriteNewZealandFont.className} text-5xl md:text-8xl font-bold leading-tight tracking-tight text-zinc-900 dark:text-white max-w-4xl`}>
+                            {post.title}
+                        </h1>
 
-                        {/* Rating Display */}
-                        {rating && rating > 0 && (
-                            <div className="flex items-center gap-1 pl-1">
+                        {rating && (
+                            <div className="flex items-center gap-1 pt-2">
                                 {[...Array(5)].map((_, i) => (
-                                    <div key={i} className={`h-1.5 w-10 ${i < rating ? 'bg-amber-500' : 'bg-white/20'}`} />
+                                    <div key={i} className={`h-1 w-8 ${i < rating ? 'bg-amber-500' : 'bg-zinc-200 dark:bg-zinc-800'}`} />
                                 ))}
-                                <span className="ml-3 text-amber-500 font-mono text-xs font-bold tracking-widest drop-shadow-md">
-                                    {rating}/5 RATING
-                                </span>
                             </div>
                         )}
-
-                        {/* Author Link - Ensure visibility against any background */}
-                        <div className="pt-8 w-full max-w-lg">
-                            <Link href={`/profile/${author.username}`} className="group flex items-center gap-5">
-                                <div className="relative w-14 h-14 border-2 border-white/20 bg-zinc-800 transition-all rounded-sm overflow-hidden shadow-lg">
-                                    <Image
-                                        src={author.profile_pic_url || '/placeholder-user.jpg'}
-                                        alt={author.display_name}
-                                        fill
-                                        className="object-cover"
-                                    />
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className="text-white font-bold text-sm uppercase tracking-widest group-hover:text-amber-500 transition-colors drop-shadow-md">
-                                        {author.display_name}
-                                    </span>
-                                    <span className="text-zinc-300 text-xs font-mono group-hover:text-white transition-colors drop-shadow-md">
-                                        // @{author.username}
-                                    </span>
-                                </div>
-                            </Link>
-                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* --- BODY CONTENT --- */}
-            <motion.div
-                className="relative max-w-4xl mx-auto px-4 md:px-0 -mt-12 md:-mt-20 z-30"
-                variants={contentVariants}
-            >
-                {/* Paper Sheet Effect */}
-                <div className="bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 p-8 md:p-16 lg:p-20 shadow-2xl relative">
+            {/* --- CONTENT WRAPPER (RELATIVE FOR OVERLAY) --- */}
+            <div className="relative min-h-[500px]">
 
-                    {/* Decorative Top Markings */}
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-zinc-200 dark:via-zinc-800 to-transparent" />
-                    <div className="absolute top-8 right-8 text-[10px] font-mono text-zinc-300 dark:text-zinc-700 rotate-90 origin-top-right">
-                        PAGE 01 OF 01
-                    </div>
-
-                    {/* The Text */}
-                    <div
-                        className="prose prose-lg dark:prose-invert max-w-none
-                        prose-headings:font-bold prose-headings:tracking-tight prose-headings:font-serif
-                        prose-p:leading-relaxed prose-p:font-light
-                        prose-a:text-zinc-900 dark:prose-a:text-white prose-a:font-bold prose-a:underline prose-a:decoration-zinc-400 prose-a:underline-offset-4
-                        prose-blockquote:border-l-2 prose-blockquote:border-zinc-900 dark:prose-blockquote:border-zinc-100 prose-blockquote:pl-6 prose-blockquote:italic
-                        text-zinc-800 dark:text-zinc-300"
-                        dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
-                    />
-
-                    {/* --- REFERENCE MATERIAL (The Movie/Series Card) --- */}
-                    {post.type === 'review' && cinematicItem && (
-                        <div className="mt-20 pt-10 border-t border-zinc-100 dark:border-zinc-900">
-                            <div className="flex items-center justify-between mb-8">
-                                <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-400">
-                                    [ Subject Material ]
-                                </h3>
-                                <div className="h-px flex-1 bg-zinc-100 dark:bg-zinc-900 ml-4" />
-                            </div>
-
-                            {/* Reference Card */}
-                            <div
-                                onClick={() => setIsCinematicModalOpen(true)}
-                                className="group cursor-pointer flex flex-col md:flex-row gap-0 border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 hover:border-zinc-900 dark:hover:border-zinc-100 transition-all duration-500 overflow-hidden"
-                            >
-                                {/* Poster */}
-                                <div className="relative w-full md:w-32 h-48 shrink-0 bg-zinc-200 dark:bg-zinc-800 overflow-hidden">
-                                    {cinematicItem.poster_url ? (
-                                        <Image
-                                            src={cinematicItem.poster_url}
-                                            alt={cinematicItem.title}
-                                            fill
-                                            className="object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700"
-                                        />
-                                    ) : (
-                                        <div className="flex items-center justify-center h-full"><FilmIcon className="w-8 h-8 text-zinc-400"/></div>
-                                    )}
-                                    {/* Grain Overlay */}
-                                    <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors pointer-events-none" />
+                {/* --- REDDIT-STYLE NSFW OVERLAY (ABSOLUTE within Content Wrapper) --- */}
+                <AnimatePresence>
+                    {nsfw && !showContent && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            // Changed from fixed inset-0 to absolute inset-0
+                            className="absolute inset-0 z-50 flex items-start justify-center pt-32 bg-white/95 dark:bg-black/95 backdrop-blur-md"
+                        >
+                            <div className="relative z-10 flex flex-col items-center text-center max-w-sm px-4">
+                                <div className="w-16 h-16 mb-6 flex items-center justify-center bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl">
+                                    <LockClosedIcon className="w-8 h-8 text-zinc-400 dark:text-zinc-600" />
                                 </div>
-
-                                {/* Info */}
-                                <div className="flex-1 p-6 flex flex-col justify-center relative">
-                                    {/* Hover Arrow */}
-                                    <div className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0 duration-300">
-                                        <ArrowUpRightIcon className="w-5 h-5 text-zinc-900 dark:text-zinc-100" />
-                                    </div>
-
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <span className="px-2 py-1 bg-zinc-900 dark:bg-white text-white dark:text-black text-[10px] font-bold uppercase tracking-wider">
-                                            {mediaType === 'movie' ? 'Film' : 'Series'}
-                                        </span>
-                                        <span className="text-xs font-mono text-zinc-500">
-                                            // {new Date(cinematicItem.release_date).getFullYear()}
-                                        </span>
-                                    </div>
-
-                                    <h4 className={`${PlayWriteNewZealandFont.className} text-3xl font-bold text-zinc-900 dark:text-zinc-100 mb-1 group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors`}>
-                                        {cinematicItem.title}
-                                    </h4>
-                                    <p className="text-xs text-zinc-500 uppercase tracking-wide mt-2">
-                                        Click to access dossier
-                                    </p>
-                                </div>
+                                <h2 className="text-xl font-bold uppercase tracking-[0.2em] mb-2 text-zinc-900 dark:text-white">
+                                    Restricted Access
+                                </h2>
+                                <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-8 leading-relaxed">
+                                    This entry contains NSFW material. <br/> Access restricted to authorized personnel.
+                                </p>
+                                <button
+                                    onClick={() => setShowContent(true)}
+                                    className="flex items-center gap-3 px-8 py-4 bg-zinc-900 dark:bg-white text-white dark:text-black text-[10px] font-bold uppercase tracking-widest hover:opacity-90 transition-all shadow-xl border border-transparent hover:scale-105"
+                                >
+                                    <EyeIcon className="w-4 h-4" />
+                                    View (must be 18+)
+                                </button>
                             </div>
-
-                            {/* The Actual Modal Component */}
-                            <CinematicInfoCard
-                                tmdbId={cinematicItem.tmdb_id}
-                                initialData={cinematicItem}
-                                mediaType={mediaType}
-                                isOpen={isCinematicModalOpen}
-                                onClose={() => setIsCinematicModalOpen(false)}
-                            />
-                        </div>
+                        </motion.div>
                     )}
-                </div>
+                </AnimatePresence>
 
-                {/* --- FOOTER SECTION --- */}
-                <div className="mt-8 max-w-4xl mx-auto space-y-px">
+                {/* --- MAIN CONTENT AREA --- */}
+                {/* Applied blur effect here if content is hidden */}
+                <motion.div
+                    className={`max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 px-6 pt-16 md:pt-24 transition-all duration-500 ${!showContent ? 'blur-md opacity-20 pointer-events-none select-none h-[600px] overflow-hidden' : ''}`}
+                    variants={contentVariants}
+                >
 
-                    {/* Stats Bar */}
-                    <div className="flex items-center justify-between p-6 bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800">
-                        <div className="flex items-center gap-6">
-                            <LikeButton postId={post.id} initialLikes={likeCount} userHasLiked={userHasLiked} />
-                        </div>
-                        <div className="flex items-center gap-2 text-xs font-mono text-zinc-400 uppercase tracking-wider">
-                            <Eye size={14} />
-                            <span>{post.view_count.toLocaleString()} Observations</span>
+                    {/* Left Sidebar */}
+                    <div className="lg:col-span-3">
+                        <div className="lg:sticky lg:top-24 space-y-8">
+                            <Link href={`/profile/${author.username}`} className="group block space-y-4">
+                                <div className="relative w-16 h-16 border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 grayscale group-hover:grayscale-0 transition-all">
+                                    <Image src={author.profile_pic_url || '/placeholder-user.jpg'} alt="" fill className="object-cover" />
+                                </div>
+                                <div>
+                                    <p className="text-xs font-bold uppercase tracking-widest text-zinc-900 dark:text-zinc-100">{author.display_name}</p>
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 group-hover:text-zinc-900 dark:group-hover:text-zinc-400 transition-colors">@{author.username}</p>
+                                </div>
+                            </Link>
+
+                            <div className="pt-8 border-t border-zinc-200 dark:border-zinc-900 space-y-4">
+                                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-600">
+                                    <Eye size={12} />
+                                    <span>{post.view_count.toLocaleString()} Views</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Comments Area */}
-                    <div className="py-6  ">
-                        <div className="mb-10 flex items-end justify-between border-b border-zinc-100 dark:border-zinc-800 pb-4">
-                            <h3 className={`${PlayWriteNewZealandFont.className} text-4xl font-bold text-zinc-900 dark:text-zinc-100`}>
-                                Discourse.
-                            </h3>
-                            <span className="text-xs font-mono uppercase text-zinc-500 tracking-widest border border-zinc-200 dark:border-zinc-800 px-2 py-1">
-                                LOGS: {comments.length}
-                            </span>
-                        </div>
-                        <CommentsSection
-                            postId={post.id}
-                            comments={comments}
-                            currentUserProfile={viewerData?.profile ?? null}
-                        />
-                    </div>
-                </div>
+                    {/* Right Area */}
+                    <div className="lg:col-span-9 space-y-20">
+                        <section className="prose prose-zinc dark:prose-invert max-w-none">
+                            <div
+                                className="font-light leading-relaxed text-zinc-700 dark:text-zinc-300 first-letter:text-5xl first-letter:font-bold first-letter:mr-3 first-letter:float-left first-letter:text-zinc-900 dark:first-letter:text-white"
+                                dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
+                            />
+                        </section>
 
-            </motion.div>
+                        {post.type === 'review' && cinematicItem && (
+                            <div className="space-y-6 pt-12 border-t border-zinc-200 dark:border-zinc-900">
+                                <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400 dark:text-zinc-600">Archive Dossier</h3>
+                                <div
+                                    onClick={() => setIsCinematicModalOpen(true)}
+                                    className="group cursor-pointer flex flex-col md:flex-row border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/50 hover:border-zinc-900 dark:hover:border-zinc-500 transition-all duration-500"
+                                >
+                                    <div className="relative w-full md:w-32 h-48 grayscale group-hover:grayscale-0 transition-all duration-700">
+                                        {cinematicItem.poster_url ? (
+                                            <Image src={cinematicItem.poster_url} alt="" fill className="object-cover" />
+                                        ) : (
+                                            <div className="flex items-center justify-center h-full bg-zinc-100 dark:bg-zinc-900"><FilmIcon className="w-6 h-6 text-zinc-300 dark:text-zinc-700"/></div>
+                                        )}
+                                    </div>
+                                    <div className="p-8 flex-1 flex flex-col justify-center">
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <span className="text-[9px] font-bold uppercase tracking-widest bg-zinc-200 dark:bg-zinc-800 px-2 py-0.5 text-zinc-700 dark:text-zinc-300">{mediaType === 'movie' ? 'Film' : 'Series'}</span>
+                                            <span className="text-[9px] font-mono text-zinc-400 dark:text-zinc-600">// {new Date(cinematicItem.release_date).getFullYear()}</span>
+                                        </div>
+                                        <h4 className={`${PlayWriteNewZealandFont.className} text-3xl font-bold text-zinc-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors`}>
+                                            {cinematicItem.title}
+                                        </h4>
+                                        <div className="mt-4 flex items-center gap-2 text-[9px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-600">
+                                            <span>Access Data</span>
+                                            <ArrowUpRightIcon className="w-3 h-3 translate-y-0.5 opacity-0 group-hover:opacity-100 transition-all" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <CinematicInfoCard
+                                    tmdbId={cinematicItem.tmdb_id}
+                                    initialData={cinematicItem}
+                                    mediaType={mediaType}
+                                    isOpen={isCinematicModalOpen}
+                                    onClose={() => setIsCinematicModalOpen(false)}
+                                />
+                            </div>
+                        )}
+
+                        <div className="space-y-12 pt-12 border-t border-zinc-200 dark:border-zinc-900">
+                            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                                <h3 className={`${PlayWriteNewZealandFont.className} text-4xl font-bold text-zinc-900 dark:text-white`}>Discourse.</h3>
+                                <div className="flex items-center gap-6">
+                                    <LikeButton postId={post.id} initialLikes={likeCount} userHasLiked={userHasLiked} />
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-600 border border-zinc-200 dark:border-zinc-900 px-2 py-1">Logs: {comments.length}</span>
+                                </div>
+                            </div>
+                            <div className="bg-zinc-50 dark:bg-zinc-950/30 border border-zinc-200 dark:border-zinc-900 p-6 md:p-12">
+                                <CommentsSection
+                                    postId={post.id}
+                                    comments={comments}
+                                    currentUserProfile={viewerData?.profile ?? null}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </motion.div>
+            </div>
 
             <ScrollToTop />
         </motion.article>
