@@ -4,62 +4,210 @@ import { useActionState, useEffect, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import Image from 'next/image';
 import Link from 'next/link';
-// ✨ 1. IMPORT Series and your new server action/types
 import { UserProfile, Movie, Series } from '@/lib/definitions';
 import { updateProfile, EditProfileState, checkUsernameAvailability } from '@/lib/actions/profile-actions';
 import { searchCinematic, type CinematicSearchResult } from '@/lib/actions/cinematic-actions';
-// import { ofetch } from 'ofetch'; // <-- No longer needed
+import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
 import {
     PhotoIcon, CheckCircleIcon, XCircleIcon, FilmIcon,
-    XMarkIcon, MagnifyingGlassIcon, TvIcon
-} from '@heroicons/react/24/solid';
+    XMarkIcon, MagnifyingGlassIcon, ArrowLeftIcon, PlusIcon,
+    ArrowPathIcon, TrashIcon
+} from '@heroicons/react/24/outline';
 import LoadingSpinner from '@/app/ui/loading-spinner';
 import { clsx } from 'clsx';
 
-// ✨ 2. REPLACED MovieSearchResults with CinematicSearchResults
-function CinematicSearchResults({ results, onSelect, isLoading }: {
-    results: CinematicSearchResult[];
+// --- SUB-COMPONENTS ---
+
+// 1. Search Modal (Unchanged)
+function SearchModal({
+                         isOpen,
+                         onClose,
+                         onSelect
+                     }: {
+    isOpen: boolean;
+    onClose: () => void;
     onSelect: (item: CinematicSearchResult) => void;
-    isLoading: boolean;
 }) {
-    if (isLoading) return <div className="absolute z-10 w-full mt-1 p-4 text-center rounded-md shadow-lg bg-white dark:bg-zinc-800 border dark:border-zinc-700"><LoadingSpinner /></div>;
-    if (results.length === 0) return null;
+    const [query, setQuery] = useState('');
+    const [results, setResults] = useState<CinematicSearchResult[]>([]);
+    const [loading, setLoading] = useState(false);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (isOpen) inputRef.current?.focus();
+    }, [isOpen]);
+
+    useEffect(() => {
+        const handler = setTimeout(async () => {
+            if (query.trim().length < 2) { setResults([]); return; }
+            setLoading(true);
+            try {
+                const data = await searchCinematic(query);
+                setResults(data);
+            } catch (e) { console.error(e); }
+            finally { setLoading(false); }
+        }, 500);
+        return () => clearTimeout(handler);
+    }, [query]);
+
+    if (!isOpen) return null;
 
     return (
-        <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg dark:bg-zinc-800 dark:border-zinc-700 max-h-60 overflow-y-auto">
-            {results.map((item) => (
-                <li key={item.id} className="flex items-center p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-700" onClick={() => onSelect(item)}>
-                    {item.poster_path ? <Image src={`https://image.tmdb.org/t/p/w92${item.poster_path}`} alt={item.title} width={40} height={60} className="object-cover mr-3 rounded" /> : <div className="w-10 h-[60px] mr-3 rounded flex items-center justify-center bg-gray-200 dark:bg-zinc-700"><FilmIcon className="w-5 h-5 text-gray-400"/></div>}
-                    <div className="flex-1">
-                        <p className="font-semibold">{item.title}</p>
-                        <p className="text-sm text-gray-500">{item.release_date?.split('-')[0]}</p>
-                    </div>
-                    <div className={`flex items-center gap-1.5 flex-shrink-0 text-xs px-2 py-0.5 rounded-full ${
-                        item.media_type === 'movie'
-                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                            : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                    }`}>
-                        {item.media_type === 'movie' ? <FilmIcon className="w-3 h-3" /> : <TvIcon className="w-3 h-3" />}
-                        <span>{item.media_type === 'movie' ? 'Movie' : 'TV'}</span>
-                    </div>
-                </li>
-            ))}
-        </ul>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-zinc-900/90 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="w-full max-w-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+                <div className="p-4 border-b border-zinc-100 dark:border-zinc-900 flex items-center justify-between bg-zinc-50 dark:bg-zinc-900/50">
+                    <h3 className={`${PlayWriteNewZealandFont.className} text-lg font-bold`}>Search Archives</h3>
+                    <button onClick={onClose} className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-full transition-colors">
+                        <XMarkIcon className="w-5 h-5" />
+                    </button>
+                </div>
+                <div className="p-4 relative">
+                    <MagnifyingGlassIcon className="absolute left-7 top-7 w-5 h-5 text-zinc-400" />
+                    <input
+                        ref={inputRef}
+                        type="text"
+                        placeholder="Type a movie or show title..."
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        className="w-full h-12 pl-10 pr-4 bg-zinc-100 dark:bg-zinc-900 border-none rounded-lg focus:ring-2 focus:ring-zinc-500 placeholder:text-zinc-400 text-lg"
+                    />
+                </div>
+                <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                    {loading ? (
+                        <div className="py-10 text-center"><LoadingSpinner /></div>
+                    ) : results.length > 0 ? (
+                        results.map((item) => (
+                            <button
+                                key={item.id}
+                                onClick={() => { onSelect(item); onClose(); setQuery(''); setResults([]); }}
+                                className="w-full flex items-center gap-4 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-lg transition-colors group text-left"
+                            >
+                                {item.poster_path ? (
+                                    <Image src={`https://image.tmdb.org/t/p/w92${item.poster_path}`} alt={item.title} width={48} height={72} className="rounded-md object-cover shadow-sm" />
+                                ) : (
+                                    <div className="w-12 h-[72px] bg-zinc-200 dark:bg-zinc-800 rounded-md flex items-center justify-center"><FilmIcon className="w-6 h-6 text-zinc-400"/></div>
+                                )}
+                                <div>
+                                    <h4 className="font-bold text-zinc-900 dark:text-zinc-100 group-hover:text-amber-600 transition-colors">{item.title}</h4>
+                                    <p className="text-xs text-zinc-500 uppercase tracking-wide">
+                                        {item.release_date?.split('-')[0]} • {item.media_type}
+                                    </p>
+                                </div>
+                            </button>
+                        ))
+                    ) : query.length > 2 ? (
+                        <div className="text-center py-10 text-zinc-500">No records found.</div>
+                    ) : null}
+                </div>
+            </div>
+        </div>
     );
 }
 
-// ... (SubmitButton is unchanged) ...
-function SubmitButton() {
-    const { pending } = useFormStatus();
+// 2. Responsive Favorite Slot (List on Mobile, Grid on Desktop)
+function FavoriteSlot({
+                          item,
+                          index,
+                          onOpenSearch,
+                          onRemove,
+                          dragStart,
+                          dragOver,
+                          drop,
+                          isDragging
+                      }: {
+    item: CinematicSearchResult | null;
+    index: number;
+    onOpenSearch: () => void;
+    onRemove: () => void;
+    dragStart: () => void;
+    dragOver: (e: React.DragEvent) => void;
+    drop: () => void;
+    isDragging: boolean;
+}) {
     return (
-        <button type="submit" disabled={pending} className="flex h-10 w-full items-center justify-center rounded-lg bg-blue-600 px-6 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-gray-500">
-            {pending ? <LoadingSpinner /> : 'Save Changes'}
-        </button>
+        <div
+            className={clsx(
+                "relative group overflow-hidden border transition-all duration-300 rounded-lg",
+                // Mobile: List Layout (Horizontal flex)
+                "flex flex-row items-center h-28 w-full p-2 gap-4",
+                // Desktop: Grid Layout (Vertical column, Aspect Ratio)
+                "md:flex-col md:items-stretch md:h-auto md:p-0 md:gap-0 md:aspect-[2/3]",
+
+                item
+                    ? "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900"
+                    : "border-dashed border-zinc-300 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30 hover:bg-zinc-100 dark:hover:bg-zinc-900",
+                isDragging && "opacity-50 scale-95 ring-2 ring-zinc-500"
+            )}
+            draggable={!!item}
+            onDragStart={dragStart}
+            onDragOver={dragOver}
+            onDrop={drop}
+        >
+            {/* Rank Badge */}
+            <div className="absolute top-2 left-2 md:top-3 md:left-3 z-20 w-6 h-6 md:w-8 md:h-8 flex items-center justify-center bg-zinc-900 text-white dark:bg-zinc-100 dark:text-black border border-white dark:border-zinc-900 text-xs md:text-sm font-black rounded-full shadow-md">
+                #{index + 1}
+            </div>
+
+            {item ? (
+                <>
+                    {/* Poster Image */}
+                    <div className="relative shrink-0 w-16 h-24 md:w-full md:h-full md:absolute md:inset-0 rounded-md md:rounded-none overflow-hidden shadow-sm md:shadow-none">
+                        {item.poster_path ? (
+                            <Image src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title} fill className="object-cover" />
+                        ) : (
+                            <div className="w-full h-full bg-zinc-800 flex items-center justify-center"><FilmIcon className="w-8 h-8 text-zinc-600"/></div>
+                        )}
+                        {/* Desktop Gradient Overlay */}
+                        <div className="hidden md:block absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-60 group-hover:opacity-90 transition-opacity" />
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 md:absolute md:bottom-0 md:inset-x-0 md:p-4 md:translate-y-2 md:group-hover:translate-y-0 md:transition-transform">
+                        <h4 className="font-bold text-zinc-900 dark:text-zinc-100 md:text-white text-base md:text-lg leading-tight line-clamp-1 md:line-clamp-2">
+                            {item.title}
+                        </h4>
+                        <p className="text-zinc-500 dark:text-zinc-400 md:text-zinc-300 text-xs mt-1">
+                            {item.release_date?.split('-')[0]} <span className="md:hidden">• {item.media_type === 'movie' ? 'Film' : 'TV'}</span>
+                        </p>
+                    </div>
+
+                    {/* Desktop Actions (Hover) */}
+                    <div className="hidden md:flex absolute inset-0 items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 backdrop-blur-[2px]">
+                        <button type="button" onClick={onOpenSearch} className="p-3 bg-white text-black rounded-full hover:scale-110 transition-transform shadow-xl" title="Replace">
+                            <ArrowPathIcon className="w-5 h-5" />
+                        </button>
+                        <button type="button" onClick={(e) => { e.stopPropagation(); onRemove(); }} className="p-3 bg-red-600 text-white rounded-full hover:scale-110 transition-transform shadow-xl" title="Remove">
+                            <TrashIcon className="w-5 h-5" />
+                        </button>
+                    </div>
+
+                    {/* Mobile Actions (Visible) */}
+                    <div className="md:hidden flex flex-col gap-2">
+                        <button type="button" onClick={onOpenSearch} className="p-2 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100">
+                            <ArrowPathIcon className="w-5 h-5" />
+                        </button>
+                        <button type="button" onClick={(e) => { e.stopPropagation(); onRemove(); }} className="p-2 text-zinc-400 hover:text-red-600">
+                            <TrashIcon className="w-5 h-5" />
+                        </button>
+                    </div>
+                </>
+            ) : (
+                /* Empty State */
+                <button
+                    type="button"
+                    onClick={onOpenSearch}
+                    className="w-full h-full flex md:flex-col items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors gap-2 md:gap-0"
+                >
+                    <PlusIcon className="w-8 h-8 md:w-10 md:h-10 md:mb-2 opacity-50" />
+                    <span className="text-xs font-semibold uppercase tracking-widest">Add Favorite</span>
+                </button>
+            )}
+        </div>
     );
 }
 
-// --- Main EditForm Component ---
-// ✨ 3. UPDATED props to accept 'favoriteItems'
+// --- MAIN FORM ---
+
 export default function ProfileEditForm({ profile, favoriteItems }: {
     profile: UserProfile;
     favoriteItems: { rank: number; movies: Movie | null, series: Series | null }[]
@@ -67,106 +215,66 @@ export default function ProfileEditForm({ profile, favoriteItems }: {
     const initialState: EditProfileState = { message: null, errors: {} };
     const [state, formAction] = useActionState(updateProfile, initialState);
 
-    // ... (State for image preview & username is unchanged) ...
+    // Profile & Availability State
     const [previewUrl, setPreviewUrl] = useState<string | null>(profile.profile_pic_url || null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [username, setUsername] = useState(profile.username);
     const [availability, setAvailability] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
 
-    // ✨ 4. UPDATED State for Favorite Items
+    // Favorites State
     const [favItems, setFavItems] = useState<(CinematicSearchResult | null)[]>([null, null, null]);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [searchResults, setSearchResults] = useState<CinematicSearchResult[]>([]);
-    const [isSearching, setIsSearching] = useState(false);
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [activeSlotIndex, setActiveSlotIndex] = useState<number>(0);
+
+    // Drag & Drop Refs
     const dragItem = useRef<number | null>(null);
     const dragOverItem = useRef<number | null>(null);
 
-    // ✨ 5. UPDATED useEffect to populate state from 'favoriteItems'
+    // --- Load Data ---
     useEffect(() => {
         const initialItems: (CinematicSearchResult | null)[] = [null, null, null];
         favoriteItems.forEach(fav => {
-            const item = fav.movies || fav.series; // Get whichever one exists
+            const item = fav.movies || fav.series;
             if (fav.rank >= 1 && fav.rank <= 3 && item) {
-                const media_type = fav.movies ? 'movie' : 'tv';
                 initialItems[fav.rank - 1] = {
                     id: item.tmdb_id,
                     title: item.title,
                     release_date: item.release_date,
                     poster_path: item.poster_url?.replace('https://image.tmdb.org/t/p/w500', '') || null,
-                    media_type: media_type
+                    media_type: fav.movies ? 'movie' : 'tv'
                 };
             }
         });
         setFavItems(initialItems);
     }, [favoriteItems]);
 
-    // ... (Username check effect is unchanged) ...
-    useEffect(() => {
-        if (username === profile.username) {
-            setAvailability('idle');
-            return;
-        }
-        if (username.length < 3) {
-            setAvailability('idle');
-            return;
-        }
-        const handler = setTimeout(() => {
-            setAvailability('checking');
-            checkUsernameAvailability(username).then(result => {
-                setAvailability(result.available ? 'available' : 'taken');
-            });
-        }, 500);
-        return () => clearTimeout(handler);
-    }, [username, profile.username]);
-
-    // ✨ 6. UPDATED search effect to use Server Action
-    useEffect(() => {
-        const handler = setTimeout(async () => {
-            if (searchQuery.trim().length < 2) {
-                setSearchResults([]);
-                return;
-            }
-            setIsSearching(true);
-            try {
-                // Call the server action
-                const results = await searchCinematic(searchQuery);
-                setSearchResults(results);
-            } catch (error) {
-                console.error("Failed to fetch cinematic results:", error);
-            } finally {
-                setIsSearching(false);
-            }
-        }, 500);
-        return () => clearTimeout(handler);
-    }, [searchQuery]);
-
-    // ... (handleFileChange is unchanged) ...
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (file) {
-            setPreviewUrl(URL.createObjectURL(file));
-        }
+    // --- Logic ---
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) setPreviewUrl(URL.createObjectURL(file));
     };
 
-    // ✨ 7. UPDATED Add/Remove handlers
-    const handleAddFavorite = (item: CinematicSearchResult) => {
-        const firstEmptyIndex = favItems.findIndex(film => film === null);
-        if (firstEmptyIndex !== -1 && !favItems.some(f => f?.id === item.id)) {
-            const newFilms = [...favItems];
-            newFilms[firstEmptyIndex] = item;
-            setFavItems(newFilms);
+    const handleOpenSearch = (index: number) => {
+        setActiveSlotIndex(index);
+        setIsSearchOpen(true);
+    };
+
+    const handleSelectFavorite = (item: CinematicSearchResult) => {
+        if (favItems.some(f => f?.id === item.id)) {
+            alert("You've already added this title!");
+            return;
         }
-        setSearchQuery('');
-        setSearchResults([]);
+        const newItems = [...favItems];
+        newItems[activeSlotIndex] = item;
+        setFavItems(newItems);
     };
 
     const handleRemoveFavorite = (index: number) => {
-        const newFilms = [...favItems];
-        newFilms[index] = null;
-        setFavItems(newFilms);
+        const newItems = [...favItems];
+        newItems[index] = null;
+        setFavItems(newItems);
     };
 
-    // ... (handleDragSort is unchanged) ...
     const handleDragSort = () => {
         if (dragItem.current === null || dragOverItem.current === null) return;
         const newFilms = [...favItems];
@@ -178,97 +286,141 @@ export default function ProfileEditForm({ profile, favoriteItems }: {
         setFavItems(newFilms);
     };
 
-    return (
-        <form action={formAction} className="space-y-8">
-            {/* ... (Profile Picture Section is unchanged) ... */}
-            <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Profile Picture</h3>
-                <div className="mt-4 flex items-center gap-6">
-                    <Image src={previewUrl || '/placeholder-user.jpg'} alt="Profile picture preview" width={96} height={96} className="h-24 w-24 rounded-full object-cover bg-gray-200" />
-                    <input type="file" name="profile_pic" id="profile_pic" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/png, image/jpeg" />
-                    <button type="button" onClick={() => fileInputRef.current?.click()} className="flex h-10 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700">
-                        <PhotoIcon className="h-5 w-5" /> Change Picture
-                    </button>
-                </div>
-            </div>
+    useEffect(() => {
+        if (username === profile.username || username.length < 3) { setAvailability('idle'); return; }
+        const handler = setTimeout(() => {
+            setAvailability('checking');
+            checkUsernameAvailability(username).then(r => setAvailability(r.available ? 'available' : 'taken'));
+        }, 500);
+        return () => clearTimeout(handler);
+    }, [username, profile.username]);
 
-            {/* ... (User Details Section is unchanged) ... */}
-            <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Your Details</h3>
-                <div className="mt-6 grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-6">
-                    <div>
-                        <label htmlFor="display_name" className="block text-sm font-medium text-gray-700 dark:text-zinc-300">Display Name</label>
-                        <input type="text" name="display_name" id="display_name" defaultValue={profile.display_name} required className="mt-1 block w-full rounded-md border-gray-300 bg-gray-50 py-2 px-3 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100" />
-                        {state.errors?.display_name && <p className="mt-1 text-sm text-red-600">{state.errors.display_name[0]}</p>}
+    return (
+        <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 pb-20">
+            {/* Search Modal (Portal) */}
+            <SearchModal
+                isOpen={isSearchOpen}
+                onClose={() => setIsSearchOpen(false)}
+                onSelect={handleSelectFavorite}
+            />
+
+            {/* STICKY HEADER */}
+            <header className="fixed top-0 inset-x-0 z-50 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 transition-all">
+                <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
+                    <Link href="/profile" className="flex items-center gap-2 text-sm font-semibold text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors">
+                        <ArrowLeftIcon className="w-4 h-4" />
+                        Back to Profile
+                    </Link>
+                    <span className="text-sm font-medium text-zinc-400 opacity-50 hidden md:block">Editing Profile</span>
+                </div>
+            </header>
+
+            {/* Main Content (Padded for Header) */}
+            <div className="pt-16">
+
+                {/* Aesthetic Hero */}
+                <div className="relative h-64 bg-zinc-900 flex items-center justify-center overflow-hidden">
+                    <div className="absolute inset-0 opacity-10"
+                         style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
+                    />
+                    <div className="relative z-10 text-center animate-in fade-in zoom-in duration-700 px-4">
+                        <h1 className={`${PlayWriteNewZealandFont.className} text-4xl font-bold text-white mb-2`}>
+                            Director's Cut.
+                        </h1>
+                        <p className="text-xs text-zinc-500 uppercase tracking-widest">
+                            Refine Your Persona
+                        </p>
                     </div>
-                    <div>
-                        <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-zinc-300">Username</label>
-                        <div className="relative mt-1">
-                            <input type="text" name="username" id="username" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))} required className="block w-full rounded-md border-gray-300 bg-gray-50 py-2 px-3 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100" />
-                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-                                {availability === 'checking' && <LoadingSpinner className="h-5 w-5" />}
-                                {availability === 'available' && <CheckCircleIcon className="h-5 w-5 text-green-500" title="Username available" />}
-                                {availability === 'taken' && <XCircleIcon className="h-5 w-5 text-red-500" title="Username taken" />}
+                    <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-zinc-50 dark:from-zinc-950 to-transparent" />
+                </div>
+
+                {/* Form Container */}
+                <div className="max-w-3xl mx-auto px-4 sm:px-6 -mt-12 relative z-20">
+                    <form action={formAction} className="space-y-12">
+
+                        {/* 1. Avatar */}
+                        <div className="flex justify-center">
+                            <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                                <div className="w-32 h-32 rounded-full border-4 border-white dark:border-zinc-900 shadow-xl overflow-hidden bg-zinc-200 relative">
+                                    <Image src={previewUrl || '/placeholder-user.jpg'} alt="Profile" fill className="object-cover transition-transform group-hover:scale-105" />
+                                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                        <PhotoIcon className="w-8 h-8 text-white" />
+                                    </div>
+                                </div>
+                                <input type="file" name="profile_pic" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
                             </div>
                         </div>
-                        {state.errors?.username && <p className="mt-1 text-sm text-red-600">{state.errors.username[0]}</p>}
-                    </div>
-                    <div className="sm:col-span-2">
-                        <label htmlFor="bio" className="block text-sm font-medium text-gray-700 dark:text-zinc-300">Bio</label>
-                        <textarea name="bio" id="bio" rows={3} defaultValue={profile.bio || ''} className="mt-1 block w-full rounded-md border-gray-300 bg-gray-50 py-2 px-3 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100" placeholder="A little about yourself..."></textarea>
-                        {state.errors?.bio && <p className="mt-1 text-sm text-red-600">{state.errors.bio[0]}</p>}
-                    </div>
-                </div>
-            </div>
 
-            {/* ✨ 8. UPDATED Favorite Items Section */}
-            <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Favorite Films & Series</h3>
-                <p className="mt-1 text-sm text-gray-600 dark:text-zinc-400">Add up to three items, then drag to reorder.</p>
-                <div className="relative mt-4">
-                    <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-                    <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search to add a film or series..." className="w-full rounded-md border-gray-300 bg-gray-50 py-2 pl-10 pr-4 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800" autoComplete="off" disabled={favItems.every(film => film !== null)} />
-                    <CinematicSearchResults results={searchResults} onSelect={handleAddFavorite} isLoading={isSearching} />
-                </div>
-                <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-6">
-                    {[0, 1, 2].map(index => {
-                        const item = favItems[index];
-                        const rankStyles = ['border-amber-400 text-amber-400', 'border-slate-400 text-slate-400', 'border-orange-600 text-orange-600'];
-                        return (
-                            <div key={index} className={clsx(`relative rounded-lg border-2 bg-white/5 p-4 transition-all duration-300 dark:bg-zinc-900/50`, rankStyles[index], dragOverItem.current === index && 'border-dashed border-sky-400 bg-sky-900/30')} onDragOver={(e) => { e.preventDefault(); dragOverItem.current = index; setFavItems([...favItems]); }} onDrop={handleDragSort} onDragEnd={() => { dragOverItem.current = null; setFavItems([...favItems]); }}>
-                                <h4 className={`text-sm font-bold`}>Top {index + 1}</h4>
-                                {item ? (
-                                    <div className={`mt-2 flex cursor-grab items-center gap-3 rounded-md p-2 transition-opacity active:cursor-grabbing ${dragItem.current === index ? 'opacity-40' : 'opacity-100'}`} draggable onDragStart={() => dragItem.current = index}>
-                                        <Image src={`https://image.tmdb.org/t/p/w92${item.poster_path}`} alt={item.title} width={40} height={60} className="rounded object-cover shadow-lg" />
-                                        <div className="flex-1 min-w-0">
-                                            <p className="font-medium text-sm truncate text-zinc-100">{item.title}</p>
-                                            <p className="text-xs text-zinc-400">{item.release_date?.split('-')[0]}</p>
-                                        </div>
-                                        <button type="button" onClick={() => handleRemoveFavorite(index)} className="p-1 text-zinc-400 hover:text-red-500 flex-shrink-0"><XMarkIcon className="h-5 w-5"/></button>
-                                    </div>
-                                ) : (
-                                    <div className="mt-2 flex h-[68px] items-center justify-center text-xs text-zinc-500">Empty Slot</div>
-                                )}
+                        {/* 2. Details */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold uppercase tracking-wider text-zinc-500">Display Name</label>
+                                <input type="text" name="display_name" defaultValue={profile.display_name} required className="w-full bg-transparent border-b border-zinc-300 dark:border-zinc-700 py-2 focus:border-zinc-900 dark:focus:border-white outline-none transition-colors rounded-none" />
+                                {state.errors?.display_name && <p className="text-xs text-red-500">{state.errors.display_name[0]}</p>}
                             </div>
-                        );
-                    })}
+                            <div className="space-y-2">
+                                <div className="flex justify-between">
+                                    <label className="text-xs font-bold uppercase tracking-wider text-zinc-500">Username</label>
+                                    {availability === 'taken' && <span className="text-xs text-red-500 flex items-center gap-1"><XCircleIcon className="w-3 h-3"/> Taken</span>}
+                                    {availability === 'available' && <span className="text-xs text-green-500 flex items-center gap-1"><CheckCircleIcon className="w-3 h-3"/> Available</span>}
+                                </div>
+                                <input type="text" name="username" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))} required className={`w-full bg-transparent border-b py-2 outline-none transition-colors rounded-none ${availability === 'taken' ? 'border-red-500 text-red-500' : 'border-zinc-300 dark:border-zinc-700 focus:border-zinc-900 dark:focus:border-white'}`} />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold uppercase tracking-wider text-zinc-500">Bio</label>
+                            <textarea name="bio" rows={3} defaultValue={profile.bio || ''} className="w-full bg-transparent border-b border-zinc-300 dark:border-zinc-700 py-2 focus:border-zinc-900 dark:focus:border-white outline-none resize-none rounded-none" placeholder="Your story..." />
+                        </div>
+
+                        {/* 3. Favorites Section (Responsive Grid/List) */}
+                        <div className="space-y-6 pt-6">
+                            <div className="text-center md:text-left">
+                                <h3 className={`${PlayWriteNewZealandFont.className} text-3xl font-bold`}>Top 3 Favorites</h3>
+                                <p className="text-sm text-zinc-500 mt-1">Select the films that define you.</p>
+                            </div>
+
+                            {/* Container adapts via Flex/Grid classes in Sub-component, but here we just need a flex container or grid container wrapper.
+                                Since the sub-component handles its own width/height, a simple grid wrapper works best for layout structure. */}
+                            <div className="flex flex-col md:grid md:grid-cols-3 gap-4 md:gap-6">
+                                {[0, 1, 2].map((i) => (
+                                    <FavoriteSlot
+                                        key={i}
+                                        index={i}
+                                        item={favItems[i]}
+                                        onOpenSearch={() => handleOpenSearch(i)}
+                                        onRemove={() => handleRemoveFavorite(i)}
+                                        dragStart={() => dragItem.current = i}
+                                        dragOver={(e) => { e.preventDefault(); dragOverItem.current = i; }}
+                                        drop={handleDragSort}
+                                        isDragging={dragItem.current === i}
+                                    />
+                                ))}
+                            </div>
+
+                            {/* Hidden Inputs for Server Action */}
+                            {[0, 1, 2].map((i) => (
+                                <div key={`hidden-${i}`}>
+                                    <input type="hidden" name={`fav_${i + 1}_id`} value={favItems[i]?.id || ''} />
+                                    <input type="hidden" name={`fav_${i + 1}_type`} value={favItems[i]?.media_type || ''} />
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="pt-8 border-t border-zinc-200 dark:border-zinc-800 flex justify-end gap-4 pb-8">
+                            <Link href="/profile" className="px-8 py-3 rounded-lg border border-zinc-200 dark:border-zinc-800 text-sm font-bold hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors">Cancel</Link>
+                            <button type="submit" disabled={state.message === 'Success'} className="px-8 py-3 rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-black text-sm font-bold hover:opacity-90 transition-opacity shadow-lg">
+                                {state.message === 'Success' ? 'Saved' : 'Save Changes'}
+                            </button>
+                        </div>
+
+                        {state.message && (
+                            <p className={`text-center text-sm font-medium ${state.message === 'Success' ? 'text-green-600' : 'text-red-600'}`}>{state.message}</p>
+                        )}
+                    </form>
                 </div>
-                {/* ✨ 9. UPDATED Hidden Inputs to match the action */}
-                <input type="hidden" name="fav_1_id" value={favItems[0]?.id || ''} />
-                <input type="hidden" name="fav_1_type" value={favItems[0]?.media_type || ''} />
-
-                <input type="hidden" name="fav_2_id" value={favItems[1]?.id || ''} />
-                <input type="hidden" name="fav_2_type" value={favItems[1]?.media_type || ''} />
-
-                <input type="hidden" name="fav_3_id" value={favItems[2]?.id || ''} />
-                <input type="hidden" name="fav_3_type" value={favItems[2]?.media_type || ''} />
             </div>
-
-            {/* ... (Action Buttons are unchanged) ... */}
-            <div className="flex justify-end gap-4">
-                <Link href="/profile" className="flex h-10 items-center justify-center rounded-lg border border-gray-300 bg-white px-6 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700">Cancel</Link>
-                <SubmitButton />
-            </div>
-        </form>
+        </div>
     );
 }

@@ -12,7 +12,8 @@ import {
     CheckIcon,
     UsersIcon,
     FilmIcon,
-    IdentificationIcon
+    IdentificationIcon,
+    BellIcon // 1. Added BellIcon
 } from '@heroicons/react/24/outline';
 import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
 
@@ -82,7 +83,6 @@ export default function ProfileHeader({
                 <div className="grid grid-cols-2 md:grid-cols-12 gap-2 md:gap-6">
 
                     {/* BLOCK 1: VISUAL (Avatar & Location) */}
-                    {/* Order 1 on Mobile (Top Left) */}
                     <div className="col-span-1 md:col-span-3 order-1 md:order-1 flex flex-col gap-2 md:gap-4 h-full">
                         <div className="relative w-full aspect-square bg-white dark:bg-black p-1 shadow-sm border border-zinc-200 dark:border-zinc-800 group h-full">
 
@@ -118,7 +118,6 @@ export default function ProfileHeader({
                     </div>
 
                     {/* BLOCK 2: NARRATIVE (Identity & Bio) */}
-                    {/* Order 3 on Mobile (Bottom Full Width) | Order 2 on Desktop (Middle) */}
                     <div className="col-span-2 md:col-span-6 order-3 md:order-2 flex flex-col bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 p-4 md:p-8 shadow-sm relative h-full">
                         {/* Decorative Label */}
                         <div className="absolute top-3 right-3 md:top-4 md:right-4 flex items-center gap-1 text-[9px] uppercase tracking-widest text-zinc-300 dark:text-zinc-700 font-mono">
@@ -159,7 +158,6 @@ export default function ProfileHeader({
                     </div>
 
                     {/* BLOCK 3: CONTROL PANEL (Stats & Actions) */}
-                    {/* Order 2 on Mobile (Top Right) | Order 3 on Desktop (Far Right) */}
                     <div className="col-span-1 md:col-span-3 order-2 md:order-3 flex flex-col gap-2 md:gap-4 h-full">
 
                         {/* Stats Card */}
@@ -201,57 +199,46 @@ export default function ProfileHeader({
 
                                 {/* 3. Watched */}
                                 <Link href={`/profile/${profile.username}/timeline`}>
-                                    <div
-                                        className="flex flex-col md:flex-row items-center md:justify-between group gap-1 md:gap-0">
+                                    <div className="flex flex-col md:flex-row items-center md:justify-between group gap-1 md:gap-0">
                                         <div className="flex items-center gap-3">
-                                            <div
-                                                className="hidden md:block p-2 bg-zinc-50 dark:bg-zinc-900 group-hover:bg-zinc-100 dark:group-hover:bg-zinc-800 transition-colors border border-zinc-100 dark:border-zinc-800">
+                                            <div className="hidden md:block p-2 bg-zinc-50 dark:bg-zinc-900 group-hover:bg-zinc-100 dark:group-hover:bg-zinc-800 transition-colors border border-zinc-100 dark:border-zinc-800">
                                                 <FilmIcon className="w-4 h-4 text-zinc-500 dark:text-zinc-400"/>
                                             </div>
-                                            <span
-                                                className="text-[9px] md:text-[10px] uppercase tracking-widest font-bold text-zinc-400 md:text-zinc-500">Watched</span>
+                                            <span className="text-[9px] md:text-[10px] uppercase tracking-widest font-bold text-zinc-400 md:text-zinc-500">Watched</span>
                                         </div>
-                                        <span
-                                            className="text-lg md:text-2xl font-light text-zinc-900 dark:text-zinc-100 group-hover:text-black dark:group-hover:text-white transition-colors font-mono">
+                                        <span className="text-lg md:text-2xl font-light text-zinc-900 dark:text-zinc-100 group-hover:text-black dark:group-hover:text-white transition-colors font-mono">
                                         {timelineCount}
                                     </span>
                                     </div>
                                 </Link>
                             </div>
                         </div>
-
-                        {/* Action Button Card - Hidden on Mobile in this specific column, moved to bottom via GRID order logic if needed, but here we will keep it inside col-span-1 but make it order-last for grid flow if we wanted. Actually, let's keep it here but in mobile we need it full width?
-
-                        STRATEGY CHANGE: To make button full width on mobile, we need it out of this column or this column needs to span full on mobile.
-                        However, to keep "Compact Square" layout (Avatar Left, Stats Right), we can't easily break the button out without changing HTML structure.
-
-                        COMPROMISE: On mobile, the button sits below the stats in the RIGHT column.
-                        OR: We move the button to a separate 4th block in the main grid that spans 2 columns on mobile.
-                        */}
                     </div>
 
-                    {/* BLOCK 4: ACTION BUTTON (Separate Grid Item for layout control) */}
-                    {/* Order 4 on Mobile (Bottom Full Width) | Order 3 (Visual tweak) inside Desktop Right Col? No, let's place it smartly. */}
-
-                    {/* Let's actually put the button INSIDE Block 3 for Desktop, but for Mobile we want it separate.
-                        CSS Grid doesn't allow "portal" movement.
-                        Solution: Render button in Block 3 (Desktop/Mobile Right Col) AND Block 4 (Mobile Bottom), show/hide based on breakpoint?
-                        Or just accept Button is small on mobile right side?
-                        User asked for "Compact". Small button on right is very compact.
-                        Let's stick to the previous layout but ensure equal height.
-                    */}
-
-                    {/* REVERTING: Putting button back in Block 3 for simplicity, but making Block 3 allow the button to sit at bottom. */}
-                    {/* The code below injects the button into the same column as stats to ensure equal height on desktop */}
+                    {/* BLOCK 4: ACTION BUTTONS (Split on Mobile) */}
                     <div className="col-span-2 md:col-span-3 md:col-start-10 md:row-start-2 lg:row-start-auto h-12 md:h-14 mt-auto md:mt-0 order-4 md:order-last">
                         {isOwnProfile ? (
-                            <Link
-                                href="/profile/edit"
-                                className="h-full w-full flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black text-xs font-bold uppercase tracking-[0.15em] transition-all shadow-sm hover:shadow-md border border-zinc-900 dark:border-white"
-                            >
-                                <PencilSquareIcon className="w-4 h-4" />
-                                Edit
-                            </Link>
+                            // ✨ MODIFIED: Flex container to hold both buttons
+                            <div className="flex w-full h-full gap-2">
+                                {/* Edit Button - Flex-1 to take available space */}
+                                <Link
+                                    href="/profile/edit"
+                                    className="flex-1 flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black text-xs font-bold uppercase tracking-[0.15em] transition-all shadow-sm hover:shadow-md border border-zinc-900 dark:border-white"
+                                >
+                                    <PencilSquareIcon className="w-4 h-4" />
+                                    <span>Edit</span>
+                                </Link>
+
+                                {/* Notification Button - Hidden on Desktop (md:hidden), Square on Mobile */}
+                                <Link
+                                    href="/profile/notifications"
+                                    className="md:hidden aspect-square h-full flex items-center justify-center bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all shadow-sm"
+                                    aria-label="Notifications"
+                                >
+                                    <BellIcon className="w-5 h-5" />
+                                    {/* Optional: Add red dot logic here if needed later */}
+                                </Link>
+                            </div>
                         ) : (
                             <div className="h-full w-full">
                                 <div className="h-full [&>button]:h-full [&>button]:w-full [&>button]:rounded-none [&>button]:text-xs [&>button]:uppercase [&>button]:tracking-[0.15em] [&>button]:font-bold">

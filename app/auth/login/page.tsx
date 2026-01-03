@@ -1,4 +1,4 @@
-import LoginForm from '@/app/ui/authentication/login-form';
+import LoginForm from '@/app/ui/auth/login-form';
 import { Suspense } from 'react';
 import { Metadata } from 'next'; // 1. Import Metadata
 

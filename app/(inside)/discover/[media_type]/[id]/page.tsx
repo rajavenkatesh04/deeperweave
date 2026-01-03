@@ -198,7 +198,7 @@ export default async function SimpleDetailPage({
                                                     src={`https://image.tmdb.org/t/p/w200${actor.profile_path}`}
                                                     alt={actor.name}
                                                     fill
-                                                    className="object-cover grayscale group-hover:grayscale-0 transition-all duration-300"
+                                                    className="object-cover group-hover:grayscale-0 transition-all duration-300"
                                                 />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center text-zinc-400 text-xs">No Image</div>
