@@ -1,67 +1,75 @@
 // @/app/ui/blog/badges.tsx
 
-// ✨ 1. Added ExclamationTriangleIcon for the new badge
 import { StarIcon, EyeSlashIcon, ExclamationTriangleIcon } from '@heroicons/react/24/solid';
 import { clsx } from 'clsx';
 
 /**
- * A subtle badge for premium content. Designed to be informative but not distracting.
+ * Premium Content Badge
+ * Style: Gold/Amber technical tag
  */
 export function PremiumBadge() {
     return (
         <div
             className={clsx(
-                "flex h-6 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium",
-                // Light & Dark mode colors for a "chip" style
-                "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300",
-                // Subtle border
-                "border border-amber-200/80 dark:border-amber-500/20"
+                "inline-flex items-center gap-1.5 px-2 py-1 rounded-sm border",
+                // Light Mode
+                "bg-amber-50 border-amber-200 text-amber-700",
+                // Dark Mode (The Archive Look)
+                "dark:bg-amber-950/30 dark:border-amber-900/50 dark:text-amber-500",
+                // Typography
+                "text-[10px] font-bold uppercase tracking-widest"
             )}
             title="Premium exclusive content"
         >
-            <StarIcon className="h-3.5 w-3.5" />
+            <StarIcon className="h-3 w-3" />
             <span>Premium</span>
         </div>
     );
 }
 
 /**
- * A subtle badge for NSFW content.
+ * NSFW Content Badge
+ * Style: Red/Rose warning tag
  */
 export function NsfwBadge() {
     return (
         <div
             className={clsx(
-                "flex h-6 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium",
-                // Light & Dark mode colors
-                "bg-rose-100 text-rose-800 dark:bg-rose-900/50 dark:text-rose-300",
-                // Subtle border
-                "border border-rose-200/80 dark:border-rose-500/20"
+                "inline-flex items-center gap-1.5 px-2 py-1 rounded-sm border",
+                // Light Mode
+                "bg-rose-50 border-rose-200 text-rose-700",
+                // Dark Mode
+                "dark:bg-red-950/30 dark:border-red-900/50 dark:text-red-500",
+                // Typography
+                "text-[10px] font-bold uppercase tracking-widest"
             )}
             title="Not Safe For Work content"
         >
-            <EyeSlashIcon className="h-3.5 w-3.5" />
+            <EyeSlashIcon className="h-3 w-3" />
             <span>NSFW</span>
         </div>
     );
 }
 
 /**
- * ✨ 2. New badge for spoiler warnings.
+ * Spoiler Warning Badge
+ * Style: High-contrast Zinc tag
  */
 export function SpoilerBadge() {
     return (
         <div
             className={clsx(
-                "flex h-6 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium",
-                // Using a neutral gray color scheme for the spoiler warning
-                "bg-gray-100 text-gray-800 dark:bg-zinc-800/80 dark:text-zinc-300",
-                // Subtle border
-                "border border-gray-200/80 dark:border-zinc-700/50"
+                "inline-flex items-center gap-1.5 px-2 py-1 rounded-sm border",
+                // Light Mode
+                "bg-zinc-100 border-zinc-300 text-zinc-700",
+                // Dark Mode
+                "dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300",
+                // Typography
+                "text-[10px] font-bold uppercase tracking-widest"
             )}
             title="Warning: This post contains spoilers"
         >
-            <ExclamationTriangleIcon className="h-3.5 w-3.5" />
+            <ExclamationTriangleIcon className="h-3 w-3" />
             <span>Spoilers</span>
         </div>
     );

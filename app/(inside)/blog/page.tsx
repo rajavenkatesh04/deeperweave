@@ -5,6 +5,12 @@ import Breadcrumbs from "@/app/ui/Breadcrumbs";
 import BlogCard from "@/app/ui/blog/BlogCard";
 import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
 import { Square3Stack3DIcon } from "@heroicons/react/24/outline";
+import {Metadata} from "next";
+
+export const metadata: Metadata = {
+    title: 'The Logs',
+    description: 'Read community transmissions, deep dives, and curated cinematic reviews from the weave.',
+};
 
 export default async function BlogPage() {
     const posts = await getPosts();

@@ -1,5 +1,15 @@
 import LandingPageClient from '@/app/ui/landing/LandingPageClient';
 import { getLandingPageData } from '@/lib/data/landing-data';
+import {Metadata} from "next";
+export const metadata: Metadata = {
+    title: 'Home', // Result: Home | DeeperWeave
+    description: 'Track your favorite movies, read community blogs, and discover your next cinematic obsession.',
+    openGraph: {
+        title: 'DeeperWeave - Track, Discover, Write',
+        description: 'The ultimate social platform for movie and TV lovers.',
+        type: 'website',
+    },
+};
 
 export const revalidate = 86400; // Daily revalidation
 

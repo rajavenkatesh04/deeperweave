@@ -4,6 +4,11 @@ import { Suspense } from 'react';
 // Using your import path
 import TimeLineEntryForm from '@/app/ui/timeline/TimeLineEntryForm';
 import LoadingSpinner from "@/app/ui/loading-spinner";
+import {Metadata} from "next";
+export const metadata: Metadata = {
+    title: 'New Entry',
+    description: 'Log a new movie or TV show to your cinematic timeline.',
+};
 
 export default async function CreateTimelineEntryPage({
                                                           params

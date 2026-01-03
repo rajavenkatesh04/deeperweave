@@ -8,7 +8,14 @@ import {
 } from '@/lib/actions/cinematic-actions';
 import TrendingHero from '@/app/ui/discover/TrendingHero';
 import CinematicRow from '@/app/ui/discover/CinematicRow';
-import LoadingSpinner from '@/app/ui/loading-spinner'; // Assuming this path
+import LoadingSpinner from '@/app/ui/loading-spinner';
+import {Metadata} from "next"; // Assuming this path
+
+export const metadata: Metadata = {
+    title: 'Discover',
+    description: 'Explore trending movies, popular TV series, Anime, and K-Dramas all in one place.',
+    keywords: ['trending movies', 'popular tv shows', 'anime discovery', 'k-drama tracker'],
+};
 
 // This is the main server component for the page
 export default async function DiscoverPage() {

@@ -1,4 +1,11 @@
 import Link from "next/link";
+import { Metadata } from 'next'; // 1. Import Metadata
+
+// 2. Export the metadata object
+export const metadata: Metadata = {
+    title: 'Error',
+    description: 'Resume your session on DeeperWeave.',
+};
 
 export default async function Page({
                                        searchParams,

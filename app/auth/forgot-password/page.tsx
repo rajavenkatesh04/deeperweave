@@ -6,6 +6,8 @@ import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
 import { requestPasswordReset, type ForgotPasswordState } from '@/lib/actions/auth-actions';
 import LoadingSpinner from "@/app/ui/loading-spinner";
+import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
+import { ArrowLeftIcon, KeyIcon, EnvelopeIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 
 function ForgotPasswordButton() {
     const { pending } = useFormStatus();
@@ -13,10 +15,9 @@ function ForgotPasswordButton() {
         <button
             type="submit"
             disabled={pending}
-            // ✨ REBRANDED: Using consistent brand colors
-            className="flex w-full h-10 items-center justify-center rounded-lg bg-orange-600 px-6 text-sm font-medium text-white shadow-sm transition-colors hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-950 disabled:cursor-not-allowed disabled:bg-orange-400"
+            className="flex w-full h-12 items-center justify-center bg-zinc-900 text-white text-sm font-bold hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
         >
-            {pending ? <><LoadingSpinner className={`mr-2`}/>Sending Link...</> : <span>Send Reset Link</span>}
+            {pending ? <><LoadingSpinner className="mr-2 h-4 w-4"/>Transmitting...</> : <span>Send Reset Link</span>}
         </button>
     );
 }
@@ -26,73 +27,158 @@ export default function ForgotPasswordForm() {
     const [state, dispatch] = useActionState(requestPasswordReset, initialState);
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-slate-50 p-4 dark:bg-zinc-950">
-            <div className="w-full max-w-md space-y-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-8">
+        <div className="min-h-screen flex items-center justify-center p-4 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 relative font-sans">
 
-                {state.success ? (
-                    // --- SUCCESS STATE ---
-                    // Show this message *instead* of the form after success
-                    <div className="space-y-4 text-center">
-                        <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-zinc-100 sm:text-3xl">Check Your Email</h1>
-                        <p className="text-gray-600 dark:text-zinc-400">
-                            {state.message}
-                        </p>
-                        <p>
-                            <Link
-                                href="/auth/login"
-                                className="font-medium text-orange-600 hover:underline dark:text-orange-500"
-                            >
-                                &larr; Back to Sign In
-                            </Link>
-                        </p>
-                    </div>
-                ) : (
-                    // --- INITIAL STATE ---
-                    // Show the form by default
-                    <>
-                        <div>
-                            <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-zinc-100 sm:text-3xl">Forgot Password?</h1>
-                            <p className="mt-2 text-gray-600 dark:text-zinc-400">
-                                No problem. Enter your email and we&apos;ll send you a link to reset your password.
-                            </p>
-                        </div>
+            {/* Desktop Back Button (Fixed Top-Left) */}
+            <div className="hidden md:block absolute top-10 left-10 z-50">
+                <Link href="/auth/login" className="group flex items-center gap-2 text-sm font-medium text-zinc-500 transition-colors hover:text-zinc-900 dark:hover:text-zinc-100">
+                    <ArrowLeftIcon className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+                    Back to Sign In
+                </Link>
+            </div>
 
-                        <form action={dispatch} className="space-y-6">
-                            <div>
-                                <label htmlFor="email" className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Email</label>
-                                <input
-                                    id="email"
-                                    name="email"
-                                    type="email"
-                                    placeholder="you@example.com"
-                                    // ✨ REBRANDED: Input focus colors
-                                    className="block w-full rounded-md border-gray-300 bg-gray-50 py-2 px-3 shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-zinc-700 dark:bg-zinc-800"
-                                    required
-                                />
-                                {state.errors?.email && (
-                                    <p className="mt-1 text-sm text-red-600 dark:text-red-500">
-                                        {state.errors.email[0]}
-                                    </p>
-                                )}
+            {/* Main Content Wrapper */}
+            <div className="w-full max-w-5xl">
+
+                {/* Mobile Back Button */}
+                <div className="md:hidden mb-6">
+                    <Link href="/auth/login" className="group inline-flex items-center gap-2 text-sm font-medium text-zinc-500 transition-colors hover:text-zinc-900 dark:hover:text-zinc-100">
+                        <ArrowLeftIcon className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+                        Back
+                    </Link>
+                </div>
+
+                {/* Card Container (Split Layout) */}
+                <div className="grid md:grid-cols-2 bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 shadow-sm md:shadow-2xl overflow-hidden min-h-[500px]">
+
+                    {/* LEFT COLUMN: Visual/Thematic Area (Desktop Only) */}
+                    <div className="hidden md:flex flex-col items-center justify-center bg-zinc-950 text-white p-12 border-r border-zinc-200 dark:border-zinc-800 relative overflow-hidden">
+
+                        {/* Film Grain Texture */}
+                        <div className="absolute inset-0 opacity-10"
+                             style={{
+                                 backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+                             }}
+                        />
+                        <div className="absolute inset-0 bg-radial-gradient from-transparent to-black/80 opacity-90" />
+
+                        <div className="relative z-10 text-center space-y-8 max-w-sm">
+                            <div className="mx-auto w-40 h-40 flex items-center justify-center rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
+                                <KeyIcon className="w-20 h-20 text-zinc-200" />
                             </div>
 
-                            {/* General error message (if not success) */}
-                            {state.message && !state.success && (
-                                <p className="text-sm text-red-600 dark:text-red-500">{state.message}</p>
+                            <div className="space-y-4">
+                                <h2 className={`${PlayWriteNewZealandFont.className} text-5xl font-bold text-white tracking-tight`}>
+                                    Flashback.
+                                </h2>
+                                <p className="text-sm font-medium text-zinc-400 italic">
+                                    "Retracing your steps to find the key."
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* RIGHT COLUMN: The Form */}
+                    <div className="flex flex-col justify-center">
+
+                        {/* Mobile Header: Visual with Grain (Visible only on mobile) */}
+                        <div className="md:hidden relative bg-zinc-950 text-white py-12 px-6 text-center border-b border-zinc-800 overflow-hidden">
+                            <div className="absolute inset-0 opacity-10"
+                                 style={{
+                                     backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+                                 }}
+                            />
+                            <div className="relative z-10">
+                                <div className="mx-auto w-12 h-12 flex items-center justify-center rounded-full bg-white/10 mb-4 backdrop-blur-md">
+                                    <KeyIcon className="w-6 h-6 text-white" />
+                                </div>
+                                <h2 className={`${PlayWriteNewZealandFont.className} text-3xl font-bold text-white mb-1`}>
+                                    Flashback.
+                                </h2>
+                                <p className="text-[10px] text-zinc-400 uppercase tracking-widest">
+                                    Recovery Sequence
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="p-8 md:p-12 lg:p-16 flex-1 flex flex-col justify-center">
+
+                            {state.success ? (
+                                // --- SUCCESS STATE ---
+                                <div className="text-center space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                    <div className="w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto">
+                                        <EnvelopeIcon className="w-8 h-8 text-green-600 dark:text-green-400" />
+                                    </div>
+                                    <div>
+                                        <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 mb-2">Check your email</h1>
+                                        <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                                            {state.message}
+                                        </p>
+                                    </div>
+                                    <div className="pt-4">
+                                        <Link
+                                            href="/auth/login"
+                                            className="inline-flex items-center justify-center w-full h-12 rounded-none border border-zinc-200 dark:border-zinc-800 text-sm font-bold uppercase tracking-widest hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors"
+                                        >
+                                            Return to Sign In
+                                        </Link>
+                                    </div>
+                                </div>
+                            ) : (
+                                // --- FORM STATE ---
+                                <>
+                                    <div className="mb-8 text-center md:text-left">
+                                        <h1 className="text-2xl md:text-3xl font-semibold tracking-tight mb-2">
+                                            Forgot Password?
+                                        </h1>
+                                        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                                            Enter your email to receive a reset link.
+                                        </p>
+                                    </div>
+
+                                    <form action={dispatch} className="space-y-6">
+                                        <div className="space-y-2">
+                                            <label htmlFor="email" className="block text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                                                Email Address
+                                            </label>
+                                            <input
+                                                id="email"
+                                                name="email"
+                                                type="email"
+                                                placeholder="name@example.com"
+                                                className="block w-full h-12 border-b border-zinc-200 bg-transparent px-0 text-base placeholder:text-zinc-300 focus:border-zinc-900 focus:outline-none dark:border-zinc-800 dark:focus:border-zinc-100 transition-colors"
+                                                required
+                                            />
+                                            {state.errors?.email && (
+                                                <p className="text-xs text-red-600 dark:text-red-400 font-medium animate-pulse">{state.errors.email[0]}</p>
+                                            )}
+                                        </div>
+
+                                        {/* General Error Message */}
+                                        {state.message && !state.success && (
+                                            <div className="p-3 bg-red-50 text-red-600 dark:bg-red-900/10 dark:text-red-400 text-xs font-medium border border-red-100 dark:border-red-900/20">
+                                                {state.message}
+                                            </div>
+                                        )}
+
+                                        <div className="pt-4">
+                                            <ForgotPasswordButton />
+                                        </div>
+                                    </form>
+
+                                    <div className="mt-auto pt-10 text-center md:text-left">
+                                        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                                            Remembered it?{' '}
+                                            <Link href="/auth/login" className="font-semibold text-zinc-900 dark:text-zinc-100 hover:underline underline-offset-4 transition-colors">
+                                                Sign in
+                                            </Link>
+                                        </p>
+                                    </div>
+                                </>
                             )}
-
-                            <ForgotPasswordButton />
-                        </form>
-
-                        <p className="text-center text-sm text-gray-600 dark:text-zinc-400">
-                            Remembered your password?{' '}
-                            {/* ✨ REBRANDED: Link color */}
-                            <Link href="/auth/login" className="font-medium text-orange-600 hover:underline dark:text-orange-500">
-                                Sign in
-                            </Link>
-                        </p>
-                    </>
-                )}
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );

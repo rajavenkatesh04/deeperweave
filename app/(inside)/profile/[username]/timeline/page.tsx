@@ -6,6 +6,23 @@ import { getTimelineEntriesByUserId } from '@/lib/data/timeline-data';
 import TimelineDisplay from '@/app/ui/timeline/TimelineDisplay';
 // ✨ FIX: Import the standard server client, not the admin client
 import { createClient } from '@/utils/supabase/server';
+import {Metadata} from "next";
+
+type Props = {
+    params: Promise<{ username: string }>
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+    const { username } = await params;
+    return {
+        title: `${username}'s Timeline`,
+        description: `View the cinematic journey and movie history of ${username} on DeeperWeave.`,
+        openGraph: {
+            title: `${username}'s Cinematic Timeline`,
+            description: `Check out what ${username} has been watching and reviewing lately.`,
+        },
+    };
+}
 
 export default async function ProfileTimelinePage({ params }: { params: Promise<{ username: string }> }) {
     const { username } = await params;

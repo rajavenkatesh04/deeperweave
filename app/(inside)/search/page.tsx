@@ -17,6 +17,7 @@ import {
 import LoadingSpinner from '@/app/ui/loading-spinner';
 import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
 
+
 /* --- 1. User Card Component (Technical) --- */
 function UserResultCard({ profile }: { profile: ProfileSearchResult }) {
     return (

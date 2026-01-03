@@ -4,6 +4,11 @@ import { getTimelineEntryById } from '@/lib/data/timeline-data';
 import { getUserProfile } from '@/lib/data/user-data';
 import { redirect, notFound } from 'next/navigation';
 import TimeLineEditForm from '@/app/ui/timeline/TimeLineEditForm';
+import {Metadata} from "next";
+export const metadata: Metadata = {
+    title: 'New Entry',
+    description: 'Log a new movie or TV show to your cinematic timeline.',
+};
 
 export default async function EditTimelineEntryPage({
                                                         params
