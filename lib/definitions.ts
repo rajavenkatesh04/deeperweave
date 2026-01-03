@@ -10,12 +10,12 @@ export interface UserProfile {
     id: string; // This is the UUID from Supabase Auth
     created_at: string;
     username: string; // The unique, public @handle
-    display_name: string | null; // The user's full name
+    display_name: string; // The user's full name
     date_of_birth: string; // ISO Date string (e.g., "1990-01-15"). Used for age verification (18+).
     country?: string; // ISO 3166-1 alpha-2 country code (e.g., "IN" for India)
     gender?: 'male' | 'female' | 'non-binary' | 'prefer_not_to_say';
-    bio?: string | null;
-    profile_pic_url?: string | null;
+    bio?: string;
+    profile_pic_url?: string;
     // For monetization and content filtering
     subscription_status: 'free' | 'premium'; // Managed via webhooks from a payment provider
     content_preference: 'sfw' | 'all'; // Default to 'sfw'. User must be 18+ to change to 'all'.
