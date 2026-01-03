@@ -402,5 +402,5 @@ export async function deleteMyAccount(
         return { message: 'A server error occurred. Could not delete account.' };
     }
     revalidatePath('/', 'layout');
-    redirect('/profile/delete-success');
+    redirect('/delete-success');
 }
