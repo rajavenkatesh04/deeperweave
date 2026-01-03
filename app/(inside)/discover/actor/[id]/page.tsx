@@ -3,7 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { getPersonDetails, PersonDetails } from '@/lib/actions/cinematic-actions';
 import CinematicRow from '@/app/ui/discover/CinematicRow';
-import { UserIcon, MapPinIcon, CalendarIcon, CameraIcon, StarIcon } from '@heroicons/react/24/outline';
+import { UserIcon, MapPinIcon, CameraIcon } from '@heroicons/react/24/outline';
 import { BackdropGallery } from '@/app/(inside)/discover/[media_type]/[id]/media-interactive';
 import BackButton from '@/app/(inside)/discover/[media_type]/[id]/BackButton';
 
@@ -15,15 +15,14 @@ function SocialLink({ href, label, colorClass }: { href: string; label: string; 
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-4 py-2 bg-zinc-100 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-all font-medium text-sm"
+            className="px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all font-medium text-xs rounded-md"
         >
             <span className={colorClass || ""}>{label}</span>
         </a>
     );
 }
 
-// Helper to calculate age
-function getAge(birthday: string, deathday: string | null) {
+function getAge(birthday: string | null, deathday: string | null) {
     if (!birthday) return null;
     const birthDate = new Date(birthday);
     const endDate = deathday ? new Date(deathday) : new Date();
@@ -67,7 +66,7 @@ export default async function ActorDetailPage({ params }: { params: Promise<{ id
 
             {/* Backdrop Gallery */}
             <BackdropGallery
-                images={details.backdrops.map(b => ({ file_path: b.file_path }))}
+                images={details.backdrops}
                 fallbackPath={details.backdrops[0]?.file_path || null}
             />
 
@@ -225,15 +224,15 @@ export default async function ActorDetailPage({ params }: { params: Promise<{ id
                         </div>
                     )}
 
-                    {/* Portraits Gallery */}
-                    {details.profiles.length > 0 && (
+                    {/* Portraits Gallery - FIXED: 'profiles' -> 'images' */}
+                    {details.images.length > 0 && (
                         <div className="space-y-8 mb-24">
                             <h2 className="text-3xl font-light text-zinc-900 dark:text-zinc-100 flex items-center gap-3">
                                 <CameraIcon className="w-7 h-7 text-zinc-400"/>
                                 Portraits
                             </h2>
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
-                                {details.profiles.map((img) => (
+                                {details.images.map((img) => (
                                     <div
                                         key={img.file_path}
                                         className="relative aspect-[2/3] w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800 rounded-md group cursor-pointer"
