@@ -7,7 +7,6 @@ import Link from "next/link";
 import CinematicInfoCard from "@/app/ui/blog/CinematicInfoCard";
 import LikeButton from "@/app/ui/blog/LikeButton";
 import CommentsSection from "@/app/ui/blog/CommentsSection";
-import { Post, Movie, Series, CommentWithAuthor, UserProfile } from "@/lib/definitions";
 import DOMPurify from 'isomorphic-dompurify';
 import { useState, useEffect } from 'react';
 import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
@@ -43,7 +42,7 @@ interface AnimatedBlogPostProps {
     author: {
         username: string;
         display_name: string | null;
-        profile_pic_url: string | null;
+        profile_pic_url?: string | null;
     };
     movie?: any;
     series?: any;

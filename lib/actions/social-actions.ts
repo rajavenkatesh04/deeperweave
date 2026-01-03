@@ -18,7 +18,6 @@ export async function followUser(profileId: string, isPrivate: boolean) {
         return { error: "You cannot follow yourself." };
     }
 
-    // Determine the status based on profile visibility
     const status = isPrivate ? 'pending' : 'accepted';
 
     const { error } = await supabase
@@ -34,14 +33,14 @@ export async function followUser(profileId: string, isPrivate: boolean) {
         return { error: "Could not follow user." };
     }
 
-    // ✨ SEND NOTIFICATION
-    // - If Private: "follow_request"
-    // - If Public: "new_follower"
+    // ✨ SEND NOTIFICATION (Fixed Types)
     await createNotification({
         recipientId: profileId,
         actorId: user.id,
         actorUsername: profile.username,
-        type: isPrivate ? 'follow_request' : 'new_follower' as any
+        // If private -> 'follow_request'. If public -> 'new_follower' (Started following you)
+        type: isPrivate ? 'follow_request' : 'new_follower',
+        targetPostId: null
     });
 
     revalidatePath(`/profile/${profileId}`);
@@ -52,9 +51,7 @@ export async function unfollowUser(profileId: string) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) {
-        return { error: 'You must be logged in.' };
-    }
+    if (!user) return { error: 'You must be logged in.' };
 
     const { error } = await supabase
         .from('followers')
@@ -67,19 +64,20 @@ export async function unfollowUser(profileId: string) {
         return { error: "Could not unfollow user." };
     }
 
-    // ✨ CLEANUP NOTIFICATIONS
-    // We try to delete both types just in case
+    // ✨ CLEANUP: Try to delete both potential notification types
+    // We pass recipientId so we delete the specific alert sent to this person
     await deleteNotification({
         actorId: user.id,
-        type: 'new_follower' as any, // Cast if your type definition is strict
-        targetPostId: null as any // Notifications table might expect null/undefined logic
+        recipientId: profileId,
+        type: 'new_follower',
+        targetPostId: null
     });
 
-    // Also delete any pending requests if they existed
     await deleteNotification({
         actorId: user.id,
-        type: 'follow_request' as any,
-        targetPostId: null as any
+        recipientId: profileId,
+        type: 'follow_request',
+        targetPostId: null
     });
 
     revalidatePath(`/profile/${profileId}`);

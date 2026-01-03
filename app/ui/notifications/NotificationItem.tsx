@@ -7,7 +7,7 @@ import RequestActions from '@/app/(inside)/profile/notifications/RequestActions'
 import { markNotificationAsRead, dismissNotification } from '@/lib/actions/notification-actions';
 import { HeartIcon, ChatBubbleLeftIcon, UserPlusIcon, XMarkIcon } from '@heroicons/react/24/solid';
 
-type NotificationType = 'FOLLOW_REQUEST' | 'LIKE' | 'COMMENT' | 'SYSTEM';
+type NotificationType = 'FOLLOW_REQUEST' | 'LIKE' | 'COMMENT' | 'SYSTEM' | 'NEW_FOLLOWER' | 'new_follower';
 
 interface NotificationProps {
     id: string; // The ID of the notification row
@@ -82,6 +82,7 @@ export default function NotificationItem({ id, type, is_read, actor, payload, ti
                             {type === 'FOLLOW_REQUEST' && "requested to follow."}
                             {type === 'LIKE' && "liked your post."}
                             {type === 'COMMENT' && "commented on your post."}
+                            {(type === 'NEW_FOLLOWER' || type === 'new_follower') && "started following you."}
                         </span>
                     </div>
 

@@ -19,34 +19,35 @@ export async function createNotification({
                                              actorUsername,
                                              type,
                                              targetPostId
-                                         }: CreateNotificationParams) {
-    // 1. Self-Check: Don't notify if the user is acting on their own content
+                                         }: {
+    recipientId: string;
+    actorId: string;
+    actorUsername: string;
+    type: string; // Changed to string to be flexible
+    targetPostId?: string | null;
+}) {
     if (recipientId === actorId) return;
 
     const supabase = await createClient();
 
-    // 2. Database Insert
-    const { error } = await supabase.from('notifications').insert({
+    // Explicitly handle null/undefined for targetPostId
+    const payload: any = {
         recipient_id: recipientId,
         actor_id: actorId,
         actor_username: actorUsername,
         type: type,
-        target_post_id: targetPostId || null,
         is_read: false,
-    });
+    };
+
+    if (targetPostId) {
+        payload.target_post_id = targetPostId;
+    }
+
+    const { error } = await supabase.from('notifications').insert(payload);
 
     if (error) {
         console.error('Failed to create notification:', error);
-        return; // specific error handling usually not needed for fire-and-forget notifications
     }
-
-    // 3. Email Trigger (Centralized Place)
-    // This is where you would call your email service (Resend, SendGrid, etc.)
-    // Example:
-    // await sendNotificationEmail({
-    //    to: recipientId,
-    //    subject: `New ${type} from @${actorUsername}`,
-    // });
 }
 
 export async function markNotificationAsRead(notificationId: string) {
@@ -82,28 +83,39 @@ export async function markAllNotificationsAsRead(userId: string) {
 export async function deleteNotification({
                                              actorId,
                                              type,
+                                             recipientId, // Added recipientId for specificity
                                              targetPostId
                                          }: {
     actorId: string;
-    type: 'like' | 'comment';
-    targetPostId: string;
+    type: string;
+    recipientId?: string;
+    targetPostId?: string | null;
 }) {
     const supabase = await createClient();
 
-    // We use .match() to find the specific notification unique to this action
-    const { error, count } = await supabase
-        .from('notifications')
-        .delete({ count: 'exact' }) // Request count to verify deletion
-        .match({
-            actor_id: actorId,
-            type: type,
-            target_post_id: targetPostId
-        });
+    // Start the query chain
+    let query = supabase.from('notifications')
+        .delete({ count: 'exact' }) // Request count to verify
+        .eq('actor_id', actorId)
+        .eq('type', type);
+
+    // Conditionally add filters
+    if (recipientId) {
+        query = query.eq('recipient_id', recipientId);
+    }
+
+    if (targetPostId) {
+        query = query.eq('target_post_id', targetPostId);
+    } else {
+        // Essential: If no post ID, make sure we only delete rows that DON'T have a post
+        // This prevents accidental deletion of likes/comments
+        query = query.is('target_post_id', null);
+    }
+
+    const { error } = await query;
 
     if (error) {
         console.error("❌ Failed to delete notification:", error.message);
-    } else {
-        console.log(`✅ Deleted ${count} notification(s) for undo action.`);
     }
 }
 
