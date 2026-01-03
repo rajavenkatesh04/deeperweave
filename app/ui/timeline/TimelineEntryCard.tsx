@@ -200,7 +200,6 @@ export default function TimelineEntryCard({
             </div>
         );
     };
-
     return (
         <>
             <motion.div

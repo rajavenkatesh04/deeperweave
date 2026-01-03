@@ -19,7 +19,7 @@ export default async function ProfileLayout({
     const { username } = await params;
 
     // Use the new, powerful data fetching function
-    const { profile, followStatus, followerCount, followingCount } = await getProfileData(username);
+    const { profile, followStatus, followerCount, followingCount, timelineCount } = await getProfileData(username);
     if (!profile) notFound();
 
     const isOwnProfile = viewer?.id === profile.id;
@@ -28,7 +28,7 @@ export default async function ProfileLayout({
     const canViewContent = !isPrivate || isFollowing || isOwnProfile;
 
     return (
-        <main className={`p-6`}>
+        <main className={`p-3 sm:p-6`}>
 
             <ProfileHeader
                 profile={profile}
@@ -37,6 +37,7 @@ export default async function ProfileLayout({
                 initialFollowStatus={followStatus}
                 followerCount={followerCount}
                 followingCount={followingCount}
+                timelineCount={timelineCount}
             />
 
             {canViewContent ? (

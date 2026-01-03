@@ -53,6 +53,7 @@ type ProfileData = {
     followStatus: 'not_following' | 'pending' | 'accepted';
     followerCount: number;
     followingCount: number;
+    timelineCount: number;
 };
 
 export async function checkFollowStatus(viewerId: string, profileId: string): Promise<boolean> {
@@ -131,20 +132,22 @@ export async function getProfileData(username: string): Promise<ProfileData> {
     const { data: { user: viewer } } = await supabase.auth.getUser();
     const { data: profile } = await supabase
         .from('profiles')
-        .select('*, follower_count:followers!following_id(count), following_count:followers!follower_id(count)')
+        .select('*, follower_count:followers!following_id(count), following_count:followers!follower_id(count),timeline_count:timeline_entries!user_id(count)')
         .eq('username', username)
-        .single<UserProfile & { follower_count: [{ count: number }], following_count: [{ count: number }] }>();
+        .single<UserProfile & { follower_count: [{ count: number }], following_count: [{ count: number }],timeline_count: [{ count: number }] }>();
     if (!profile) {
-        return { profile: null, followStatus: 'not_following', followerCount: 0, followingCount: 0 };
+        return { profile: null, followStatus: 'not_following', followerCount: 0, followingCount: 0, timelineCount: 0 };;
     }
     const followerCount = profile.follower_count[0]?.count || 0;
     const followingCount = profile.following_count[0]?.count || 0;
+    const timelineCount = profile.timeline_count[0]?.count || 0;
+
     if (!viewer || viewer.id === profile.id) {
-        return { profile, followStatus: 'not_following', followerCount, followingCount };
+        return { profile, followStatus: 'not_following', followerCount, followingCount, timelineCount };
     }
     const { data: follow } = await supabase.from('followers').select('status').eq('follower_id', viewer.id).eq('following_id', profile.id).single();
     const followStatus = follow ? follow.status : 'not_following';
-    return { profile, followStatus: followStatus as 'not_following' | 'pending' | 'accepted', followerCount, followingCount };
+    return { profile, followStatus: followStatus as 'not_following' | 'pending' | 'accepted', followerCount, followingCount, timelineCount };
 }
 
 

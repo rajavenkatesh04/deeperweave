@@ -29,10 +29,10 @@ function CopyableId({ username }: { username: string }) {
     return (
         <button
             onClick={handleCopy}
-            className="group flex items-center gap-2 px-3 py-1 bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 transition-all cursor-copy"
+            className="group flex items-center gap-2 px-2 py-0.5 md:px-3 md:py-1 bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 transition-all cursor-copy"
             title="Click to copy ID"
         >
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 group-hover:text-black dark:group-hover:text-white">
+            <span className="text-[9px] md:text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 group-hover:text-black dark:group-hover:text-white">
                 @{username}
             </span>
             {copied ? (
@@ -51,6 +51,7 @@ export default function ProfileHeader({
                                           initialFollowStatus,
                                           followerCount,
                                           followingCount,
+                                          timelineCount,
                                       }: {
     profile: UserProfile;
     isOwnProfile: boolean;
@@ -58,6 +59,7 @@ export default function ProfileHeader({
     initialFollowStatus: 'not_following' | 'pending' | 'accepted';
     followerCount: number;
     followingCount: number;
+    timelineCount: number;
 }) {
     return (
         <div className="relative w-full bg-zinc-50 dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 overflow-hidden">
@@ -73,145 +75,194 @@ export default function ProfileHeader({
                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
             />
 
-            <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+            <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-12">
 
                 {/* --- BENTO BOX GRID --- */}
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6">
+                {/* Mobile: 2 Cols | Desktop: 12 Cols */}
+                <div className="grid grid-cols-2 md:grid-cols-12 gap-2 md:gap-6">
 
-                    {/* BLOCK 1: THE VISUAL (Avatar & Location) - Spans 3 columns */}
-                    <div className="md:col-span-3 flex flex-col gap-4">
-                        <div className="relative aspect-square w-full bg-white dark:bg-black p-1.5 shadow-sm border border-zinc-200 dark:border-zinc-800 group">
+                    {/* BLOCK 1: VISUAL (Avatar & Location) */}
+                    {/* Order 1 on Mobile (Top Left) */}
+                    <div className="col-span-1 md:col-span-3 order-1 md:order-1 flex flex-col gap-2 md:gap-4 h-full">
+                        <div className="relative w-full aspect-square bg-white dark:bg-black p-1 shadow-sm border border-zinc-200 dark:border-zinc-800 group h-full">
+
                             <div className="relative w-full h-full overflow-hidden bg-zinc-100 dark:bg-zinc-900">
                                 {profile.profile_pic_url ? (
                                     <Image
-                                        className="object-cover transition-transform duration-700 group-hover:scale-105 group-hover:grayscale-0 grayscale"
+                                        className="object-cover transition-transform duration-700 group-hover:scale-105 group-hover:grayscale-0"
                                         src={profile.profile_pic_url}
                                         alt={profile.display_name}
                                         fill
                                         priority
-                                        sizes="(max-width: 768px) 100vw, 300px"
+                                        sizes="(max-width: 768px) 50vw, 300px"
                                     />
                                 ) : (
                                     <div className="flex items-center justify-center w-full h-full">
-                                        <FilmIcon className="w-12 h-12 text-zinc-300 dark:text-zinc-700" />
+                                        <FilmIcon className="w-8 h-8 md:w-12 md:h-12 text-zinc-300 dark:text-zinc-700" />
                                     </div>
                                 )}
+
                                 {/* Frame markers */}
-                                <div className="absolute top-2 left-2 w-2 h-2 border-t border-l border-zinc-400/50" />
-                                <div className="absolute top-2 right-2 w-2 h-2 border-t border-r border-zinc-400/50" />
-                                <div className="absolute bottom-2 left-2 w-2 h-2 border-b border-l border-zinc-400/50" />
-                                <div className="absolute bottom-2 right-2 w-2 h-2 border-b border-r border-zinc-400/50" />
+                                <div className="absolute top-1 left-1 md:top-2 md:left-2 w-2 h-2 border-t border-l border-zinc-400/50" />
+                                <div className="absolute top-1 right-1 md:top-2 md:right-2 w-2 h-2 border-t border-r border-zinc-400/50" />
+                                <div className="absolute bottom-1 left-1 md:bottom-2 md:left-2 w-2 h-2 border-b border-l border-zinc-400/50" />
+                                <div className="absolute bottom-1 right-1 md:bottom-2 md:right-2 w-2 h-2 border-b border-r border-zinc-400/50" />
                             </div>
                         </div>
 
-                        {/* Location Badge */}
-                        <div className="hidden md:flex items-center justify-center gap-2 p-3 bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 text-xs font-mono uppercase tracking-wider text-zinc-500">
+                        {/* Location Badge: Hidden on mobile to save space, visible desktop */}
+                        <div className="hidden md:flex items-center justify-center gap-2 p-3 bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 text-xs font-mono uppercase tracking-wider text-zinc-500 mt-auto">
                             <MapPinIcon className="w-4 h-4" />
                             {profile.country || "N/A"}
                         </div>
                     </div>
 
-
-                    {/* BLOCK 2: THE NARRATIVE (Identity & Bio) - Spans 5 columns */}
-                    <div className="md:col-span-6 flex flex-col bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 p-6 md:p-8 shadow-sm relative">
+                    {/* BLOCK 2: NARRATIVE (Identity & Bio) */}
+                    {/* Order 3 on Mobile (Bottom Full Width) | Order 2 on Desktop (Middle) */}
+                    <div className="col-span-2 md:col-span-6 order-3 md:order-2 flex flex-col bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 p-4 md:p-8 shadow-sm relative h-full">
                         {/* Decorative Label */}
-                        <div className="absolute top-4 right-4 flex items-center gap-1 text-[9px] uppercase tracking-widest text-zinc-300 dark:text-zinc-700 font-mono">
+                        <div className="absolute top-3 right-3 md:top-4 md:right-4 flex items-center gap-1 text-[9px] uppercase tracking-widest text-zinc-300 dark:text-zinc-700 font-mono">
                             <IdentificationIcon className="w-3 h-3" />
-                            ID-CARD
+                            <span className="hidden md:inline">ID-CARD</span>
                         </div>
 
-                        <div className="flex flex-col gap-4 h-full pt-2">
-
+                        <div className="flex flex-col gap-3 md:gap-4 h-full">
                             {/* Header Row: Name & ID */}
-                            <div className="flex flex-col items-start gap-3">
-                                <h1 className={`${PlayWriteNewZealandFont.className} text-3xl md:text-5xl font-bold text-zinc-900 dark:text-zinc-100 leading-none`}>
+                            <div className="flex flex-col items-start gap-2 md:gap-3">
+                                <h1 className={`${PlayWriteNewZealandFont.className} text-2xl md:text-5xl font-bold text-zinc-900 dark:text-zinc-100 leading-none pt-2 md:pt-0`}>
                                     {profile.display_name}
                                 </h1>
                                 <CopyableId username={profile.username} />
                             </div>
 
-                            <div className="w-full h-px bg-zinc-100 dark:bg-zinc-900 my-4" />
+                            <div className="w-full h-px bg-zinc-100 dark:bg-zinc-900 my-1 md:my-4" />
 
                             {/* Bio Area */}
                             <div className="flex-1">
                                 {profile.bio ? (
-                                    <p className="text-sm md:text-base text-zinc-600 dark:text-zinc-400 leading-relaxed whitespace-pre-wrap font-light">
+                                    <p className="text-xs md:text-base text-zinc-600 dark:text-zinc-400 leading-relaxed whitespace-pre-wrap font-light">
                                         {profile.bio}
                                     </p>
                                 ) : (
-                                    <p className="text-zinc-400 italic text-sm font-mono">
-                                        // No biography data found.
+                                    <p className="text-zinc-400 italic text-xs md:text-sm font-mono">
+                                        // No biography data.
                                     </p>
                                 )}
                             </div>
 
-                            {/* Mobile Location */}
-                            <div className="md:hidden flex items-center gap-2 text-xs font-mono uppercase text-zinc-500 mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-900">
+                            {/* Mobile Only Location (Compact footer for bio) */}
+                            <div className="md:hidden flex items-center gap-1 text-[10px] font-mono uppercase text-zinc-400 pt-3 mt-2 border-t border-zinc-100 dark:border-zinc-900">
                                 <MapPinIcon className="w-3 h-3" />
-                                <span>{profile.country || "Unknown Location"}</span>
+                                {profile.country || "N/A"}
                             </div>
                         </div>
                     </div>
 
-
-                    {/* BLOCK 3: THE CONTROL PANEL (Stats & Actions) - Spans 3 columns */}
-                    <div className="md:col-span-3 flex flex-col gap-4">
+                    {/* BLOCK 3: CONTROL PANEL (Stats & Actions) */}
+                    {/* Order 2 on Mobile (Top Right) | Order 3 on Desktop (Far Right) */}
+                    <div className="col-span-1 md:col-span-3 order-2 md:order-3 flex flex-col gap-2 md:gap-4 h-full">
 
                         {/* Stats Card */}
-                        <div className="flex-1 bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 p-6 flex flex-col justify-center shadow-sm">
-                            <div className="space-y-6">
-                                <Link href={`/profile/${profile.username}/followers`} className="flex items-center justify-between group">
+                        <div className="bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 p-2 md:p-6 flex flex-col justify-center shadow-sm h-full md:h-auto flex-1">
+
+                            <div className="flex flex-col h-full justify-between md:justify-start md:space-y-6">
+
+                                {/* 1. Followers */}
+                                <Link href={`/profile/${profile.username}/followers`} className="flex flex-col md:flex-row items-center md:justify-between group gap-1 md:gap-0">
                                     <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-zinc-50 dark:bg-zinc-900 group-hover:bg-zinc-100 dark:group-hover:bg-zinc-800 transition-colors border border-zinc-100 dark:border-zinc-800">
+                                        <div className="hidden md:block p-2 bg-zinc-50 dark:bg-zinc-900 group-hover:bg-zinc-100 dark:group-hover:bg-zinc-800 transition-colors border border-zinc-100 dark:border-zinc-800">
                                             <UsersIcon className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
                                         </div>
-                                        <span className="text-[10px] uppercase tracking-widest font-bold text-zinc-500">Followers</span>
+                                        <span className="text-[9px] md:text-[10px] uppercase tracking-widest font-bold text-zinc-400 md:text-zinc-500">Followers</span>
                                     </div>
-                                    <span className="text-2xl font-light text-zinc-900 dark:text-zinc-100 group-hover:text-black dark:group-hover:text-white transition-colors font-mono">
+                                    <span className="text-lg md:text-2xl font-light text-zinc-900 dark:text-zinc-100 group-hover:text-black dark:group-hover:text-white transition-colors font-mono">
                                         {followerCount}
                                     </span>
                                 </Link>
 
+                                {/* Divider */}
                                 <div className="h-px w-full bg-zinc-100 dark:bg-zinc-900" />
 
-                                <Link href={`/profile/${profile.username}/following`} className="flex items-center justify-between group">
+                                {/* 2. Following */}
+                                <Link href={`/profile/${profile.username}/following`} className="flex flex-col md:flex-row items-center md:justify-between group gap-1 md:gap-0">
                                     <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-zinc-50 dark:bg-zinc-900 group-hover:bg-zinc-100 dark:group-hover:bg-zinc-800 transition-colors border border-zinc-100 dark:border-zinc-800">
+                                        <div className="hidden md:block p-2 bg-zinc-50 dark:bg-zinc-900 group-hover:bg-zinc-100 dark:group-hover:bg-zinc-800 transition-colors border border-zinc-100 dark:border-zinc-800">
                                             <UsersIcon className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
                                         </div>
-                                        <span className="text-[10px] uppercase tracking-widest font-bold text-zinc-500">Following</span>
+                                        <span className="text-[9px] md:text-[10px] uppercase tracking-widest font-bold text-zinc-400 md:text-zinc-500">Following</span>
                                     </div>
-                                    <span className="text-2xl font-light text-zinc-900 dark:text-zinc-100 group-hover:text-black dark:group-hover:text-white transition-colors font-mono">
+                                    <span className="text-lg md:text-2xl font-light text-zinc-900 dark:text-zinc-100 group-hover:text-black dark:group-hover:text-white transition-colors font-mono">
                                         {followingCount}
                                     </span>
+                                </Link>
+
+                                {/* Divider */}
+                                <div className="h-px w-full bg-zinc-100 dark:bg-zinc-900" />
+
+                                {/* 3. Watched */}
+                                <Link href={`/profile/${profile.username}/timeline`}>
+                                    <div
+                                        className="flex flex-col md:flex-row items-center md:justify-between group gap-1 md:gap-0">
+                                        <div className="flex items-center gap-3">
+                                            <div
+                                                className="hidden md:block p-2 bg-zinc-50 dark:bg-zinc-900 group-hover:bg-zinc-100 dark:group-hover:bg-zinc-800 transition-colors border border-zinc-100 dark:border-zinc-800">
+                                                <FilmIcon className="w-4 h-4 text-zinc-500 dark:text-zinc-400"/>
+                                            </div>
+                                            <span
+                                                className="text-[9px] md:text-[10px] uppercase tracking-widest font-bold text-zinc-400 md:text-zinc-500">Watched</span>
+                                        </div>
+                                        <span
+                                            className="text-lg md:text-2xl font-light text-zinc-900 dark:text-zinc-100 group-hover:text-black dark:group-hover:text-white transition-colors font-mono">
+                                        {timelineCount}
+                                    </span>
+                                    </div>
                                 </Link>
                             </div>
                         </div>
 
-                        {/* Action Button Card */}
-                        <div className="h-14">
-                            {isOwnProfile ? (
-                                <Link
-                                    href="/profile/edit"
-                                    className="h-full w-full flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black text-xs font-bold uppercase tracking-[0.15em] transition-all shadow-sm hover:shadow-md border border-zinc-900 dark:border-white"
-                                >
-                                    <PencilSquareIcon className="w-4 h-4" />
-                                    Edit Profile
-                                </Link>
-                            ) : (
-                                <div className="h-full w-full">
-                                    {/* Wrapping div to pass height to FollowButton if needed */}
-                                    <div className="h-full [&>button]:h-full [&>button]:w-full [&>button]:rounded-none [&>button]:text-xs [&>button]:uppercase [&>button]:tracking-[0.15em] [&>button]:font-bold">
-                                        <FollowButton
-                                            profileId={profile.id}
-                                            isPrivate={isPrivate}
-                                            initialFollowStatus={initialFollowStatus}
-                                        />
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+                        {/* Action Button Card - Hidden on Mobile in this specific column, moved to bottom via GRID order logic if needed, but here we will keep it inside col-span-1 but make it order-last for grid flow if we wanted. Actually, let's keep it here but in mobile we need it full width?
 
+                        STRATEGY CHANGE: To make button full width on mobile, we need it out of this column or this column needs to span full on mobile.
+                        However, to keep "Compact Square" layout (Avatar Left, Stats Right), we can't easily break the button out without changing HTML structure.
+
+                        COMPROMISE: On mobile, the button sits below the stats in the RIGHT column.
+                        OR: We move the button to a separate 4th block in the main grid that spans 2 columns on mobile.
+                        */}
+                    </div>
+
+                    {/* BLOCK 4: ACTION BUTTON (Separate Grid Item for layout control) */}
+                    {/* Order 4 on Mobile (Bottom Full Width) | Order 3 (Visual tweak) inside Desktop Right Col? No, let's place it smartly. */}
+
+                    {/* Let's actually put the button INSIDE Block 3 for Desktop, but for Mobile we want it separate.
+                        CSS Grid doesn't allow "portal" movement.
+                        Solution: Render button in Block 3 (Desktop/Mobile Right Col) AND Block 4 (Mobile Bottom), show/hide based on breakpoint?
+                        Or just accept Button is small on mobile right side?
+                        User asked for "Compact". Small button on right is very compact.
+                        Let's stick to the previous layout but ensure equal height.
+                    */}
+
+                    {/* REVERTING: Putting button back in Block 3 for simplicity, but making Block 3 allow the button to sit at bottom. */}
+                    {/* The code below injects the button into the same column as stats to ensure equal height on desktop */}
+                    <div className="col-span-2 md:col-span-3 md:col-start-10 md:row-start-2 lg:row-start-auto h-12 md:h-14 mt-auto md:mt-0 order-4 md:order-last">
+                        {isOwnProfile ? (
+                            <Link
+                                href="/profile/edit"
+                                className="h-full w-full flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black text-xs font-bold uppercase tracking-[0.15em] transition-all shadow-sm hover:shadow-md border border-zinc-900 dark:border-white"
+                            >
+                                <PencilSquareIcon className="w-4 h-4" />
+                                Edit
+                            </Link>
+                        ) : (
+                            <div className="h-full w-full">
+                                <div className="h-full [&>button]:h-full [&>button]:w-full [&>button]:rounded-none [&>button]:text-xs [&>button]:uppercase [&>button]:tracking-[0.15em] [&>button]:font-bold">
+                                    <FollowButton
+                                        profileId={profile.id}
+                                        isPrivate={isPrivate}
+                                        initialFollowStatus={initialFollowStatus}
+                                    />
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                 </div>

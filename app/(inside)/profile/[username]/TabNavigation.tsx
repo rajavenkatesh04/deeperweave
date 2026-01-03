@@ -7,7 +7,8 @@ import {
     HomeIcon,
     ClockIcon,
     DocumentTextIcon,
-    EllipsisHorizontalIcon
+    EllipsisHorizontalIcon,
+    RectangleStackIcon
 } from '@heroicons/react/24/outline';
 
 const ICONS: Record<string, React.ElementType> = {
@@ -21,50 +22,59 @@ export default function TabNavigation({ username, isOwnProfile }: { username: st
     const pathname = usePathname();
     const baseUrl = `/profile/${username}`;
 
-    const tabs = isOwnProfile
-        ? [
-            { name: 'Home', href: `${baseUrl}/home` },
-            { name: 'Timeline', href: `${baseUrl}/timeline` },
-            { name: 'Posts', href: `${baseUrl}/posts` },
-            { name: 'More', href: `${baseUrl}/more` },
-        ]
-        : [
-            { name: 'Home', href: `${baseUrl}/home` },
-            { name: 'Timeline', href: `${baseUrl}/timeline` },
-            { name: 'Posts', href: `${baseUrl}/posts` },
-        ];
+    const tabs = [
+        { name: 'Home', href: `${baseUrl}/home` },
+        { name: 'Timeline', href: `${baseUrl}/timeline` },
+        { name: 'Posts', href: `${baseUrl}/posts` },
+    ];
+
+    if (isOwnProfile) {
+        tabs.push({ name: 'More', href: `${baseUrl}/more` });
+    }
 
     return (
-        <div className="w-full border-b border-zinc-200 dark:border-zinc-800 mt-4 mb-8">
-            <nav className="flex space-x-6 md:space-x-8 overflow-x-auto hide-scrollbar" aria-label="Tabs">
-                {tabs.map((tab) => {
-                    const isActive = pathname === tab.href;
-                    const Icon = ICONS[tab.name] || HomeIcon;
+        <div className="sticky top-0 z-40 w-full bg-white dark:bg-black border-b border-zinc-200 dark:border-zinc-800">
+            <div className="max-w-6xl mx-auto px-4 md:px-8">
+                <nav className="flex space-x-8 overflow-x-auto scrollbar-hide" aria-label="Tabs">
+                    {tabs.map((tab) => {
+                        const isActive = pathname === tab.href;
+                        const Icon = ICONS[tab.name] || RectangleStackIcon;
 
-                    return (
-                        <Link
-                            key={tab.name}
-                            href={tab.href}
-                            className={clsx(
-                                'group flex items-center gap-2 py-4 border-b-2 text-xs font-bold uppercase tracking-widest transition-all duration-200 whitespace-nowrap',
-                                {
-                                    // ACTIVE: Sharp Black/White Text + Solid Underline
-                                    'border-zinc-900 dark:border-zinc-100 text-zinc-900 dark:text-zinc-100': isActive,
+                        return (
+                            <Link
+                                key={tab.name}
+                                href={tab.href}
+                                className={clsx(
+                                    'group relative flex items-center gap-2 py-5 text-xs font-bold uppercase tracking-widest transition-colors duration-200 whitespace-nowrap outline-none select-none',
+                                    {
+                                        // Active State: High Contrast
+                                        'text-zinc-900 dark:text-zinc-100': isActive,
+                                        // Inactive State: Muted
+                                        'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200': !isActive,
+                                    }
+                                )}
+                            >
+                                <Icon className={clsx(
+                                    "w-4 h-4 transition-transform duration-300",
+                                    isActive ? "stroke-2" : "group-hover:-translate-y-0.5"
+                                )} />
 
-                                    // INACTIVE: Gray Text + Transparent Border (Hover shows light gray border)
-                                    'border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-700': !isActive,
-                                }
-                            )}
-                        >
-                            <Icon className={clsx(
-                                "w-4 h-4 transition-colors",
-                                isActive ? "text-zinc-900 dark:text-zinc-100" : "text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300"
-                            )} />
-                            <span>{tab.name}</span>
-                        </Link>
-                    );
-                })}
-            </nav>
+                                <span>{tab.name}</span>
+
+                                {/* Active Indicator: Sharp Black Line */}
+                                {isActive && (
+                                    <span className="absolute bottom-0 left-0 w-full h-[2px] bg-zinc-900 dark:bg-zinc-100 animate-in zoom-in-x duration-300" />
+                                )}
+
+                                {/* Hover Indicator: Ghost Line */}
+                                {!isActive && (
+                                    <span className="absolute bottom-0 left-0 w-full h-[2px] bg-zinc-200 dark:bg-zinc-800 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                )}
+                            </Link>
+                        );
+                    })}
+                </nav>
+            </div>
         </div>
     );
 }
