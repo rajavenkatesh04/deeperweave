@@ -1,15 +1,16 @@
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { getMovieDetails, getSeriesDetails } from '@/lib/actions/cinematic-actions';
-import { PlusIcon, FilmIcon, StarIcon } from '@heroicons/react/24/solid';
+import { getMovieDetails, getSeriesDetails, RichCinematicDetails } from '@/lib/actions/cinematic-actions';
+import { PlusIcon, FilmIcon, StarIcon, HashtagIcon } from '@heroicons/react/24/solid';
 import { ShareButton, TrailerButton, BackdropGallery } from './media-interactive';
 import BackButton from './BackButton';
 import { getUserProfile } from '@/lib/data/user-data';
+// 👇 1. Import your reusable component
+import CinematicRow from '@/app/ui/discover/CinematicRow';
 
 export const dynamic = 'force-dynamic';
 
-interface Genre { id: number; name: string; }
 interface CastMember { id: number; name: string; character: string; profile_path: string | null; }
 
 export default async function SimpleDetailPage({
@@ -22,10 +23,11 @@ export default async function SimpleDetailPage({
 
     if (isNaN(numericId) || (media_type !== 'movie' && media_type !== 'tv')) notFound();
 
+    // Fetch user for the "Log Entry" link logic
     const userResult = await getUserProfile();
     const currentUser = userResult?.profile;
 
-    let details: any;
+    let details: RichCinematicDetails;
     try {
         if (media_type === 'movie') details = await getMovieDetails(numericId);
         else details = await getSeriesDetails(numericId);
@@ -36,18 +38,21 @@ export default async function SimpleDetailPage({
 
     if (!details) notFound();
 
-    const title = details.title || details.name;
-    const releaseDate = details.release_date || details.first_air_date;
+    const title = details.title;
+    const releaseDate = details.release_date;
     const releaseYear = releaseDate?.split('-')[0] || 'N/A';
-    const directorOrCreator = details.director || details.creator || (details.created_by?.[0]?.name);
+    const directorOrCreator = details.director || details.creator;
 
     const formatRuntime = (mins?: number) => mins ? `${Math.floor(mins / 60)}h ${mins % 60}m` : null;
     const runtimeString = details.runtime ? formatRuntime(details.runtime) : null;
     const seasonsString = details.number_of_seasons ? `${details.number_of_seasons} Seasons` : null;
     const rating = details.vote_average ? details.vote_average.toFixed(1) : 'NR';
 
-    // FIX: Determine if we actually have a backdrop to render
+    // Determine if we actually have a backdrop to render
     const hasBackdrop = !!(details.backdrop_path || (details.images?.backdrops?.length > 0));
+
+    // Helper for provider logos
+    const providers = details.watch_providers?.flatrate || [];
 
     return (
         <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
@@ -63,26 +68,24 @@ export default async function SimpleDetailPage({
             </header>
 
             {/* Backdrop Section */}
-            {/* Only render if we have images, otherwise this component returns null anyway,
-                but we use 'hasBackdrop' variable to control layout below */}
             <BackdropGallery
                 images={details.images?.backdrops || []}
                 fallbackPath={details.backdrop_path}
             />
 
-            {/* If no backdrop, add a spacer so content doesn't hit the header immediately */}
+            {/* Spacer if no backdrop */}
             {!hasBackdrop && <div className="h-10 w-full" />}
 
             <main className="pb-24">
-                {/* FIX: Conditional Margin.
-                    If backdrop exists: -mt-48 (Overlap effect).
-                    If NO backdrop: mt-8 (Standard spacing). */}
+                {/* Conditional Margin to create overlap effect if backdrop exists */}
                 <div className={`relative z-10 max-w-7xl mx-auto px-6 ${hasBackdrop ? '-mt-48' : 'mt-8'}`}>
 
                     <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 mb-24">
 
-                        {/* Poster Column */}
-                        <div className="lg:col-span-2">
+                        {/* LEFT COLUMN: Poster & Streaming Info */}
+                        <div className="lg:col-span-2 space-y-6">
+
+                            {/* Poster Card */}
                             <div className="relative aspect-[2/3] w-full max-w-md mx-auto overflow-hidden bg-zinc-200 dark:bg-zinc-900 shadow-2xl group border-4 border-white dark:border-zinc-800 rounded-sm">
                                 {details.poster_path ? (
                                     <>
@@ -101,15 +104,45 @@ export default async function SimpleDetailPage({
                                     </div>
                                 )}
                             </div>
+
+                            {/* Streaming Providers */}
+                            {providers.length > 0 && (
+                                <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                                    <p className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-3">Streaming On</p>
+                                    <div className="flex flex-wrap gap-3">
+                                        {providers.map((p) => (
+                                            <div key={p.provider_name} className="relative w-10 h-10 rounded-lg overflow-hidden border border-zinc-100 dark:border-zinc-800" title={p.provider_name}>
+                                                <Image
+                                                    src={`https://image.tmdb.org/t/p/original${p.logo_path}`}
+                                                    alt={p.provider_name}
+                                                    fill
+                                                    className="object-cover"
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
-                        {/* Info Column */}
-                        {/* FIX: Conditional Margin.
-                            If backdrop exists: lg:mt-56 (Push down to clear image area).
-                            If NO backdrop: lg:mt-0 (Align to top with poster). */}
+                        {/* RIGHT COLUMN: Info & Details */}
                         <div className={`lg:col-span-3 space-y-8 ${hasBackdrop ? 'lg:mt-56' : 'lg:mt-0'}`}>
 
                             <div className="space-y-3">
+                                <div className="flex items-center gap-3 flex-wrap">
+                                    {/* Status Badges */}
+                                    {details.certification && details.certification !== 'NR' && (
+                                        <span className="px-2 py-1 border border-zinc-400 dark:border-zinc-600 text-xs font-bold rounded">
+                                            {details.certification}
+                                        </span>
+                                    )}
+                                    {details.status && (
+                                        <span className={`text-xs font-bold px-2 py-1 rounded ${details.status === 'Ended' || details.status === 'Released' ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400' : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'}`}>
+                                            {details.status}
+                                        </span>
+                                    )}
+                                </div>
+
                                 <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-light tracking-tight text-zinc-900 dark:text-zinc-100 leading-tight">
                                     {title}
                                 </h1>
@@ -125,7 +158,7 @@ export default async function SimpleDetailPage({
                                 <span className="font-medium">{releaseYear}</span>
                                 {runtimeString && <><span className="text-zinc-400">·</span><span>{runtimeString}</span></>}
                                 {seasonsString && <><span className="text-zinc-400">·</span><span>{seasonsString}</span></>}
-                                {details.vote_average && (
+                                {details.vote_average > 0 && (
                                     <>
                                         <span className="text-zinc-400">·</span>
                                         <span className="inline-flex items-center gap-1.5 font-medium">
@@ -139,7 +172,7 @@ export default async function SimpleDetailPage({
                             {/* Genres */}
                             {details.genres?.length > 0 && (
                                 <div className="flex flex-wrap gap-2">
-                                    {details.genres.map((g: Genre) => (
+                                    {details.genres.map((g) => (
                                         <span key={g.id} className="px-4 py-2 bg-zinc-100 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 text-sm font-medium">
                                             {g.name}
                                         </span>
@@ -149,9 +182,8 @@ export default async function SimpleDetailPage({
 
                             {/* Actions */}
                             <div className="flex flex-wrap items-center gap-3">
-                                <TrailerButton videos={details.videos?.results || []} />
+                                <TrailerButton videos={details.videos || []} />
 
-                                {/* 👇 3. Render Link only if user is logged in, using their username */}
                                 {currentUser ? (
                                     <Link
                                         href={`/profile/${currentUser.username}/timeline/create?item=${id}&type=${media_type}`}
@@ -182,7 +214,7 @@ export default async function SimpleDetailPage({
                                 </p>
                             </div>
 
-                            {/* Details Grid */}
+                            {/* Details Grid (Director, Release Date) */}
                             <div className="grid grid-cols-2 gap-8 pt-8 border-t border-zinc-200 dark:border-zinc-800">
                                 {directorOrCreator && (
                                     <div className="space-y-2">
@@ -199,37 +231,74 @@ export default async function SimpleDetailPage({
                                     </div>
                                 )}
                             </div>
+
+                            {/* 👇 2. MOVED TAGS TO THE BOTTOM (Lowest importance) */}
+                            {details.keywords?.length > 0 && (
+                                <div className="pt-8 border-t border-zinc-200 dark:border-zinc-800 opacity-60 hover:opacity-100 transition-opacity">
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-3 flex items-center gap-2">
+                                        <HashtagIcon className="w-3 h-3"/> Related Keywords
+                                    </p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {details.keywords.slice(0, 10).map((k) => (
+                                            <Link
+                                                key={k.id}
+                                                href={`/search?query=${k.name}`}
+                                                className="px-2 py-1 bg-zinc-100 dark:bg-zinc-900 text-[10px] text-zinc-500 dark:text-zinc-400 rounded-sm hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
+                                            >
+                                                #{k.name}
+                                            </Link>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
 
                     {/* Cast Section */}
                     {details.cast?.length > 0 && (
-                        <div className="space-y-8">
+                        <div className="space-y-8 mb-24">
                             <h2 className="text-3xl font-light text-zinc-900 dark:text-zinc-100">Cast</h2>
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-8">
                                 {details.cast.slice(0, 12).map((actor: CastMember) => (
-                                    <div key={actor.id} className="space-y-3 group cursor-pointer">
-                                        <div className="relative aspect-[3/4] w-full overflow-hidden bg-zinc-200 dark:bg-zinc-900">
+                                    // 👇 CHANGED FROM DIV TO LINK
+                                    <Link
+                                        key={actor.id}
+                                        href={`/discover/actor/${actor.id}`}
+                                        className="space-y-3 group cursor-pointer block"
+                                    >
+                                        <div className="relative aspect-[3/4] w-full overflow-hidden bg-zinc-200 dark:bg-zinc-900 rounded-md">
                                             {actor.profile_path ? (
                                                 <Image
                                                     src={`https://image.tmdb.org/t/p/w200${actor.profile_path}`}
                                                     alt={actor.name}
                                                     fill
-                                                    className="object-cover group-hover:grayscale-0 transition-all duration-300"
+                                                    className="object-cover group-hover:scale-105 transition-transform duration-500"
                                                 />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center text-zinc-400 text-xs">No Image</div>
                                             )}
                                         </div>
                                         <div>
-                                            <p className="text-sm font-medium">{actor.name}</p>
-                                            <p className="text-sm text-zinc-500">{actor.character}</p>
+                                            <p className="text-sm font-medium group-hover:text-amber-600 transition-colors">{actor.name}</p>
+                                            <p className="text-xs text-zinc-500">{actor.character}</p>
                                         </div>
-                                    </div>
+                                    </Link>
                                 ))}
                             </div>
                         </div>
                     )}
+
+                    {/* 👇 3. REPLACED WITH CINEMATIC ROW (Reused Component) */}
+                    {details.recommendations?.length > 0 && (
+                        <div className="mt-12 -mx-6 md:-mx-12">
+                            <CinematicRow
+                                title="More Like This"
+                                items={details.recommendations}
+                                href="/discover" // Placeholder link
+                            />
+                        </div>
+                    )}
+
                 </div>
             </main>
         </div>
