@@ -1,16 +1,16 @@
-// app/(inside)/discover/actor/[id]/page.tsx
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { getPersonDetails, PersonDetails } from '@/lib/actions/cinematic-actions';
 import CinematicRow from '@/app/ui/discover/CinematicRow';
-import { CameraIcon, BriefcaseIcon, GlobeAltIcon, ArrowUpRightIcon } from '@heroicons/react/24/outline';
+import { BriefcaseIcon, GlobeAltIcon, ArrowUpRightIcon } from '@heroicons/react/24/outline';
 import { BackdropGallery, ShareButton } from '@/app/(inside)/discover/[media_type]/[id]/media-interactive';
 import BackButton from '@/app/(inside)/discover/[media_type]/[id]/BackButton';
-import { googleSansCode } from '@/app/ui/fonts'; // Importing the mono font for the casting sheet
+import { googleSansCode } from '@/app/ui/fonts';
+import PortraitGallery from '@/app/ui/discover/PortraitGallery';
 
 export const dynamic = 'force-dynamic';
 
-// --- NEW HELPER COMPONENTS FOR LEFT COLUMN ---
+// --- HELPER COMPONENTS ---
 
 function CastingStat({ label, value }: { label: string; value: string | number | null }) {
     if (!value) return null;
@@ -77,7 +77,7 @@ export default async function ActorDetailPage({ params }: { params: Promise<{ id
     return (
         <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
 
-            {/* --- NEW HEADER: Back + Share --- */}
+            {/* --- HEADER: Back + Share --- */}
             <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 sticky top-0 z-50 backdrop-blur-sm bg-opacity-90 dark:bg-opacity-90">
                 <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
                     <BackButton />
@@ -87,7 +87,7 @@ export default async function ActorDetailPage({ params }: { params: Promise<{ id
                 </div>
             </header>
 
-            {/* Backdrop Gallery (Unchanged) */}
+            {/* Backdrop Gallery */}
             <BackdropGallery
                 images={details.backdrops}
                 fallbackPath={details.backdrops[0]?.file_path || null}
@@ -100,10 +100,10 @@ export default async function ActorDetailPage({ params }: { params: Promise<{ id
 
                     <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 mb-24">
 
-                        {/* --- LEFT COLUMN: NEW "Casting Sheet" Style --- */}
+                        {/* --- LEFT COLUMN --- */}
                         <div className="lg:col-span-2 space-y-8">
 
-                            {/* New Profile Card */}
+                            {/* Profile Card */}
                             <div className="relative group">
                                 {/* Decorative "Paper" Shadow */}
                                 <div className="absolute top-2 left-2 w-full h-full bg-zinc-900/5 dark:bg-white/5 rounded-sm -z-10 transition-transform group-hover:translate-x-1 group-hover:translate-y-1" />
@@ -129,7 +129,7 @@ export default async function ActorDetailPage({ params }: { params: Promise<{ id
                                 </div>
                             </div>
 
-                            {/* New Data Sheet Box */}
+                            {/* Data Sheet Box */}
                             <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg border border-zinc-200 dark:border-zinc-800 shadow-sm relative overflow-hidden">
                                 {/* Decorative "Stamp" */}
                                 <div className="absolute -top-6 -right-6 w-20 h-20 bg-zinc-100 dark:bg-zinc-800 rounded-full blur-2xl opacity-50 pointer-events-none" />
@@ -161,7 +161,7 @@ export default async function ActorDetailPage({ params }: { params: Promise<{ id
                                 </div>
                             </div>
 
-                            {/* New Social Tags */}
+                            {/* Social Tags */}
                             <div className="flex flex-wrap gap-2">
                                 {details.social_ids.instagram_id && <SocialTag href={`https://instagram.com/${details.social_ids.instagram_id}`} label="IG" />}
                                 {details.social_ids.twitter_id && <SocialTag href={`https://twitter.com/${details.social_ids.twitter_id}`} label="TW" />}
@@ -170,7 +170,7 @@ export default async function ActorDetailPage({ params }: { params: Promise<{ id
                             </div>
                         </div>
 
-                        {/* --- RIGHT COLUMN: Kept "As Is" (From your snippet) --- */}
+                        {/* --- RIGHT COLUMN --- */}
                         <div className={`lg:col-span-3 space-y-10 ${hasBackdrop ? 'lg:mt-56' : 'lg:mt-0'}`}>
 
                             {/* Name */}
@@ -201,7 +201,7 @@ export default async function ActorDetailPage({ params }: { params: Promise<{ id
                         </div>
                     </div>
 
-                    {/* Known For Row (Kept "As Is") */}
+                    {/* Known For Row */}
                     {details.known_for.length > 0 && (
                         <div className="mb-24 -mx-6 md:-mx-12">
                             <CinematicRow
@@ -212,29 +212,9 @@ export default async function ActorDetailPage({ params }: { params: Promise<{ id
                         </div>
                     )}
 
-                    {/* Portraits Gallery (Kept "As Is") */}
+                    {/* --- NEW PORTRAITS GALLERY --- */}
                     {details.images.length > 0 && (
-                        <div className="space-y-8 mb-24">
-                            <h2 className="text-3xl font-light text-zinc-900 dark:text-zinc-100 flex items-center gap-3">
-                                <CameraIcon className="w-7 h-7 text-zinc-400"/>
-                                Portraits
-                            </h2>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
-                                {details.images.map((img) => (
-                                    <div
-                                        key={img.file_path}
-                                        className="relative aspect-[2/3] w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800 rounded-md group cursor-pointer"
-                                    >
-                                        <Image
-                                            src={`https://image.tmdb.org/t/p/w500${img.file_path}`}
-                                            alt="Portrait"
-                                            fill
-                                            className="object-cover group-hover:scale-105 transition-transform duration-500"
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+                        <PortraitGallery images={details.images} />
                     )}
                 </div>
             </main>
