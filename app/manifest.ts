@@ -2,9 +2,9 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
     return {
-        name: 'Liv',
-        short_name: 'Liv',
-        description: 'A Better LetterBoxd.',
+        name: 'DeeperWeave',
+        short_name: 'DeeperWeave',
+        description: 'A Better Letterboxd.',
         start_url: '/',
         display: 'standalone',
         background_color: '#ffffff',

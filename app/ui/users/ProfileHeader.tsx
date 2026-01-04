@@ -13,7 +13,7 @@ import {
     UsersIcon,
     FilmIcon,
     IdentificationIcon,
-    BellIcon // 1. Added BellIcon
+    BellIcon
 } from '@heroicons/react/24/outline';
 import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
 
@@ -211,16 +211,45 @@ export default function ProfileHeader({
                                     </span>
                                     </div>
                                 </Link>
+
+                                {/* --- DESKTOP ACTIONS (MOVED HERE) --- */}
+                                {/* Visible only on Desktop (md:flex). Hidden on mobile. */}
+                                <div className="hidden md:flex flex-col mt-auto pt-4">
+                                    <div className="h-px w-full bg-zinc-100 dark:bg-zinc-900 mb-4" />
+
+                                    {isOwnProfile ? (
+                                        // Edit Button (Exact copy of mobile styles)
+                                        <Link
+                                            href="/profile/edit"
+                                            className="flex w-full items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black text-xs font-bold uppercase tracking-[0.15em] transition-all shadow-sm hover:shadow-md border border-zinc-900 dark:border-white py-3"
+                                        >
+                                            <PencilSquareIcon className="w-4 h-4" />
+                                            <span>Edit</span>
+                                        </Link>
+                                    ) : (
+                                        // Follow Button
+                                        // I have removed the color overrides.
+                                        // Only kept: w-full, uppercase, bold, tracking (to match font style) and py-3 for height.
+                                        <div className="w-full [&>button]:w-full [&>button]:py-3 [&>button]:rounded-none [&>button]:text-xs [&>button]:uppercase [&>button]:tracking-[0.15em] [&>button]:font-bold">
+                                            <FollowButton
+                                                profileId={profile.id}
+                                                isPrivate={isPrivate}
+                                                initialFollowStatus={initialFollowStatus}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+
                             </div>
                         </div>
                     </div>
 
-                    {/* BLOCK 4: ACTION BUTTONS (Split on Mobile) */}
-                    <div className="col-span-2 md:col-span-3 md:col-start-10 md:row-start-2 lg:row-start-auto h-12 md:h-14 mt-auto md:mt-0 order-4 md:order-last">
+                    {/* BLOCK 4: ACTION BUTTONS (MOBILE ONLY) */}
+                    {/* --- CHANGE: Added 'md:hidden' to hide this block on desktop --- */}
+                    <div className="col-span-2 md:hidden h-12 mt-auto order-4">
                         {isOwnProfile ? (
-                            // ✨ MODIFIED: Flex container to hold both buttons
                             <div className="flex w-full h-full gap-2">
-                                {/* Edit Button - Flex-1 to take available space */}
+                                {/* Edit Button */}
                                 <Link
                                     href="/profile/edit"
                                     className="flex-1 flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black text-xs font-bold uppercase tracking-[0.15em] transition-all shadow-sm hover:shadow-md border border-zinc-900 dark:border-white"
@@ -229,14 +258,13 @@ export default function ProfileHeader({
                                     <span>Edit</span>
                                 </Link>
 
-                                {/* Notification Button - Hidden on Desktop (md:hidden), Square on Mobile */}
+                                {/* Notification Button */}
                                 <Link
                                     href="/profile/notifications"
-                                    className="md:hidden aspect-square h-full flex items-center justify-center bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all shadow-sm"
+                                    className="aspect-square h-full flex items-center justify-center bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all shadow-sm"
                                     aria-label="Notifications"
                                 >
                                     <BellIcon className="w-5 h-5" />
-                                    {/* Optional: Add red dot logic here if needed later */}
                                 </Link>
                             </div>
                         ) : (
