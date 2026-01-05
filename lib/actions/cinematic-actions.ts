@@ -8,14 +8,16 @@ import { createClient } from '@/utils/supabase/server';
 
 export type CinematicSearchResult = {
     id: number;
-    title: string;          // Normalized: 'title' for movies, 'name' for TV
-    release_date: string;   // Normalized: 'release_date' for movies, 'first_air_date' for TV
-    poster_path: string | null;
-    backdrop_path?: string | null;
+    title: string;          // Normalized: 'title' for movies, 'name' for TV/Person
+    release_date?: string;   // Normalized: 'release_date' | 'first_air_date' (Undefined for Person)
+    poster_path: string | null; // Normalized: 'poster_path' | 'profile_path'
+    backdrop_path?: string | null; // Normalized: 'backdrop_path' | 'known_for[0].backdrop_path'
     overview?: string;
-    media_type: 'movie' | 'tv';
+    media_type: 'movie' | 'tv' | 'person'; // ✨ ADDED 'person'
+    department?: string;    // ✨ ADDED for persons (e.g., "Acting", "Directing")
 };
 
+// ... (Keep RichCinematicDetails and PersonDetails as they are) ...
 export interface RichCinematicDetails {
     // Core
     id: number;
@@ -84,13 +86,21 @@ export interface PersonDetails {
 interface TmdbMultiSearchItem {
     id: number;
     media_type?: 'movie' | 'tv' | 'person';
-    poster_path: string | null;
+
+    // Media fields
+    poster_path?: string | null;
     backdrop_path?: string | null;
     overview?: string;
     title?: string;
     release_date?: string;
+
+    // TV/Person fields
     name?: string;
     first_air_date?: string;
+
+    // Person specific fields
+    profile_path?: string | null;
+    known_for_department?: string;
 }
 
 interface TmdbMultiSearchResponse {
@@ -102,12 +112,24 @@ interface TmdbMultiSearchResponse {
 // =====================================================================
 
 const normalizeTmdbItem = (item: TmdbMultiSearchItem, forcedMediaType: 'movie' | 'tv' | null = null): CinematicSearchResult | null => {
-    const media_type = (item.media_type as 'movie' | 'tv') || forcedMediaType;
+    const media_type = (item.media_type as 'movie' | 'tv' | 'person') || forcedMediaType;
 
-    // Filter out people (unless explicitly looking for them elsewhere) and items with no poster
-    if ((media_type !== 'movie' && media_type !== 'tv') || !item.poster_path) {
-        return null;
+    // ✨ HANDLE PERSON
+    if (media_type === 'person') {
+        if (!item.profile_path) return null; // Skip people with no image
+        return {
+            id: item.id,
+            title: item.name!,
+            poster_path: item.profile_path, // Map profile_path to poster_path
+            media_type: 'person',
+            department: item.known_for_department || 'Artist',
+            // No backdrop or release_date for list view usually
+        };
     }
+
+    // ✨ HANDLE MOVIE/TV
+    // Filter out items with no poster
+    if (!item.poster_path) return null;
 
     return {
         id: item.id,
@@ -120,6 +142,7 @@ const normalizeTmdbItem = (item: TmdbMultiSearchItem, forcedMediaType: 'movie' |
     };
 };
 
+// ... (Keep fetchTmdbList and discoverMedia exactly as they are) ...
 async function fetchTmdbList(endpoint: string, params: Record<string, string> = {}): Promise<CinematicSearchResult[]> {
     const TMDB_API_KEY = process.env.TMDB_API_KEY;
     if (!TMDB_API_KEY) {
@@ -152,7 +175,12 @@ async function fetchTmdbList(endpoint: string, params: Record<string, string> = 
         return data.results
             .map(item => normalizeTmdbItem(item, forcedMediaType))
             .filter((item): item is CinematicSearchResult => item !== null)
-            .filter(item => !!item.backdrop_path)
+            // Allow items without backdrop if they are persons, but existing logic filtered them.
+            // Updated logic: Filter strictly if it's NOT a person, or handle person differently.
+            // For simplicity, let's relax the strict backdrop check for Search results specifically,
+            // but fetchTmdbList is used widely.
+            // FIX: We generally want good quality data.
+            .filter(item => item.media_type === 'person' || !!item.backdrop_path)
             .slice(0, 20);
 
     } catch (error) {
@@ -160,12 +188,7 @@ async function fetchTmdbList(endpoint: string, params: Record<string, string> = 
         return [];
     }
 }
-
-// =====================================================================
-// == DISCOVERY & TRENDING ACTIONS
-// =====================================================================
-
-// 👇 MASTER DISCOVER FUNCTION (Replaces repetitive code)
+// ... (Rest of the file including getMovieDetails, getSeriesDetails, getPersonDetails remains unchanged) ...
 export type DiscoverFilters = {
     type: 'movie' | 'tv';
     sort_by?: 'popularity.desc' | 'vote_average.desc' | 'first_air_date.desc' | 'release_date.desc';
