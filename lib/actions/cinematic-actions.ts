@@ -13,11 +13,10 @@ export type CinematicSearchResult = {
     poster_path: string | null; // Normalized: 'poster_path' | 'profile_path'
     backdrop_path?: string | null; // Normalized: 'backdrop_path' | 'known_for[0].backdrop_path'
     overview?: string;
-    media_type: 'movie' | 'tv' | 'person'; // ✨ ADDED 'person'
-    department?: string;    // ✨ ADDED for persons (e.g., "Acting", "Directing")
+    media_type: 'movie' | 'tv' | 'person';
+    department?: string;    // for persons (e.g., "Acting", "Directing")
 };
 
-// ... (Keep RichCinematicDetails and PersonDetails as they are) ...
 export interface RichCinematicDetails {
     // Core
     id: number;
@@ -123,7 +122,6 @@ const normalizeTmdbItem = (item: TmdbMultiSearchItem, forcedMediaType: 'movie' |
             poster_path: item.profile_path, // Map profile_path to poster_path
             media_type: 'person',
             department: item.known_for_department || 'Artist',
-            // No backdrop or release_date for list view usually
         };
     }
 
@@ -142,7 +140,30 @@ const normalizeTmdbItem = (item: TmdbMultiSearchItem, forcedMediaType: 'movie' |
     };
 };
 
-// ... (Keep fetchTmdbList and discoverMedia exactly as they are) ...
+// ✨ NEW HELPER: Check user preference for Adult Content
+async function getAdultContentFlag(): Promise<string> {
+    try {
+        const supabase = await createClient();
+
+        // 1. Check if user is logged in
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return 'false'; // Guest = Safe Mode
+
+        // 2. Check their profile setting
+        const { data } = await supabase
+            .from('profiles')
+            .select('content_preference')
+            .eq('id', user.id)
+            .single();
+
+        // 3. Return 'true' only if explicitly set to 'all'
+        return data?.content_preference === 'all' ? 'true' : 'false';
+    } catch (error) {
+        // Fail safe to 'false' if any DB error occurs
+        return 'false';
+    }
+}
+
 async function fetchTmdbList(endpoint: string, params: Record<string, string> = {}): Promise<CinematicSearchResult[]> {
     const TMDB_API_KEY = process.env.TMDB_API_KEY;
     if (!TMDB_API_KEY) {
@@ -154,13 +175,23 @@ async function fetchTmdbList(endpoint: string, params: Record<string, string> = 
     if (endpoint.startsWith('/movie')) forcedMediaType = 'movie';
     else if (endpoint.startsWith('/tv') || endpoint.startsWith('/discover/tv')) forcedMediaType = 'tv';
 
+    // ✨ DYNAMICALLY GET PREFERENCE
+    // If 'include_adult' is already passed in params (e.g. override), use it.
+    // Otherwise, fetch from user profile.
+    let includeAdultParam = params.include_adult;
+    if (!includeAdultParam) {
+        includeAdultParam = await getAdultContentFlag();
+    }
+
     const query = new URLSearchParams({
         api_key: TMDB_API_KEY,
-        include_adult: 'false',
+        include_adult: includeAdultParam, // ✅ Uses dynamic user setting
         ...params
     });
 
     try {
+        // Note: The cache key includes the query params.
+        // So 'include_adult=true' and 'include_adult=false' will be cached separately.
         const res = await fetch(`https://api.themoviedb.org/3${endpoint}?${query.toString()}`, {
             next: { revalidate: 3600 } // Cache for 1 hour
         });
@@ -175,11 +206,7 @@ async function fetchTmdbList(endpoint: string, params: Record<string, string> = 
         return data.results
             .map(item => normalizeTmdbItem(item, forcedMediaType))
             .filter((item): item is CinematicSearchResult => item !== null)
-            // Allow items without backdrop if they are persons, but existing logic filtered them.
-            // Updated logic: Filter strictly if it's NOT a person, or handle person differently.
-            // For simplicity, let's relax the strict backdrop check for Search results specifically,
-            // but fetchTmdbList is used widely.
-            // FIX: We generally want good quality data.
+            // Allow items without backdrop if they are persons, but ensure quality for others
             .filter(item => item.media_type === 'person' || !!item.backdrop_path)
             .slice(0, 20);
 
@@ -188,7 +215,11 @@ async function fetchTmdbList(endpoint: string, params: Record<string, string> = 
         return [];
     }
 }
-// ... (Rest of the file including getMovieDetails, getSeriesDetails, getPersonDetails remains unchanged) ...
+
+// =====================================================================
+// == PUBLIC ACTIONS
+// =====================================================================
+
 export type DiscoverFilters = {
     type: 'movie' | 'tv';
     sort_by?: 'popularity.desc' | 'vote_average.desc' | 'first_air_date.desc' | 'release_date.desc';

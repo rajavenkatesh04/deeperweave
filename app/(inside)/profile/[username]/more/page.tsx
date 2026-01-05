@@ -98,6 +98,12 @@ export default async function SettingsPage() {
                     </div>
                 </section>
 
+                <section className="bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 overflow-hidden rounded-sm">
+                    <div className="p-2">
+                        <Link href={`/profile/settings`}>Settings</Link>
+                    </div>
+                </section>
+
                 {/* 2. PERSONAL INFORMATION */}
                 <section className="bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 overflow-hidden rounded-sm">
                     <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 flex items-center gap-2">
