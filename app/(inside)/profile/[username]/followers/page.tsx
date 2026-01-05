@@ -1,6 +1,6 @@
 // app/profile/[username]/followers/page.tsx
 import { getFollowers, getProfileByUsername } from '@/lib/data/user-data';
-import UserCard from '@/app/ui/users/UserCard';
+import UserCard from '@/app/ui/user/UserCard';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeftIcon, UsersIcon } from '@heroicons/react/24/outline';

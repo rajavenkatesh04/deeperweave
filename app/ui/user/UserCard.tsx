@@ -1,4 +1,4 @@
-// app/ui/users/UserCard.tsx
+// app/ui/user/UserCard.tsx
 import Link from 'next/link';
 import Image from 'next/image';
 import { UserProfile } from '@/lib/definitions';

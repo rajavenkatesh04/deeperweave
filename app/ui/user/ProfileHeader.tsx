@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState } from 'react';
 import { UserProfile } from '@/lib/definitions';
-import FollowButton from '@/app/ui/users/FollowButton';
+import FollowButton from '@/app/ui/user/FollowButton';
 import {
     PencilSquareIcon,
     MapPinIcon,

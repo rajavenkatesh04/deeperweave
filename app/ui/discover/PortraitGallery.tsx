@@ -74,7 +74,7 @@ export default function PortraitGallery({ images }: { images: ImageType[] }) {
     return (
         <>
             {/* --- Masonry Grid (Pinterest Style) --- */}
-            <section className="z-80 space-y-8 mb-24 animate-in fade-in duration-700">
+            <section className=" space-y-8 mb-24 animate-in fade-in duration-700">
                 <div className="flex items-center justify-between">
                     <h2 className="text-3xl font-light text-zinc-900 dark:text-zinc-100 flex items-center gap-3">
                         <CameraIcon className="w-7 h-7 text-zinc-400" />

@@ -48,7 +48,7 @@ export async function updateSession(request: NextRequest) {
             return NextResponse.redirect(new URL('/profile', request.url));
         }
 
-        // NEW: Redirect logged-in users away from Landing Page ('/')
+        // NEW: Redirect logged-in user away from Landing Page ('/')
         if (pathname === '/') {
             return NextResponse.redirect(new URL('/profile', request.url));
         }

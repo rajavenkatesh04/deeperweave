@@ -10,7 +10,7 @@ export async function followUser(profileId: string, isPrivate: boolean) {
     const userData = await getUserProfile();
 
     if (!userData?.user || !userData.profile) {
-        return { error: 'You must be logged in to follow users.' };
+        return { error: 'You must be logged in to follow user.' };
     }
     const { user, profile } = userData;
 

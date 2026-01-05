@@ -1,9 +1,9 @@
 import { notFound } from 'next/navigation';
 import { getProfileData } from '@/lib/data/user-data';
 import { createClient } from '@/utils/supabase/server';
-import ProfileHeader from '@/app/ui/users/ProfileHeader';
+import ProfileHeader from '@/app/ui/user/ProfileHeader';
 import TabNavigation from './TabNavigation';
-import PrivateProfileScreen from '@/app/ui/users/PrivateProfileScreen';
+import PrivateProfileScreen from '@/app/ui/user/PrivateProfileScreen';
 
 export default async function ProfileLayout({
                                                 children,

@@ -160,7 +160,7 @@ export interface ChatRoom {
 }
 
 /**
- * Join table linking users to the chat rooms they are in.
+ * Join table linking user to the chat rooms they are in.
  * Stored in the 'chat_participants' table.
  */
 export interface ChatParticipant {
@@ -227,7 +227,7 @@ export interface ProfileSearchResult {
 // =====================================================================
 
 /**
- * Represents the join table for tagged users on a timeline entry.
+ * Represents the join table for tagged user on a timeline entry.
  * Stored in 'timeline_collaborators'.
  */
 export interface TimelineCollaborator {
