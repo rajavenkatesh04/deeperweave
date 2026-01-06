@@ -281,3 +281,18 @@ export interface TimelineEntry {
 export type TimelineEntryWithUser = TimelineEntry & {
     profiles: Pick<UserProfile, 'username' | 'display_name' | 'profile_pic_url'>;
 };
+
+
+export type SaveableItemType = 'movie' | 'series' | 'person' | 'post' | 'profile';
+
+export interface SavedItem {
+    id: string;
+    item_type: SaveableItemType;
+    created_at: string;
+    // We make these optional because a row only has one of them
+    movie?: { tmdb_id: number; title: string; poster_url: string | null };
+    series?: { tmdb_id: number; title: string; poster_url: string | null };
+    person?: { tmdb_id: number; name: string; profile_path: string | null };
+    post?: { id: string; title: string; banner_url: string | null; slug: string };
+    profile?: { username: string; display_name: string; profile_pic_url: string | null };
+}

@@ -2,12 +2,13 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { getMovieDetails, getSeriesDetails, RichCinematicDetails } from '@/lib/actions/cinematic-actions';
+import { getIsSaved } from '@/lib/actions/save-actions'; // ✨ IMPORT
+import { getUserProfile } from '@/lib/data/user-data';
+import SaveButton from '@/app/ui/save/SaveButton'; // ✨ IMPORT
+import CinematicRow from '@/app/ui/discover/CinematicRow';
 import { PlusIcon, FilmIcon, StarIcon, HashtagIcon } from '@heroicons/react/24/solid';
 import { ShareButton, TrailerButton, BackdropGallery } from './media-interactive';
 import BackButton from './BackButton';
-import { getUserProfile } from '@/lib/data/user-data';
-// 👇 1. Import your reusable component
-import CinematicRow from '@/app/ui/discover/CinematicRow';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,21 +24,19 @@ export default async function SimpleDetailPage({
 
     if (isNaN(numericId) || (media_type !== 'movie' && media_type !== 'tv')) notFound();
 
-    // Fetch user for the "Log Entry" link logic
-    const userResult = await getUserProfile();
-    const currentUser = userResult?.profile;
-
-    let details: RichCinematicDetails;
-    try {
-        if (media_type === 'movie') details = await getMovieDetails(numericId);
-        else details = await getSeriesDetails(numericId);
-    } catch (error) {
-        console.error(error);
-        notFound();
-    }
+    // ✨ OPTIMIZATION: Fetch User, Details, and Saved Status in parallel
+    const [userResult, details, isSaved] = await Promise.all([
+        getUserProfile(),
+        (media_type === 'movie' ? getMovieDetails(numericId) : getSeriesDetails(numericId)).catch((e) => {
+            console.error("Fetch error:", e);
+            return null;
+        }),
+        getIsSaved(media_type as 'movie' | 'series', numericId)
+    ]);
 
     if (!details) notFound();
 
+    const currentUser = userResult?.profile;
     const title = details.title;
     const releaseDate = details.release_date;
     const releaseYear = releaseDate?.split('-')[0] || 'N/A';
@@ -61,7 +60,15 @@ export default async function SimpleDetailPage({
             <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 sticky top-0 z-50 backdrop-blur-sm bg-opacity-90 dark:bg-opacity-90">
                 <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
                     <BackButton />
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
+                        {/* ✨ INJECTED SAVE BUTTON */}
+                        <SaveButton
+                            itemType={media_type as 'movie' | 'series'}
+                            itemId={numericId}
+                            initialIsSaved={isSaved}
+                            className="bg-zinc-100 dark:bg-zinc-900 p-2 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-800"
+                            iconSize="w-5 h-5"
+                        />
                         <ShareButton />
                     </div>
                 </div>
@@ -232,7 +239,7 @@ export default async function SimpleDetailPage({
                                 )}
                             </div>
 
-                            {/* 👇 2. MOVED TAGS TO THE BOTTOM (Lowest importance) */}
+                            {/* Keywords (Moved to bottom) */}
                             {details.keywords?.length > 0 && (
                                 <div className="pt-8 border-t border-zinc-200 dark:border-zinc-800 opacity-60 hover:opacity-100 transition-opacity">
                                     <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-3 flex items-center gap-2">
@@ -254,13 +261,12 @@ export default async function SimpleDetailPage({
                         </div>
                     </div>
 
-                    {/* Cast Section */}
+                    {/* Cast Section (Clickable) */}
                     {details.cast?.length > 0 && (
                         <div className="space-y-8 mb-24">
                             <h2 className="text-3xl font-light text-zinc-900 dark:text-zinc-100">Cast</h2>
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-8">
                                 {details.cast.slice(0, 12).map((actor: CastMember) => (
-                                    // 👇 CHANGED FROM DIV TO LINK
                                     <Link
                                         key={actor.id}
                                         href={`/discover/actor/${actor.id}`}
@@ -288,13 +294,13 @@ export default async function SimpleDetailPage({
                         </div>
                     )}
 
-                    {/* 👇 3. REPLACED WITH CINEMATIC ROW (Reused Component) */}
+                    {/* Recommendations (Using Reusable CinematicRow) */}
                     {details.recommendations?.length > 0 && (
                         <div className="mt-12 -mx-6 md:-mx-12">
                             <CinematicRow
                                 title="More Like This"
                                 items={details.recommendations}
-                                href="/discover" // Placeholder link
+                                href="/discover"
                             />
                         </div>
                     )}

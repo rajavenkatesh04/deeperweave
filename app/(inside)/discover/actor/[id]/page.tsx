@@ -1,6 +1,8 @@
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { getPersonDetails, PersonDetails } from '@/lib/actions/cinematic-actions';
+import { getIsSaved } from '@/lib/actions/save-actions'; // ✨ IMPORT
+import SaveButton from '@/app/ui/save/SaveButton'; // ✨ IMPORT
 import CinematicRow from '@/app/ui/discover/CinematicRow';
 import { BriefcaseIcon, GlobeAltIcon, ArrowUpRightIcon } from '@heroicons/react/24/outline';
 import { BackdropGallery, ShareButton } from '@/app/(inside)/discover/[media_type]/[id]/media-interactive';
@@ -60,13 +62,14 @@ export default async function ActorDetailPage({ params }: { params: Promise<{ id
 
     if (isNaN(numericId)) notFound();
 
-    let details: PersonDetails;
-    try {
-        details = await getPersonDetails(numericId);
-    } catch (error) {
-        console.error(error);
-        notFound();
-    }
+    // ✨ OPTIMIZATION: Fetch Actor Details & Saved Status concurrently
+    const [details, isSaved] = await Promise.all([
+        getPersonDetails(numericId).catch((e) => {
+            console.error(e);
+            return null;
+        }),
+        getIsSaved('person', numericId).catch(() => false)
+    ]);
 
     if (!details) notFound();
 
@@ -77,11 +80,20 @@ export default async function ActorDetailPage({ params }: { params: Promise<{ id
     return (
         <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
 
-            {/* --- HEADER: Back + Share --- */}
+            {/* --- HEADER: Back + Share + Save --- */}
             <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 sticky top-0 z-50 backdrop-blur-sm bg-opacity-90 dark:bg-opacity-90">
                 <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
                     <BackButton />
+
                     <div className="flex items-center gap-3">
+                        {/* ✨ INJECTED SAVE BUTTON */}
+                        <SaveButton
+                            itemType="person"
+                            itemId={numericId}
+                            initialIsSaved={isSaved}
+                            className="bg-zinc-100 dark:bg-zinc-900 p-2 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-800"
+                            iconSize="w-5 h-5"
+                        />
                         <ShareButton />
                     </div>
                 </div>
