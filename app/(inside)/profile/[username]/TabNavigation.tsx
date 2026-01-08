@@ -8,12 +8,13 @@ import {
     ClockIcon,
     DocumentTextIcon,
     EllipsisHorizontalIcon,
-    RectangleStackIcon
+    RectangleStackIcon, ListBulletIcon
 } from '@heroicons/react/24/outline';
 
 const ICONS: Record<string, React.ElementType> = {
     'Home': HomeIcon,
     'Timeline': ClockIcon,
+    'Lists': ListBulletIcon,
     'Posts': DocumentTextIcon,
     'More': EllipsisHorizontalIcon,
 };
@@ -25,6 +26,7 @@ export default function TabNavigation({ username, isOwnProfile }: { username: st
     const tabs = [
         { name: 'Home', href: `${baseUrl}/home` },
         { name: 'Timeline', href: `${baseUrl}/timeline` },
+        { name: 'Lists', href: `${baseUrl}/lists` },
         { name: 'Posts', href: `${baseUrl}/posts` },
     ];
 

@@ -49,7 +49,7 @@ export default async function SavedPage() {
                 <div className="flex items-end justify-between mb-8 border-b border-zinc-200 dark:border-zinc-800 pb-6">
                     <div>
                         <h1 className={`${PlayWriteNewZealandFont.className} text-3xl md:text-4xl font-bold text-zinc-900 dark:text-zinc-100 mb-2`}>
-                            The Vault
+                            Saved
                         </h1>
                         <p className="text-sm text-zinc-500 font-mono uppercase tracking-wider">
                             Private Library // {savedItems.length} Items

@@ -3,13 +3,21 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import clsx from 'clsx';
-import { BookOpenIcon, PlusCircleIcon, HomeIcon, MagnifyingGlassIcon, BellIcon } from '@heroicons/react/24/outline';
+import {
+    BookOpenIcon,
+    PlusCircleIcon,
+    HomeIcon,
+    MagnifyingGlassIcon,
+    BellIcon,
+    BookmarkIcon
+} from '@heroicons/react/24/outline';
 
 const links = [
     { name: 'Discover', href: '/discover', icon: HomeIcon },
-    { name: 'Blogs', href: '/blog', icon: BookOpenIcon },
-    { name: 'Create', href: '/create', icon: PlusCircleIcon },
     { name: 'Search', href: '/search', icon: MagnifyingGlassIcon},
+    { name: 'Create', href: '/create', icon: PlusCircleIcon },
+    { name: 'Blogs', href: '/blog', icon: BookOpenIcon },
+    { name: 'Saved', href: '/profile/saved', icon: BookmarkIcon },
     { name: 'Notifications', href: '/profile/notifications', icon: BellIcon },
 ];
 
