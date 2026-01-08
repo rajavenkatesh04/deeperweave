@@ -127,7 +127,7 @@ export default async function ActorDetailPage({ params }: { params: Promise<{ id
                                                 src={`https://image.tmdb.org/t/p/h632${details.profile_path}`}
                                                 alt={details.name}
                                                 fill
-                                                className="object-cover grayscale contrast-110 group-hover:grayscale-0 transition-all duration-700 ease-in-out"
+                                                className="object-cover contrast-110 group-hover:grayscale-0 transition-all duration-700 ease-in-out"
                                                 priority
                                             />
                                             {/* Flash Effect on Hover */}

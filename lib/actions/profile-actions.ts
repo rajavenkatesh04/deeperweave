@@ -379,16 +379,18 @@ const DeleteAccountSchema = z.object({
     }),
 });
 
-// ... (deleteMyAccount function is unchanged) ...
 export async function deleteMyAccount(
     prevState: DeleteAccountState,
     formData: FormData
 ): Promise<DeleteAccountState> {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
+
     if (!user) {
         return { message: 'Authentication error.' };
     }
+
+    // 1. Validate the form input (Keep your existing logic)
     const validatedFields = DeleteAccountSchema.safeParse(Object.fromEntries(formData.entries()));
     if (!validatedFields.success) {
         return {
@@ -396,11 +398,55 @@ export async function deleteMyAccount(
             message: 'Confirmation is incorrect.',
         };
     }
+
+    // =========================================================
+    // ✨ NEW: CLEAN UP STORAGE BUCKETS
+    // =========================================================
+    try {
+        // 1. Clean Profile Pictures
+        // We assume files are stored in a folder named after the user ID based on your updateProfile code
+        const { data: profileFiles } = await supabase.storage
+            .from('profile_pics')
+            .list(`${user.id}`); // List all files in the user's folder
+
+        if (profileFiles && profileFiles.length > 0) {
+            const filesToRemove = profileFiles.map(file => `${user.id}/${file.name}`);
+            await supabase.storage.from('profile_pics').remove(filesToRemove);
+        }
+
+        // 2. Clean Timeline Photos (If you have a 'timeline_photos' bucket)
+        // Repeat this pattern for any other buckets you use (e.g. 'post_banners')
+        const { data: timelineFiles } = await supabase.storage
+            .from('timeline_photos')
+            .list(`${user.id}`);
+
+        if (timelineFiles && timelineFiles.length > 0) {
+            const timelineRemovals = timelineFiles.map(file => `${user.id}/${file.name}`);
+            await supabase.storage.from('timeline_photos').remove(timelineRemovals);
+        }
+
+    } catch (storageError) {
+        // Optional: Decide if you want to stop deletion if storage cleanup fails.
+        // Usually, it's better to log it and proceed with DB deletion so the account is still closed.
+        console.error('Error cleaning up storage files:', storageError);
+    }
+
+    // =========================================================
+    // ✨ EXISTING: DELETE DATABASE RECORD
+    // =========================================================
+
+    // Now that images are gone, we can safely wipe the DB.
+    // The SQL Cascades you added will handle posts, likes, comments, etc.
     const { error: rpcError } = await supabase.rpc('delete_my_account');
+
     if (rpcError) {
         console.error('Account deletion RPC error:', rpcError);
         return { message: 'A server error occurred. Could not delete account.' };
     }
+
+    // Optional: Explicitly sign the user out of the session
+    await supabase.auth.signOut();
+
     revalidatePath('/', 'layout');
     redirect('/delete-success');
 }
