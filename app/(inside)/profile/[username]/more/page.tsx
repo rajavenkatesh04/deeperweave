@@ -102,6 +102,10 @@ export default async function SettingsPage() {
                     <div className="p-2">
                         <Link href={`/profile/settings`}>Settings</Link>
                     </div>
+
+                    <div className="p-2">
+                        <Link href={`/profile/saved`}>Saved</Link>
+                    </div>
                 </section>
 
                 {/* 2. PERSONAL INFORMATION */}

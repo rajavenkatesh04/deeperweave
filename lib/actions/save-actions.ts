@@ -6,7 +6,7 @@ import { getMovieDetails, getSeriesDetails, getPersonDetails } from '@/lib/actio
 import { SaveableItemType } from '@/lib/definitions';
 
 export async function toggleSaveItem(
-    itemType: SaveableItemType,
+    itemType: SaveableItemType | 'tv', // Allow 'tv' as input
     itemId: string | number,
     path: string
 ) {
@@ -17,23 +17,32 @@ export async function toggleSaveItem(
         return { error: "Unauthorized" };
     }
 
+    // ✨ FIX: Normalize 'tv' -> 'series' immediately
+    const normalizedType = itemType === 'tv' ? 'series' : itemType;
+    const numericId = Number(itemId);
+
+    // 1. Ensure the item exists in our local cache (movies/series/people tables)
     try {
-        if (itemType === 'movie') await getMovieDetails(Number(itemId));
-        else if (itemType === 'series') await getSeriesDetails(Number(itemId));
-        else if (itemType === 'person') await getPersonDetails(Number(itemId));
-    } catch {}
+        if (normalizedType === 'movie') await getMovieDetails(numericId);
+        else if (normalizedType === 'series') await getSeriesDetails(numericId);
+        else if (normalizedType === 'person') await getPersonDetails(numericId);
+    } catch (e) {
+        console.error("Error ensuring item details exist:", e);
+    }
 
     const queryPayload: any = {
         user_id: user.id,
-        item_type: itemType,
+        item_type: normalizedType, // Store as 'series' in DB
     };
 
-    if (itemType === 'movie') queryPayload.movie_id = Number(itemId);
-    else if (itemType === 'series') queryPayload.series_id = Number(itemId);
-    else if (itemType === 'person') queryPayload.person_id = Number(itemId);
-    else if (itemType === 'post') queryPayload.post_id = String(itemId);
-    else if (itemType === 'profile') queryPayload.target_user_id = String(itemId);
+    // 2. Set the correct foreign key based on normalized type
+    if (normalizedType === 'movie') queryPayload.movie_id = numericId;
+    else if (normalizedType === 'series') queryPayload.series_id = numericId;
+    else if (normalizedType === 'person') queryPayload.person_id = numericId;
+    else if (normalizedType === 'post') queryPayload.post_id = String(itemId);
+    else if (normalizedType === 'profile') queryPayload.target_user_id = String(itemId);
 
+    // 3. Check if already saved
     const { data: existing, error: fetchError } = await supabase
         .from('saved_items')
         .select('id')
@@ -44,15 +53,14 @@ export async function toggleSaveItem(
         return { saved: false };
     }
 
+    // 4. Toggle Logic
     if (existing) {
         const { error: deleteError } = await supabase
             .from('saved_items')
             .delete()
             .eq('id', existing.id);
 
-        if (deleteError) {
-            return { saved: true };
-        }
+        if (deleteError) return { saved: true };
 
         revalidatePath(path);
         return { saved: false };
@@ -63,6 +71,7 @@ export async function toggleSaveItem(
             .select();
 
         if (insertError) {
+            console.error("Insert Error:", insertError);
             return { saved: false };
         }
 
@@ -71,21 +80,24 @@ export async function toggleSaveItem(
     }
 }
 
-export async function getIsSaved(itemType: SaveableItemType, itemId: string | number) {
+export async function getIsSaved(itemType: SaveableItemType | 'tv', itemId: string | number) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return false;
 
+    // ✨ FIX: Normalize here too so the UI button lights up correctly
+    const normalizedType = itemType === 'tv' ? 'series' : itemType;
+
     const queryPayload: any = {
         user_id: user.id,
-        item_type: itemType,
+        item_type: normalizedType,
     };
 
-    if (itemType === 'movie') queryPayload.movie_id = itemId;
-    else if (itemType === 'series') queryPayload.series_id = itemId;
-    else if (itemType === 'person') queryPayload.person_id = itemId;
-    else if (itemType === 'post') queryPayload.post_id = itemId;
-    else if (itemType === 'profile') queryPayload.target_user_id = itemId;
+    if (normalizedType === 'movie') queryPayload.movie_id = itemId;
+    else if (normalizedType === 'series') queryPayload.series_id = itemId;
+    else if (normalizedType === 'person') queryPayload.person_id = itemId;
+    else if (normalizedType === 'post') queryPayload.post_id = itemId;
+    else if (normalizedType === 'profile') queryPayload.target_user_id = itemId;
 
     const { data } = await supabase
         .from('saved_items')
