@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom'; // ✨ IMPORT ADDED
 import Image from 'next/image';
 import { CameraIcon, XMarkIcon, ArrowsPointingOutIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
@@ -12,6 +13,7 @@ export default function PortraitGallery({ images }: { images: ImageType[] }) {
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
     const [touchStart, setTouchStart] = useState<number | null>(null);
     const [touchEnd, setTouchEnd] = useState<number | null>(null);
+    const [mounted, setMounted] = useState(false); // ✨ STATE ADDED
 
     // --- Navigation Logic ---
     const closeModal = useCallback(() => setSelectedIndex(null), []);
@@ -26,7 +28,11 @@ export default function PortraitGallery({ images }: { images: ImageType[] }) {
         setSelectedIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : images.length - 1));
     }, [images.length]);
 
-    // --- Keyboard & Scroll Lock ---
+    // --- Handle Mounting & Scroll Lock ---
+    useEffect(() => {
+        setMounted(true); // ✨ COMPONENT MOUNTED
+    }, []);
+
     useEffect(() => {
         if (selectedIndex === null) return;
 
@@ -37,11 +43,11 @@ export default function PortraitGallery({ images }: { images: ImageType[] }) {
         };
 
         window.addEventListener('keydown', handleKeyDown);
-        document.body.style.overflow = 'hidden'; // Lock scroll
+        document.body.style.overflow = 'hidden';
 
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
-            document.body.style.overflow = 'unset'; // Unlock scroll
+            document.body.style.overflow = 'unset';
         };
     }, [selectedIndex, closeModal, nextImage, prevImage]);
 
@@ -74,7 +80,7 @@ export default function PortraitGallery({ images }: { images: ImageType[] }) {
     return (
         <>
             {/* --- Masonry Grid (Pinterest Style) --- */}
-            <section className=" space-y-8 mb-24 animate-in fade-in duration-700">
+            <section className="space-y-8 mb-24 animate-in fade-in duration-700">
                 <div className="flex items-center justify-between">
                     <h2 className="text-3xl font-light text-zinc-900 dark:text-zinc-100 flex items-center gap-3">
                         <CameraIcon className="w-7 h-7 text-zinc-400" />
@@ -85,7 +91,6 @@ export default function PortraitGallery({ images }: { images: ImageType[] }) {
                     </span>
                 </div>
 
-                {/* CSS Columns for Masonry Effect */}
                 <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
                     {images.map((img, index) => (
                         <div
@@ -101,7 +106,6 @@ export default function PortraitGallery({ images }: { images: ImageType[] }) {
                                 className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-105"
                                 sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
                             />
-                            {/* Hover Overlay */}
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
                                 <ArrowsPointingOutIcon className="w-8 h-8 text-white opacity-0 transform scale-75 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300 drop-shadow-md" />
                             </div>
@@ -110,13 +114,12 @@ export default function PortraitGallery({ images }: { images: ImageType[] }) {
                 </div>
             </section>
 
-            {/* --- Fullscreen Lightbox (ALWAYS DARK MODE) --- */}
-            {selectedIndex !== null && (
+            {/* --- Fullscreen Lightbox (Teleported to Body) --- */}
+            {mounted && selectedIndex !== null && createPortal(
                 <div
                     className="fixed inset-0 z-[9999] bg-black/98 backdrop-blur-xl flex items-center justify-center touch-none"
-                    onClick={closeModal} // Click backdrop to close
+                    onClick={closeModal}
                 >
-                    {/* Fixed Top-Right Close Button */}
                     <button
                         onClick={(e) => { e.stopPropagation(); closeModal(); }}
                         className="fixed top-6 right-6 z-[10000] p-3 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
@@ -125,7 +128,6 @@ export default function PortraitGallery({ images }: { images: ImageType[] }) {
                         <XMarkIcon className="w-6 h-6" />
                     </button>
 
-                    {/* Main Image Container */}
                     <div
                         className="relative w-full h-full flex items-center justify-center p-4 pb-20 md:pb-4"
                         onTouchStart={handleTouchStart}
@@ -134,7 +136,7 @@ export default function PortraitGallery({ images }: { images: ImageType[] }) {
                     >
                         <div
                             className="relative w-full h-full max-w-6xl max-h-[85vh] flex items-center justify-center"
-                            onClick={(e) => e.stopPropagation()} // Click image does NOT close
+                            onClick={(e) => e.stopPropagation()}
                         >
                             <Image
                                 src={`https://image.tmdb.org/t/p/original${images[selectedIndex].file_path}`}
@@ -147,9 +149,7 @@ export default function PortraitGallery({ images }: { images: ImageType[] }) {
                         </div>
                     </div>
 
-                    {/* --- Controls (Forced White Text) --- */}
-
-                    {/* Desktop Left Arrow */}
+                    {/* Controls */}
                     <button
                         onClick={prevImage}
                         className="fixed left-6 top-1/2 -translate-y-1/2 z-[10000] p-4 rounded-full bg-white/5 text-white/50 hover:bg-white/10 hover:text-white transition-colors hidden md:block"
@@ -157,7 +157,6 @@ export default function PortraitGallery({ images }: { images: ImageType[] }) {
                         <ChevronLeftIcon className="w-8 h-8" />
                     </button>
 
-                    {/* Desktop Right Arrow */}
                     <button
                         onClick={nextImage}
                         className="fixed right-6 top-1/2 -translate-y-1/2 z-[10000] p-4 rounded-full bg-white/5 text-white/50 hover:bg-white/10 hover:text-white transition-colors hidden md:block"
@@ -165,7 +164,6 @@ export default function PortraitGallery({ images }: { images: ImageType[] }) {
                         <ChevronRightIcon className="w-8 h-8" />
                     </button>
 
-                    {/* Mobile Bottom Control Bar */}
                     <div
                         className="fixed bottom-0 left-0 right-0 z-[10000] p-6 pb-8 bg-gradient-to-t from-black via-black/90 to-transparent flex items-center justify-between md:justify-center gap-8"
                         onClick={(e) => e.stopPropagation()}
@@ -188,7 +186,8 @@ export default function PortraitGallery({ images }: { images: ImageType[] }) {
                             <ChevronRightIcon className="w-8 h-8" />
                         </button>
                     </div>
-                </div>
+                </div>,
+                document.body // ✨ TARGET DESTINATION
             )}
         </>
     );

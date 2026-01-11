@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom'; // ✨ IMPORT ADDED
 import { ShareIcon, PlayIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/solid';
 import Image from 'next/image';
 
@@ -40,6 +41,21 @@ export function ShareButton() {
 /* --- 2. Trailer Button --- */
 export function TrailerButton({ videos }: { videos: any[] }) {
     const [isOpen, setIsOpen] = useState(false);
+    const [mounted, setMounted] = useState(false); // ✨ STATE ADDED
+
+    useEffect(() => {
+        setMounted(true); // ✨ COMPONENT MOUNTED
+    }, []);
+
+    // Lock scroll when modal is open
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => { document.body.style.overflow = 'unset'; }
+    }, [isOpen]);
 
     // Logic: Look for 'Trailer' on YouTube. Fallback to 'Teaser'.
     const trailer = videos?.find(
@@ -68,8 +84,8 @@ export function TrailerButton({ videos }: { videos: any[] }) {
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
             </button>
 
-            {/* Modal */}
-            {isOpen && (
+            {/* Modal - Wrapped in Portal */}
+            {isOpen && mounted && createPortal(
                 <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
                     <div className="relative w-full max-w-6xl aspect-video bg-black rounded-xl overflow-hidden shadow-2xl ring-1 ring-zinc-800">
                         <button
@@ -84,13 +100,14 @@ export function TrailerButton({ videos }: { videos: any[] }) {
                             className="w-full h-full"
                         />
                     </div>
-                </div>
+                </div>,
+                document.body // ✨ TARGET DESTINATION
             )}
         </>
     );
 }
 
-/* --- 3. Backdrop Gallery (Soft Hover Fix) --- */
+/* --- 3. Backdrop Gallery --- */
 export function BackdropGallery({ images, fallbackPath }: { images: any[], fallbackPath: string | null }) {
     const [index, setIndex] = useState(0);
     // Filter textless backdrops preferably
@@ -116,7 +133,6 @@ export function BackdropGallery({ images, fallbackPath }: { images: any[], fallb
                     src={`https://image.tmdb.org/t/p/original${currentPath}`}
                     alt="Backdrop"
                     fill
-                    // FIX: "ease-in-out" and "duration-1000" make the hover effect soft
                     className="object-cover opacity-100 dark:opacity-60 transition-all duration-1000 ease-in-out transform scale-100 group-hover:scale-105"
                     priority
                 />
