@@ -1,9 +1,9 @@
 import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
+import Image from 'next/image';
 import Link from 'next/link';
 import { FilmIcon, TvIcon, UserIcon, ArchiveBoxIcon } from '@heroicons/react/24/outline';
 import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
-import PosterCard from '@/app/ui/discover/PosterCard';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,16 +24,15 @@ export default async function SavedPage() {
         return <EmptyState />;
     }
 
-    // 2. Separate IDs by type
+    // 2. Separate IDs
     const movieIds = savedItems.filter(i => i.item_type === 'movie').map(i => i.movie_id);
     const seriesIds = savedItems.filter(i => i.item_type === 'series' || i.item_type === 'tv').map(i => i.series_id).filter(id => id !== null);
     const personIds = savedItems.filter(i => i.item_type === 'person').map(i => i.person_id);
 
-    // 3. Fetch Details in Parallel
+    // 3. Fetch Details (Added 'release_date' to selection)
     const [moviesRes, seriesRes, peopleRes] = await Promise.all([
         movieIds.length > 0 ? supabase.from('movies').select('tmdb_id, title, poster_url, release_date').in('tmdb_id', movieIds) : { data: [] },
         seriesIds.length > 0 ? supabase.from('series').select('tmdb_id, title, poster_url, release_date').in('tmdb_id', seriesIds) : { data: [] },
-        // ✨ FIXED: Removed the invalid "peopleRes:" label here
         personIds.length > 0 ? supabase.from('people').select('tmdb_id, name, profile_path').in('tmdb_id', personIds) : { data: [] }
     ]);
 
@@ -55,7 +54,7 @@ export default async function SavedPage() {
             />
 
             <div className="relative z-10 max-w-7xl mx-auto">
-                {/* Header Section */}
+                {/* Header */}
                 <div className="mb-8">
                     <div className="flex items-start justify-between mb-4">
                         <div>
@@ -78,56 +77,112 @@ export default async function SavedPage() {
                     </div>
                 </div>
 
-                {/* Grid Section - Using PosterCard */}
-                <div className="flex flex-wrap gap-4 justify-start">
+                {/* Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                     {savedItems.map((item) => {
-                        let data: any = null;
-                        let normalizedItem: any = null;
+                        let details: any = null;
+                        let isPerson = false;
+                        let isMovie = false;
+                        let href = '#';
+                        let tmdbId = 0;
 
                         if (item.item_type === 'movie') {
-                            data = movieMap.get(item.movie_id);
-                            if (data) {
-                                normalizedItem = {
-                                    id: data.tmdb_id,
-                                    title: data.title,
-                                    poster_path: data.poster_url,
-                                    media_type: 'movie',
-                                    release_date: data.release_date
-                                };
-                            }
+                            details = movieMap.get(item.movie_id);
+                            isMovie = true;
+                            href = `/discover/movie/${item.movie_id}`;
+                            tmdbId = item.movie_id || 0;
                         }
                         else if (item.item_type === 'series' || item.item_type === 'tv') {
-                            data = seriesMap.get(item.series_id);
-                            if (data) {
-                                normalizedItem = {
-                                    id: data.tmdb_id,
-                                    title: data.title,
-                                    poster_path: data.poster_url,
-                                    media_type: 'tv',
-                                    release_date: data.release_date
-                                };
-                            }
+                            details = seriesMap.get(item.series_id);
+                            href = `/discover/tv/${item.series_id}`;
+                            tmdbId = item.series_id || 0;
                         }
                         else if (item.item_type === 'person') {
-                            data = personMap.get(item.person_id);
-                            if (data) {
-                                normalizedItem = {
-                                    id: data.tmdb_id,
-                                    title: data.name,
-                                    poster_path: data.profile_path,
-                                    media_type: 'person',
-                                    release_date: ''
-                                };
-                            }
+                            details = personMap.get(item.person_id);
+                            isPerson = true;
+                            href = `/discover/actor/${item.person_id}`;
+                            tmdbId = Number(item.person_id) || 0;
                         }
 
-                        if (!normalizedItem) return null;
+                        if (!details) return null;
+
+                        const title = details.title || details.name;
+                        const rawImage = details.poster_url || details.profile_path;
+                        const image = rawImage ? (rawImage.startsWith('http') ? rawImage : `https://image.tmdb.org/t/p/w500${rawImage}`) : null;
+
+                        // Subtitle Logic
+                        let subtitle = 'N/A';
+                        if (isPerson) {
+                            subtitle = 'Star';
+                        } else if (details.release_date) {
+                            subtitle = details.release_date.split('-')[0];
+                        }
+
+                        // Badge Logic
+                        let badgeLabel = 'TV';
+                        let badgeColorClass = 'bg-zinc-900/90 dark:bg-white/90 text-white dark:text-black';
+
+                        if (isMovie) badgeLabel = 'FILM';
+                        else if (isPerson) {
+                            badgeLabel = 'STAR';
+                            badgeColorClass = 'bg-amber-500/90 text-black border-amber-400/20';
+                        }
 
                         return (
-                            <PosterCard
-                                key={item.id}
-                                item={normalizedItem}
-                            />
+                            <div key={item.id} className="group relative w-full h-full">
+                                <Link href={href} className="block w-full h-full">
+
+                                    {/* --- POSTER CONTAINER --- */}
+                                    <div className="relative aspect-[2/3] w-full rounded-sm overflow-hidden bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-2xl group-hover:border-zinc-400 dark:group-hover:border-zinc-100">
+
+                                        {image ? (
+                                            <Image
+                                                src={image}
+                                                alt={title}
+                                                fill
+                                                className="object-cover transition-transform duration-700 ease-out group-hover:scale-105 group-hover:saturate-100 grayscale-[0.1] group-hover:grayscale-0"
+                                                sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex flex-col items-center justify-center text-zinc-400 bg-zinc-100 dark:bg-zinc-900">
+                                                <span className="text-[10px] uppercase font-bold tracking-widest">No Image</span>
+                                            </div>
+                                        )}
+
+                                        {/* Badge */}
+                                        <div className="absolute top-0 left-0 p-2 z-10">
+                                            <div className={`px-1.5 py-0.5 backdrop-blur-sm text-[9px] font-black uppercase tracking-wider shadow-sm border border-white/10 dark:border-black/10 ${badgeColorClass}`}>
+                                                {badgeLabel}
+                                            </div>
+                                        </div>
+
+                                        {/* Inner Border & Shine */}
+                                        <div className="absolute inset-0 border border-black/5 dark:border-white/5 pointer-events-none rounded-sm group-hover:opacity-0 transition-opacity" />
+                                        <div className="absolute inset-0 opacity-0 group-hover:opacity-20 bg-gradient-to-tr from-transparent via-white to-transparent pointer-events-none transition-opacity duration-500" />
+                                    </div>
+
+                                    {/* --- INFO SECTION --- */}
+                                    <div className="mt-4 px-1 space-y-1 transition-opacity duration-300 opacity-80 group-hover:opacity-100">
+                                        <h3 className="text-base font-bold leading-tight text-zinc-900 dark:text-zinc-100 line-clamp-1 group-hover:underline decoration-1 underline-offset-4">
+                                            {title}
+                                        </h3>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs font-mono text-zinc-500 dark:text-zinc-400">
+                                                {subtitle}
+                                            </span>
+
+                                            {!isPerson && (
+                                                <>
+                                                    <span className="h-px w-3 bg-zinc-300 dark:bg-zinc-700" />
+                                                    <span className="text-[10px] font-mono text-zinc-400 uppercase">
+                                                        TMDB-{tmdbId}
+                                                    </span>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                </Link>
+                            </div>
                         );
                     })}
                 </div>
