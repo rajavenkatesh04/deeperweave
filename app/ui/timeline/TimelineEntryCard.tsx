@@ -16,7 +16,8 @@ import {
     DevicePhoneMobileIcon,
     QrCodeIcon,
     PhotoIcon,
-    ChatBubbleLeftRightIcon,
+    DocumentTextIcon,
+    PhotoIcon as PhotoSolidIcon
 } from '@heroicons/react/24/outline';
 import { motion, AnimatePresence } from 'framer-motion';
 import CinematicInfoCard from '@/app/ui/blog/CinematicInfoCard';
@@ -25,7 +26,7 @@ import { deleteTimelineEntry } from '@/lib/actions/timeline-actions';
 import { TimelineEntry, UserProfile } from "@/lib/definitions";
 import ImageModal from './ImageModal';
 import UserProfilePopover from './UserProfilePopover';
-import { googleSansCode } from "@/app/ui/fonts"; //
+import { googleSansCode } from "@/app/ui/fonts";
 
 const ottPlatformDetails: { [key: string]: { logo: string; color: string } } = {
     'Netflix': { logo: '/logos/netflix.svg', color: '#E50914' },
@@ -37,7 +38,19 @@ const ottPlatformDetails: { [key: string]: { logo: string; color: string } } = {
 };
 
 // --- COMPACT MENU ---
-function DropdownMenu({ entry, username, onDownload, isDownloading, safeTitle }: { entry: TimelineEntry; username: string; onDownload: () => void; isDownloading: boolean; safeTitle: string; }) {
+function DropdownMenu({
+                          entry,
+                          username,
+                          onDownload,
+                          isDownloading,
+                          safeTitle
+                      }: {
+    entry: TimelineEntry;
+    username: string;
+    onDownload: (mode: 'notes' | 'clean') => void; // Updated signature
+    isDownloading: boolean;
+    safeTitle: string;
+}) {
     const [isOpen, setIsOpen] = useState(false);
     const [showShareDialog, setShowShareDialog] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -62,7 +75,7 @@ function DropdownMenu({ entry, username, onDownload, isDownloading, safeTitle }:
 
     const handleCopyLink = () => {
         navigator.clipboard.writeText(`${window.location.origin}/profile/${username}/timeline#entry-${entry.id}`);
-        toast.success('COPIED');
+        toast.success('COORDINATES COPIED');
         setShowShareDialog(false);
     };
 
@@ -108,14 +121,38 @@ function DropdownMenu({ entry, username, onDownload, isDownloading, safeTitle }:
                             <button onClick={() => setShowShareDialog(false)} className="absolute top-2 right-2 p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"><XMarkIcon className="w-5 h-5" /></button>
                             <div className="flex items-center gap-2 mb-6 border-b-2 border-zinc-900 dark:border-zinc-100 pb-2">
                                 <QrCodeIcon className="w-5 h-5" />
-                                <h3 className="text-sm font-bold uppercase tracking-widest">Export</h3>
+                                <h3 className="text-sm font-bold uppercase tracking-widest">Export Data</h3>
                             </div>
+
                             <div className="space-y-3">
-                                <button onClick={onDownload} disabled={isDownloading} className="flex w-full items-center justify-center gap-3 px-4 py-3 bg-zinc-900 dark:bg-white text-white dark:text-black text-xs font-bold uppercase tracking-widest hover:opacity-90 transition-opacity border border-transparent rounded-none">
-                                    {isDownloading ? 'Processing...' : (<><ArrowDownTrayIcon className="w-4 h-4" /> Download Card</>)}
-                                </button>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        onClick={() => onDownload('notes')}
+                                        disabled={isDownloading}
+                                        className="flex flex-col items-center justify-center gap-2 px-2 py-4 bg-zinc-900 dark:bg-white text-white dark:text-black hover:opacity-90 transition-opacity border border-transparent rounded-none"
+                                    >
+                                        <DocumentTextIcon className="w-5 h-5" />
+                                        <span className="text-[10px] font-bold uppercase tracking-widest text-center">With Notes</span>
+                                    </button>
+
+                                    <button
+                                        onClick={() => onDownload('clean')}
+                                        disabled={isDownloading}
+                                        className="flex flex-col items-center justify-center gap-2 px-2 py-4 bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors rounded-none"
+                                    >
+                                        <PhotoSolidIcon className="w-5 h-5" />
+                                        <span className="text-[10px] font-bold uppercase tracking-widest text-center">Poster Only</span>
+                                    </button>
+                                </div>
+
+                                {isDownloading && (
+                                    <div className="text-center py-1 text-[10px] font-mono animate-pulse">
+                                        PROCESSING_DATA...
+                                    </div>
+                                )}
+
                                 <button onClick={handleCopyLink} className="flex w-full items-center justify-center gap-3 px-4 py-3 bg-transparent border border-zinc-900 dark:border-zinc-100 text-zinc-900 dark:text-zinc-100 text-xs font-bold uppercase tracking-widest hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors rounded-none">
-                                    <LinkIcon className="w-4 h-4" /> Copy Link
+                                    <LinkIcon className="w-4 h-4" /> Copy Direct Link
                                 </button>
                             </div>
                         </div>
@@ -154,17 +191,20 @@ export default function TimelineEntryCard({
     const displayRating = rating % 1 === 0 ? rating.toString() : rating.toFixed(1);
     const safeTitle = cinematicItem.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
 
-    const handleDownloadShareImage = async () => {
+    // Updated handler to accept mode
+    const handleDownloadShareImage = async (mode: 'notes' | 'clean') => {
         setIsDownloading(true);
         toast.loading('Processing...');
         try {
-            const response = await fetch(`/api/timeline/share/${entry.id}`);
+            // Append mode to query string
+            const response = await fetch(`/api/timeline/share/${entry.id}?mode=${mode}`);
             if (!response.ok) throw new Error('Failed.');
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `LOG_${entry.id}_${safeTitle}.png`;
+            // Differentiate filename
+            a.download = `LOG_${entry.id}_${safeTitle}_${mode.toUpperCase()}.png`;
             document.body.appendChild(a);
             a.click();
             a.remove();
