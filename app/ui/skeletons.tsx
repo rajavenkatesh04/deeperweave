@@ -2,40 +2,54 @@ const shimmer =
     'before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent';
 
 // =================================================================================
-// --- PROFILE SKELETONS ---
+// --- PROFILE SKELETONS (Updated to Bento Grid) ---
 // =================================================================================
 
 export function ProfileHeaderSkeleton() {
     return (
-        <div className="relative mb-8 overflow-hidden rounded-2xl bg-gradient-to-br from-white via-gray-50/50 to-white shadow-lg ring-1 ring-black/5 dark:from-zinc-900 dark:via-zinc-800/50 dark:to-zinc-900 dark:ring-white/10">
-            <div className={`${shimmer} relative p-6 md:p-8 lg:p-10`}>
-                <div className="flex flex-col gap-8 lg:flex-row lg:items-center">
-                    {/* Profile Picture & Mobile Username */}
-                    <div className="flex flex-col items-center gap-4 sm:flex-row lg:flex-col lg:items-center">
-                        <div className="h-28 w-28 flex-shrink-0 rounded-full bg-gray-200 dark:bg-zinc-800 lg:h-32 lg:w-32"></div>
-                        <div className="h-8 w-32 rounded-full bg-gray-200 dark:bg-zinc-800 lg:hidden"></div>
+        <div className="relative w-full border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 py-4 md:py-12">
+            <div className={`mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 ${shimmer} relative overflow-hidden`}>
+
+                {/* Bento Grid Layout */}
+                <div className="grid grid-cols-2 gap-2 md:grid-cols-12 md:gap-6">
+
+                    {/* BLOCK 1: VISUAL (Avatar) - Span 3 */}
+                    <div className="col-span-1 flex flex-col gap-4 md:col-span-3">
+                        <div className="relative aspect-square w-full overflow-hidden border border-zinc-200 bg-white p-1 shadow-sm dark:border-zinc-800 dark:bg-black">
+                            <div className="h-full w-full bg-gray-200 dark:bg-zinc-900" />
+                        </div>
+                        {/* Desktop Location Badge */}
+                        <div className="hidden h-10 w-full border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-black md:block" />
                     </div>
 
-                    {/* Profile Info */}
-                    <div className="flex-1 space-y-4">
-                        <div className="mx-auto h-8 w-3/5 rounded-md bg-gray-200 dark:bg-zinc-800 sm:mx-0"></div>
-                        <div className="hidden pt-2 lg:block">
-                            <div className="h-6 w-40 rounded-full bg-gray-200 dark:bg-zinc-800"></div>
-                        </div>
-                        <div className="space-y-2 pt-2">
-                            <div className="mx-auto h-4 w-full rounded-md bg-gray-200 dark:bg-zinc-800 sm:mx-0"></div>
-                            <div className="mx-auto h-4 w-4/5 rounded-md bg-gray-200 dark:bg-zinc-800 sm:mx-0"></div>
-                        </div>
-                        <div className="flex items-center justify-center gap-6 pt-2 sm:justify-start">
-                            <div className="h-5 w-24 rounded-md bg-gray-200 dark:bg-zinc-800"></div>
-                            <div className="h-5 w-24 rounded-md bg-gray-200 dark:bg-zinc-800"></div>
+                    {/* BLOCK 2: NARRATIVE (Bio) - Span 6 */}
+                    <div className="col-span-2 flex flex-col border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-black md:col-span-6 md:p-8">
+                        <div className="mb-4 h-8 w-1/2 rounded-md bg-gray-200 dark:bg-zinc-900 md:h-12" />
+                        <div className="mb-4 h-px w-full bg-zinc-100 dark:bg-zinc-900" />
+                        <div className="space-y-2">
+                            <div className="h-4 w-full rounded-md bg-gray-200 dark:bg-zinc-900" />
+                            <div className="h-4 w-full rounded-md bg-gray-200 dark:bg-zinc-900" />
+                            <div className="h-4 w-2/3 rounded-md bg-gray-200 dark:bg-zinc-900" />
                         </div>
                     </div>
 
-                    {/* Action Button */}
-                    <div className="flex w-full flex-col sm:w-auto lg:w-auto">
-                        <div className="h-11 w-full rounded-xl bg-gray-200 dark:bg-zinc-800 sm:w-36 lg:w-36"></div>
+                    {/* BLOCK 3: STATS - Span 3 */}
+                    <div className="col-span-1 flex flex-col gap-4 md:col-span-3">
+                        <div className="flex flex-1 flex-col justify-center border border-zinc-200 bg-white p-2 shadow-sm dark:border-zinc-800 dark:bg-black md:p-6">
+                            {/* Stats Rows */}
+                            <div className="flex flex-col space-y-4 md:space-y-6">
+                                {[...Array(3)].map((_, i) => (
+                                    <div key={i} className="flex flex-col gap-1 md:flex-row md:justify-between">
+                                        <div className="h-4 w-16 bg-gray-200 dark:bg-zinc-900" />
+                                        <div className="h-6 w-8 bg-gray-200 dark:bg-zinc-900" />
+                                    </div>
+                                ))}
+                                {/* Desktop Action Button */}
+                                <div className="mt-4 hidden h-10 w-full bg-zinc-900 dark:bg-zinc-100 md:block" />
+                            </div>
+                        </div>
                     </div>
+
                 </div>
             </div>
         </div>
@@ -44,39 +58,56 @@ export function ProfileHeaderSkeleton() {
 
 export function TabNavigationSkeleton() {
     return (
-        <div className={`${shimmer} relative overflow-hidden border-b border-gray-200 dark:border-zinc-800 mt-6`}>
-            <nav className="-mb-px flex space-x-8" aria-label="Tabs">
-                <div className="border-b-2 border-transparent py-4 px-1">
-                    <div className="h-5 w-12 rounded-md bg-gray-200 dark:bg-zinc-800" />
-                </div>
-                <div className="border-b-2 border-transparent py-4 px-1">
-                    <div className="h-5 w-12 rounded-md bg-gray-200 dark:bg-zinc-800" />
-                </div>
-                <div className="border-b-2 border-transparent py-4 px-1">
-                    <div className="h-5 w-12 rounded-md bg-gray-200 dark:bg-zinc-800" />
-                </div>
-            </nav>
+        <div className={`${shimmer} relative mt-6 overflow-hidden border-b border-gray-200 dark:border-zinc-800`}>
+            <div className="flex space-x-8 px-4">
+                {[...Array(3)].map((_, i) => (
+                    <div key={i} className="py-4">
+                        <div className="h-5 w-20 rounded-md bg-gray-200 dark:bg-zinc-900" />
+                    </div>
+                ))}
+            </div>
         </div>
     );
 }
 
-
 // =================================================================================
-// --- FAVORITE FILMS SKELETON (NEW) ---
+// --- FAVORITE FILMS SKELETON (Updated for Podium Layout) ---
 // =================================================================================
 
 function FilmCardSkeleton() {
-    return <div className="aspect-[2/3] w-full rounded-lg bg-gray-200 dark:bg-zinc-800" />;
+    return (
+        <div className="flex h-full flex-col border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+            {/* Header Strip */}
+            <div className="flex h-12 items-center justify-between border-b border-zinc-100 bg-zinc-50 px-4 dark:border-zinc-800 dark:bg-zinc-900/50">
+                <div className="h-4 w-8 bg-gray-200 dark:bg-zinc-800" />
+                <div className="h-6 w-6 rounded-full bg-gray-200 dark:bg-zinc-800" />
+            </div>
+
+            {/* Poster Area */}
+            <div className="flex flex-1 items-center justify-center bg-zinc-100/50 p-6 dark:bg-zinc-900/20">
+                <div className="aspect-[2/3] w-full max-w-[150px] bg-gray-200 shadow-sm dark:bg-zinc-800" />
+            </div>
+
+            {/* Footer Info */}
+            <div className="border-t border-zinc-100 p-5 dark:border-zinc-800">
+                <div className="mb-2 h-3 w-24 bg-gray-200 dark:bg-zinc-800" />
+                <div className="h-6 w-3/4 bg-gray-200 dark:bg-zinc-800" />
+            </div>
+        </div>
+    );
 }
 
 export function FavoriteFilmsSkeleton() {
     return (
-        <section className={`${shimmer} relative overflow-hidden`}>
-            {/* Title Skeleton */}
-            <div className="h-6 w-40 rounded-md bg-gray-200 dark:bg-zinc-800"></div>
+        <section className={`${shimmer} relative w-full overflow-hidden py-12`}>
+            {/* Title */}
+            <div className="mb-12 px-2">
+                <div className="h-10 w-64 rounded-md bg-gray-200 dark:bg-zinc-800" />
+                <div className="mt-2 h-4 w-48 rounded-md bg-gray-200 dark:bg-zinc-800" />
+            </div>
 
-            {/* Grid Skeleton */}
-            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+            {/* Grid */}
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-8">
                 <FilmCardSkeleton />
                 <FilmCardSkeleton />
                 <FilmCardSkeleton />
@@ -85,36 +116,37 @@ export function FavoriteFilmsSkeleton() {
     );
 }
 
+// =================================================================================
+// --- BLOG CARD SKELETON (Updated for Image + Data Layout) ---
+// =================================================================================
 
-/**
- * A detailed skeleton for a single blog post card.
- * It matches the dimensions and layout of the real BlogCard component.
- */
 export function PostCardSkeleton() {
     return (
-        <div className="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-            {/* Banner Image Placeholder */}
-            <div className="h-48 w-full bg-gray-200 dark:bg-zinc-800" />
+        <div className={`${shimmer} relative flex h-full flex-col overflow-hidden border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-black`}>
+            {/* Visual Record (Image) */}
+            <div className="relative aspect-[16/9] w-full border-b border-zinc-200 bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900" />
 
-            <div className="flex flex-1 flex-col p-6">
-                <div className="flex-1">
-                    {/* Title Placeholder */}
-                    <div className="h-6 w-3/4 rounded-md bg-gray-200 dark:bg-zinc-800" />
+            {/* Data Entry (Content) */}
+            <div className="flex flex-1 flex-col p-5 md:p-6">
+                {/* Date Line */}
+                <div className="mb-4 h-3 w-24 rounded-sm bg-gray-200 dark:bg-zinc-800" />
 
-                    {/* Content Placeholder */}
-                    <div className="mt-4 space-y-2">
-                        <div className="h-4 w-full rounded-md bg-gray-200 dark:bg-zinc-800" />
-                        <div className="h-4 w-full rounded-md bg-gray-200 dark:bg-zinc-800" />
-                        <div className="h-4 w-5/6 rounded-md bg-gray-200 dark:bg-zinc-800" />
-                    </div>
+                {/* Title */}
+                <div className="mb-3 h-7 w-3/4 rounded-sm bg-gray-200 dark:bg-zinc-800" />
+
+                {/* Excerpt */}
+                <div className="mb-6 space-y-2">
+                    <div className="h-3 w-full rounded-sm bg-gray-200 dark:bg-zinc-800" />
+                    <div className="h-3 w-full rounded-sm bg-gray-200 dark:bg-zinc-800" />
+                    <div className="h-3 w-2/3 rounded-sm bg-gray-200 dark:bg-zinc-800" />
                 </div>
 
-                {/* Author Info Placeholder */}
-                <div className="mt-6 flex items-center gap-3 border-t border-gray-200 pt-4 dark:border-zinc-800">
-                    <div className="h-10 w-10 shrink-0 rounded-full bg-gray-200 dark:bg-zinc-800" />
-                    <div className="w-full space-y-2">
-                        <div className="h-4 w-24 rounded-md bg-gray-200 dark:bg-zinc-800" />
-                        <div className="h-3 w-16 rounded-md bg-gray-200 dark:bg-zinc-800" />
+                {/* Footer (Author) */}
+                <div className="mt-auto flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-sm bg-gray-200 dark:bg-zinc-800" />
+                    <div className="space-y-1">
+                        <div className="h-3 w-20 bg-gray-200 dark:bg-zinc-800" />
+                        <div className="h-2 w-16 bg-gray-200 dark:bg-zinc-800" />
                     </div>
                 </div>
             </div>
@@ -122,73 +154,61 @@ export function PostCardSkeleton() {
     );
 }
 
-
 // =================================================================================
-// --- TIMELINE SKELETON ---
+// --- TIMELINE SKELETON (Updated for Date Anchor Layout) ---
 // =================================================================================
 
 function TimelineEntryCardSkeleton() {
     return (
-        <div className="group">
-            <div className="flex gap-4 md:gap-6 -mx-2 md:-mx-4 px-2 md:px-4 py-3 md:py-4 rounded-xl">
-                {/* Date Section Skeleton */}
-                <div className="flex-shrink-0 w-16 md:w-20 text-center pt-1 space-y-1">
-                    {/* Day */}
-                    <div className="h-9 md:h-11 w-12 md:w-14 mx-auto rounded-md bg-gray-200 dark:bg-zinc-800" />
-                    {/* Month */}
-                    <div className="h-3 md:h-4 w-10 mx-auto rounded-md bg-gray-200 dark:bg-zinc-800" />
-                    {/* Year */}
-                    <div className="h-3 md:h-4 w-12 mx-auto rounded-md bg-gray-200 dark:bg-zinc-800" />
+        <div className="relative mb-6">
+            {/* Connector Line */}
+            <div className="absolute left-[2.5rem] top-0 bottom-0 -z-10 w-px border-l border-dashed border-zinc-300 dark:border-zinc-700 md:left-[3.5rem]" />
+
+            <div className="flex items-start gap-4 md:gap-6">
+
+                {/* 1. Date Anchor (Vertical Block) */}
+                <div className="flex w-10 shrink-0 flex-col items-center gap-1 border border-zinc-900 bg-zinc-900 py-2 dark:border-zinc-100 dark:bg-zinc-100 md:w-14">
+                    <div className="h-2 w-6 bg-zinc-700 dark:bg-zinc-300" />
+                    <div className="h-6 w-6 bg-zinc-700 dark:bg-zinc-300" />
+                    <div className="h-2 w-8 bg-zinc-700 dark:bg-zinc-300" />
                 </div>
 
-                {/* Poster Skeleton */}
-                <div className="flex-shrink-0">
-                    <div className="w-[80px] h-[120px] md:w-[90px] md:h-[135px] rounded-lg bg-gray-200 dark:bg-zinc-800" />
-                </div>
+                {/* 2. Main Data Slate (Card) */}
+                <div className="relative flex-1 border border-zinc-300 bg-white p-3 shadow-sm dark:border-zinc-700 dark:bg-black md:p-4">
+                    <div className="flex gap-3 md:gap-5">
+                        {/* Poster */}
+                        <div className="aspect-[2/3] w-[75px] shrink-0 bg-gray-200 dark:bg-zinc-900 md:w-[90px]" />
 
-                {/* Content Skeleton */}
-                <div className="flex-1 min-w-0 pt-1 space-y-2">
-                    {/* Movie Title */}
-                    <div className="h-6 md:h-7 w-3/4 rounded-md bg-gray-200 dark:bg-zinc-800" />
+                        {/* Info Console */}
+                        <div className="flex min-w-0 flex-1 flex-col gap-2">
+                            <div className="space-y-2">
+                                <div className="h-3 w-16 bg-gray-200 dark:bg-zinc-800" />
+                                <div className="h-6 w-3/4 bg-gray-200 dark:bg-zinc-800" />
+                            </div>
 
-                    {/* Year */}
-                    <div className="h-4 md:h-5 w-16 rounded-md bg-gray-200 dark:bg-zinc-800" />
-
-                    {/* Rating Stars */}
-                    <div className="flex items-center gap-1">
-                        {[...Array(5)].map((_, i) => (
-                            <div key={i} className="w-4 h-4 md:w-5 md:h-5 rounded-sm bg-gray-200 dark:bg-zinc-800" />
-                        ))}
-                        <div className="ml-1 h-4 w-10 rounded-md bg-gray-200 dark:bg-zinc-800" />
+                            {/* Rating Row */}
+                            <div className="mt-1 flex items-center gap-2 border border-zinc-200 bg-zinc-100 p-2 dark:border-zinc-800 dark:bg-zinc-900">
+                                <div className="h-3 w-24 bg-gray-300 dark:bg-zinc-800" />
+                                <div className="h-3 w-24 bg-gray-300 dark:bg-zinc-800" />
+                            </div>
+                        </div>
                     </div>
-
-                    {/* Notes Skeleton */}
-                    <div className="space-y-1.5">
-                        <div className="h-3.5 md:h-4 w-full rounded-md bg-gray-200 dark:bg-zinc-800" />
-                        <div className="h-3.5 md:h-4 w-4/5 rounded-md bg-gray-200 dark:bg-zinc-800" />
-                    </div>
-
-                    {/* Review Link Skeleton */}
-                    <div className="h-5 w-28 rounded-md bg-gray-200 dark:bg-zinc-800" />
                 </div>
             </div>
-
-            {/* Divider */}
-            <div className="border-b border-gray-200 dark:border-zinc-800 ml-20 md:ml-24 my-2 md:my-3" />
         </div>
     );
 }
 
 export function TimelineDisplaySkeleton() {
     return (
-        <section className={`${shimmer} relative overflow-hidden max-w-4xl`}>
-            {/* Header Skeleton */}
-            <div className="mb-6 md:mb-8 space-y-2">
-                <div className="h-8 md:h-9 w-48 rounded-md bg-gray-200 dark:bg-zinc-800" />
-                <div className="h-4 md:h-5 w-32 rounded-md bg-gray-200 dark:bg-zinc-800" />
+        <section className={`${shimmer} relative max-w-4xl overflow-hidden`}>
+            {/* Header */}
+            <div className="mb-6 space-y-2 md:mb-8">
+                <div className="h-8 w-48 rounded-md bg-gray-200 dark:bg-zinc-800 md:h-9" />
+                <div className="h-4 w-32 rounded-md bg-gray-200 dark:bg-zinc-800 md:h-5" />
             </div>
 
-            {/* Timeline Entries */}
+            {/* Entries */}
             <TimelineEntryCardSkeleton />
             <TimelineEntryCardSkeleton />
             <TimelineEntryCardSkeleton />
