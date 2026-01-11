@@ -3,11 +3,38 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+// Ensure your CinematicSearchResult type definition includes 'person' in the media_type union
 import { CinematicSearchResult } from '@/lib/actions/cinematic-actions';
 
 export default function PosterCard({ item }: { item: CinematicSearchResult }) {
-    const year = item.release_date ? item.release_date.split('-')[0] : 'N/A';
+    const isPerson = item.media_type === 'person';
     const isMovie = item.media_type === 'movie';
+
+    // 1. Determine Correct Link
+    // Adjust '/discover/actor/' if your route is named differently
+    const href = isPerson
+        ? `/discover/actor/${item.id}`
+        : `/discover/${item.media_type}/${item.id}`;
+
+    // 2. Determine Subtitle (Year vs "Star")
+    let subtitle = 'N/A';
+    if (isPerson) {
+        subtitle = 'Star'; // or 'Artist'
+    } else if (item.release_date) {
+        subtitle = item.release_date.split('-')[0];
+    }
+
+    // 3. Determine Badge Label & Color
+    let badgeLabel = 'TV';
+    let badgeColorClass = 'bg-zinc-900/90 dark:bg-white/90 text-white dark:text-black'; // Default B&W
+
+    if (isMovie) {
+        badgeLabel = 'FILM';
+    } else if (isPerson) {
+        badgeLabel = 'STAR';
+        // Optional: Give actors a gold badge to distinguish them
+        badgeColorClass = 'bg-amber-500/90 text-black border-amber-400/20';
+    }
 
     return (
         <motion.div
@@ -17,7 +44,7 @@ export default function PosterCard({ item }: { item: CinematicSearchResult }) {
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
         >
-            <Link href={`/discover/${item.media_type}/${item.id}`} className="block w-full h-full">
+            <Link href={href} className="block w-full h-full">
 
                 {/* --- POSTER CONTAINER --- */}
                 <div className="relative aspect-[2/3] w-full rounded-sm overflow-hidden bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl group-hover:border-zinc-400 dark:group-hover:border-zinc-100">
@@ -37,17 +64,17 @@ export default function PosterCard({ item }: { item: CinematicSearchResult }) {
                         </div>
                     )}
 
-                    {/* --- TYPE BADGE (Technical / High Contrast) --- */}
+                    {/* --- TYPE BADGE --- */}
                     <div className="absolute top-0 left-0 p-2 z-10">
-                        <div className="px-1.5 py-0.5 bg-zinc-900/90 dark:bg-white/90 backdrop-blur-sm text-white dark:text-black text-[9px] font-black uppercase tracking-wider shadow-sm border border-white/10 dark:border-black/10">
-                            {isMovie ? 'FILM' : 'TV'}
+                        <div className={`px-1.5 py-0.5 backdrop-blur-sm text-[9px] font-black uppercase tracking-wider shadow-sm border border-white/10 dark:border-black/10 ${badgeColorClass}`}>
+                            {badgeLabel}
                         </div>
                     </div>
 
-                    {/* Inner Border (Subtle depth, fades out on hover to look cleaner) */}
+                    {/* Inner Border */}
                     <div className="absolute inset-0 border border-black/5 dark:border-white/5 pointer-events-none rounded-sm group-hover:opacity-0 transition-opacity" />
 
-                    {/* Hover Shine Effect (Subtle) */}
+                    {/* Hover Shine Effect */}
                     <div className="absolute inset-0 opacity-0 group-hover:opacity-20 bg-gradient-to-tr from-transparent via-white to-transparent pointer-events-none transition-opacity duration-500" />
                 </div>
 
@@ -58,12 +85,18 @@ export default function PosterCard({ item }: { item: CinematicSearchResult }) {
                     </h3>
                     <div className="flex items-center gap-2">
                         <span className="text-xs font-mono text-zinc-500 dark:text-zinc-400">
-                            {year}
+                            {subtitle}
                         </span>
-                        <span className="h-px w-3 bg-zinc-300 dark:bg-zinc-700" />
-                        <span className="text-[10px] font-mono text-zinc-400 uppercase">
-                            TMDB-{item.id}
-                        </span>
+
+                        {/* Only show ID for Media, it looks weird on people */}
+                        {!isPerson && (
+                            <>
+                                <span className="h-px w-3 bg-zinc-300 dark:bg-zinc-700" />
+                                <span className="text-[10px] font-mono text-zinc-400 uppercase">
+                                    TMDB-{item.id}
+                                </span>
+                            </>
+                        )}
                     </div>
                 </div>
             </Link>

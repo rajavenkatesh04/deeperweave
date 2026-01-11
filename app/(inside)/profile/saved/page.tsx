@@ -1,9 +1,9 @@
 import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
-import Image from 'next/image';
 import Link from 'next/link';
-import { FilmIcon, TvIcon, UserIcon, BookmarkIcon, ArchiveBoxIcon } from '@heroicons/react/24/outline';
+import { FilmIcon, TvIcon, UserIcon, ArchiveBoxIcon } from '@heroicons/react/24/outline';
 import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
+import PosterCard from '@/app/ui/discover/PosterCard';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,33 +24,26 @@ export default async function SavedPage() {
         return <EmptyState />;
     }
 
-    // 2. Separate IDs by type (Handling both 'series' and 'tv' for safety)
-    const movieIds = savedItems
-        .filter(i => i.item_type === 'movie')
-        .map(i => i.movie_id);
-
-    const seriesIds = savedItems
-        .filter(i => i.item_type === 'series' || i.item_type === 'tv') // ✨ ROBUST CHECK
-        .map(i => i.series_id)
-        .filter(id => id !== null); // Filter out nulls if bad data exists
-
-    const personIds = savedItems
-        .filter(i => i.item_type === 'person')
-        .map(i => i.person_id);
+    // 2. Separate IDs by type
+    const movieIds = savedItems.filter(i => i.item_type === 'movie').map(i => i.movie_id);
+    const seriesIds = savedItems.filter(i => i.item_type === 'series' || i.item_type === 'tv').map(i => i.series_id).filter(id => id !== null);
+    const personIds = savedItems.filter(i => i.item_type === 'person').map(i => i.person_id);
 
     // 3. Fetch Details in Parallel
     const [moviesRes, seriesRes, peopleRes] = await Promise.all([
-        movieIds.length > 0 ? supabase.from('movies').select('tmdb_id, title, poster_url').in('tmdb_id', movieIds) : { data: [] },
-        seriesIds.length > 0 ? supabase.from('series').select('tmdb_id, title, poster_url').in('tmdb_id', seriesIds) : { data: [] },
+        movieIds.length > 0 ? supabase.from('movies').select('tmdb_id, title, poster_url, release_date').in('tmdb_id', movieIds) : { data: [] },
+        seriesIds.length > 0 ? supabase.from('series').select('tmdb_id, title, poster_url, release_date').in('tmdb_id', seriesIds) : { data: [] },
+        // ✨ FIXED: Removed the invalid "peopleRes:" label here
         personIds.length > 0 ? supabase.from('people').select('tmdb_id, name, profile_path').in('tmdb_id', personIds) : { data: [] }
     ]);
 
     // 4. Create lookup maps
     const movieMap = new Map(moviesRes.data?.map(m => [m.tmdb_id, m]));
     const seriesMap = new Map(seriesRes.data?.map(s => [s.tmdb_id, s]));
+    // @ts-ignore
     const personMap = new Map(peopleRes.data?.map(p => [p.tmdb_id, p]));
 
-    // 5. Count by type
+    // 5. Counts
     const movieCount = movieIds.length;
     const seriesCount = seriesIds.length;
     const personCount = personIds.length;
@@ -62,6 +55,7 @@ export default async function SavedPage() {
             />
 
             <div className="relative z-10 max-w-7xl mx-auto">
+                {/* Header Section */}
                 <div className="mb-8">
                     <div className="flex items-start justify-between mb-4">
                         <div>
@@ -84,81 +78,56 @@ export default async function SavedPage() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                {/* Grid Section - Using PosterCard */}
+                <div className="flex flex-wrap gap-4 justify-start">
                     {savedItems.map((item) => {
-                        let details: any = null;
-                        let href = '#';
-                        let icon = null;
-                        let subtitle = '';
-                        let badgeColor = '';
+                        let data: any = null;
+                        let normalizedItem: any = null;
 
                         if (item.item_type === 'movie') {
-                            details = movieMap.get(item.movie_id);
-                            href = `/discover/movie/${item.movie_id}`;
-                            icon = <FilmIcon className="w-3 h-3" />;
-                            subtitle = 'FILM';
-                            badgeColor = 'bg-blue-500/90';
+                            data = movieMap.get(item.movie_id);
+                            if (data) {
+                                normalizedItem = {
+                                    id: data.tmdb_id,
+                                    title: data.title,
+                                    poster_path: data.poster_url,
+                                    media_type: 'movie',
+                                    release_date: data.release_date
+                                };
+                            }
                         }
-                        // ✨ CHECK BOTH TYPES FOR ROBUSTNESS
                         else if (item.item_type === 'series' || item.item_type === 'tv') {
-                            details = seriesMap.get(item.series_id);
-                            href = `/discover/tv/${item.series_id}`;
-                            icon = <TvIcon className="w-3 h-3" />;
-                            subtitle = 'TV';
-                            badgeColor = 'bg-purple-500/90';
+                            data = seriesMap.get(item.series_id);
+                            if (data) {
+                                normalizedItem = {
+                                    id: data.tmdb_id,
+                                    title: data.title,
+                                    poster_path: data.poster_url,
+                                    media_type: 'tv',
+                                    release_date: data.release_date
+                                };
+                            }
                         }
                         else if (item.item_type === 'person') {
-                            details = personMap.get(item.person_id);
-                            href = `/discover/actor/${item.person_id}`;
-                            icon = <UserIcon className="w-3 h-3" />;
-                            subtitle = 'STAR';
-                            badgeColor = 'bg-amber-500/90';
+                            data = personMap.get(item.person_id);
+                            if (data) {
+                                normalizedItem = {
+                                    id: data.tmdb_id,
+                                    title: data.name,
+                                    poster_path: data.profile_path,
+                                    media_type: 'person',
+                                    release_date: ''
+                                };
+                            }
                         }
 
-                        if (!details) return null;
-
-                        const title = details.title || details.name;
-                        const image = details.poster_url || (details.profile_path ? `https://image.tmdb.org/t/p/w500${details.profile_path}` : null);
+                        if (!normalizedItem) return null;
 
                         return (
-                            <Link
+                            <PosterCard
                                 key={item.id}
-                                href={href}
-                                className="group block bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 hover:border-zinc-900 dark:hover:border-zinc-100 transition-all hover:shadow-lg overflow-hidden"
-                            >
-                                <div className="relative w-full aspect-[2/3] bg-zinc-100 dark:bg-zinc-900">
-                                    {image ? (
-                                        <Image
-                                            src={image.startsWith('http') ? image : `https://image.tmdb.org/t/p/w500${image}`}
-                                            alt={title}
-                                            fill
-                                            className="object-cover transition-transform duration-500 group-hover:scale-105"
-                                        />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-zinc-400">
-                                            {icon && <div className="w-12 h-12">{icon}</div>}
-                                        </div>
-                                    )}
-                                    <div className="absolute top-2 left-2">
-                                        <div className={`${badgeColor} px-2 py-1 flex items-center gap-1.5`}>
-                                            <div className="text-white w-3 h-3">{icon}</div>
-                                            <span className="text-white text-[9px] font-bold uppercase tracking-wider">
-                                                {subtitle}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <div className="bg-white/90 dark:bg-black/90 p-1.5 border border-zinc-200 dark:border-zinc-800">
-                                            <BookmarkIcon className="w-3 h-3 text-zinc-900 dark:text-zinc-100 fill-zinc-900 dark:fill-zinc-100" />
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="p-3 bg-white dark:bg-black border-t border-zinc-200 dark:border-zinc-800">
-                                    <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 leading-tight line-clamp-2 group-hover:underline decoration-1 underline-offset-2">
-                                        {title}
-                                    </p>
-                                </div>
-                            </Link>
+                                item={normalizedItem}
+                            />
                         );
                     })}
                 </div>
