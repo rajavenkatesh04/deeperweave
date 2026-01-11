@@ -1,495 +1,229 @@
-// Import the correct type from your data file
 import { type TimelineEntryWithUser } from "@/lib/definitions";
 
-// ✅ FIX: Define the base URL for absolute paths
+// Define base URL for local assets if needed
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL
     ? process.env.NEXT_PUBLIC_SITE_URL
     : 'http://localhost:3000';
 
-// --- SVG Star Components ---
-const FullStar = () => (
-    <svg width="36" height="36" viewBox="0 0 24 24" fill="#d4af37" stroke="#d4af37" strokeWidth="1">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.31h5.518a.562.562 0 01.31.95l-4.225 3.09a.563.563 0 00-.175.545l1.618 5.39a.562.562 0 01-.815.61l-4.47-3.251a.563.563 0 00-.546 0L5.99 20.109a.562.562 0 01-.815-.61l1.618-5.39a.563.563 0 00-.175.545l-4.225-3.09a.562.562 0 01.31-.95h5.518a.563.563 0 00.475-.31l2.125-5.111z" />
-    </svg>
-);
+// --- Assets & Helpers ---
 
-const HalfStar = () => (
-    <svg width="36" height="36" viewBox="0 0 24 24" fill="#27272a" stroke="#d4af37" strokeWidth="1">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.31h5.518a.562.562 0 01.31.95l-4.225 3.09a.563.563 0 00-.175.545l1.618 5.39a.562.562 0 01-.815.61l-4.47-3.251a.563.563 0 00-.546 0L5.99 20.109a.562.562 0 01-.815-.61l1.618-5.39a.563.563 0 00-.175.545l-4.225-3.09a.562.562 0 01.31-.95h5.518a.563.563 0 00.475-.31l2.125-5.111z" />
-        <path fill="#d4af37" stroke="#d4af37" strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 01.52.002L14.125 8.61a.563.563 0 00.475.31h5.518a.562.562 0 01.31.95l-4.225 3.09a.563.563 0 00-.175.545l1.618 5.39a.562.562 0 01-.815.61l-4.47-3.251a.563.563 0 00-.546 0v-18.1z" />
-    </svg>
-);
-
-const OutlineStar = () => (
-    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#52525b" strokeWidth="1">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.31h5.518a.562.562 0 01.31.95l-4.225 3.09a.563.563 0 00-.175.545l1.618 5.39a.562.562 0 01-.815.61l-4.47-3.251a.563.563 0 00-.546 0L5.99 20.109a.562.562 0 01-.815-.61l1.618-5.39a.563.563 0 00-.175.545l-4.225-3.09a.562.562 0 01.31-.95h5.518a.563.563 0 00.475-.31l2.125-5.111z" />
-    </svg>
-);
-
-// --- SVG Icons for Context ---
-const TheatreIcon = () => (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#d4d4d8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M2 16.1A5 5 0 0 1 5.9 20M2 12.05A9 9 0 0 1 9.95 20M2 8V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6"/>
-        <line x1="2" y1="20" x2="2.01" y2="20"/>
-    </svg>
-);
-
-const TVIcon = () => (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#d4d4d8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect>
-        <polyline points="17 2 12 7 7 2"></polyline>
-    </svg>
-);
-
-// --- Platform Details ---
-const ottPlatformDetails: { [key: string]: { logo: string; } } = {
-    'Netflix': { logo: '/logos/netflix.svg' },
-    'Prime Video': { logo: '/logos/prime-video.svg' },
-    'Disney+': { logo: '/logos/disney-plus.svg' },
-    'Hulu': { logo: '/logos/hulu.svg' },
-    'Max': { logo: '/logos/max.svg' },
-    'Apple TV+': { logo: '/logos/apple-tv.svg' },
-    'Other': { logo: '' },
+// Helper to ensure we have a valid image URL.
+// If your DB stores paths (e.g. "/path.jpg"), this adds the TMDB prefix.
+const getImageUrl = (pathOrUrl: string | null | undefined) => {
+    if (!pathOrUrl) return null;
+    if (pathOrUrl.startsWith('http')) return pathOrUrl;
+    return `https://image.tmdb.org/t/p/original${pathOrUrl}`;
 };
 
-// --- Helper for Viewing Context ---
-const ViewingContext = ({ context }: { context: string | null }) => {
-    if (!context) return null;
+// SVG Components (Stars & Icons) - kept clean and minimal
+const StarIcon = ({ filled }: { filled: boolean }) => (
+    <svg width="48" height="48" viewBox="0 0 24 24" fill={filled ? "#fbbf24" : "none"} stroke={filled ? "#fbbf24" : "#52525b"} strokeWidth="1.5">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.31h5.518a.562.562 0 01.31.95l-4.225 3.09a.563.563 0 00-.175.545l1.618 5.39a.562.562 0 01-.815.61l-4.47-3.251a.563.563 0 00-.546 0L5.99 20.109a.562.562 0 01-.815-.61l1.618-5.39a.563.563 0 00-.175.545l-4.225-3.09a.562.562 0 01.31-.95h5.518a.563.563 0 00.475-.31l2.125-5.111z" />
+    </svg>
+);
 
-    const platform = context in ottPlatformDetails ? ottPlatformDetails[context] : null;
-    const isTheatre = context === 'Theatre';
-    const preposition = isTheatre ? 'in' : 'on';
-
-    let icon: React.ReactNode;
-    const text = context;
-
-    if (isTheatre) {
-        icon = <TheatreIcon />;
-    } else if (platform && platform.logo) {
-        icon = (
-            <img
-                src={`${baseUrl}${platform.logo}`}
-                alt={context}
-                width={32}
-                height={32}
-                style={{
-                    filter: context === 'Apple TV+' ? 'invert(1)' : 'none',
-                    objectFit: 'contain'
-                }}
-            />
-        );
-    } else {
-        icon = <TVIcon />;
-    }
-
-    return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            {icon}
-            <span style={{
-                fontSize: '28px',
-                fontWeight: 400,
-                color: '#d4d4d8',
-                fontFamily: '"Cormorant Garamond", "Georgia", serif',
-                letterSpacing: '0.01em'
-            }}>
-                Watched {preposition} {text}
-            </span>
-        </div>
-    );
-};
+const QuoteIcon = () => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill="#27272a" xmlns="http://www.w3.org/2000/svg">
+        <path d="M14.017 21L14.017 18C14.017 16.8954 14.9124 16 16.017 16H19.017C19.5693 16 20.017 15.5523 20.017 15V9C20.017 8.44772 19.5693 8 19.017 8H15.017C14.4647 8 14.017 8.44772 14.017 9V11C14.017 11.5523 13.5693 12 13.017 12H12.017V5H22.017V15C22.017 18.3137 19.3307 21 16.017 21H14.017ZM5.01697 21L5.01697 18C5.01697 16.8954 5.9124 16 7.01697 16H10.017C10.5693 16 11.017 15.5523 11.017 15V9C11.017 8.44772 10.5693 8 10.017 8H6.01697C5.46468 8 5.01697 8.44772 5.01697 9V11C5.01697 11.5523 4.56925 12 4.01697 12H3.01697V5H13.017V15C13.017 18.3137 10.3307 21 7.01697 21H5.01697Z" />
+    </svg>
+);
 
 export default function ShareStoryImage({ entry }: { entry: TimelineEntryWithUser }) {
-
-    // ✨ 1. THE FIX: Create a unified item
-    // This is the core fix. We check for movies first, then fall back to series.
+    // 1. Unify Item (Movie or Series)
     const cinematicItem = entry.movies || entry.series;
 
-    // ✨ 2. SAFETY CHECK
-    // If there's no item (data error), we must return a fallback
-    // to prevent the API route from crashing.
     if (!cinematicItem) {
         return (
-            <div style={{
-                display: 'flex',
-                width: 1080,
-                height: 1920,
-                justifyContent: 'center',
-                alignItems: 'center',
-                flexDirection: 'column',
-                color: 'white',
-                backgroundColor: '#0a0a0a',
-            }}>
-                <h1 style={{fontSize: 48, fontFamily: 'sans-serif'}}>Error</h1>
-                <p style={{fontSize: 32, fontFamily: 'sans-serif'}}>Could not find movie or series data.</p>
+            <div style={{ display: 'flex', width: 1080, height: 1920, backgroundColor: '#09090b', color: 'white', alignItems: 'center', justifyContent: 'center' }}>
+                <h1>Media Not Found</h1>
             </div>
-        )
+        );
     }
 
-    // ✨ 3. USE THE UNIFIED ITEM
-    const rating = Number(entry.rating);
-    const notes = entry.notes || '';
-    const releaseYear = cinematicItem.release_date?.split('-')[0]; // Use unified item
+    // 2. Data Preparation
+    const backdropUrl = getImageUrl(cinematicItem.backdrop_url);
+    const posterUrl = getImageUrl(cinematicItem.poster_url);
+    const user = entry.profiles;
+    const rating = entry.rating || 0;
+    const releaseYear = cinematicItem.release_date?.split('-')[0] || 'N/A';
 
-    const username = entry.profiles.username;
-    const displayName = entry.profiles.display_name || username;
-    const profilePicUrl = entry.profiles.profile_pic_url;
-
-    const viewingContext = entry.viewing_context;
-    const collaborators = entry.timeline_collaborators?.filter(c => c.profiles) || [];
-
-    // Create star rating array
-    const stars: React.ReactNode[] = [];
-    if (rating > 0) {
-        for (let i = 1; i <= 5; i++) {
-            if (rating >= i) {
-                stars.push(<FullStar key={`star-full-${i}`} />);
-            } else if (rating >= i - 0.5) {
-                stars.push(<HalfStar key={`star-half-${i}`} />);
-            } else {
-                stars.push(<OutlineStar key={`star-outline-${i}`} />);
-            }
-        }
-    }
-
-    const watchedDate = new Date(entry.watched_on).toLocaleDateString('en-US', {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-        timeZone: 'UTC'
-    });
+    // Generate Stars
+    const starArray = Array.from({ length: 5 }, (_, i) => i < Math.round(rating));
 
     return (
         <div style={{
             display: 'flex',
             flexDirection: 'column',
-            width: 1080,
-            height: 1920,
+            width: '100%',
+            height: '100%',
+            backgroundColor: '#09090b', // Zinc-950
+            color: '#fafafa', // Zinc-50
+            fontFamily: '"Inter", sans-serif',
             position: 'relative',
-            color: 'white',
-            backgroundColor: '#0a0a0a',
-            fontFamily: '"Cormorant Garamond", "Georgia", serif'
         }}>
-            {/* ✨ 4. USE THE UNIFIED ITEM */}
-            {cinematicItem.poster_url && (
+
+            {/* --- BACKGROUND LAYER --- */}
+
+            {/* 1. Backdrop Image at Top (Faded) */}
+            {backdropUrl ? (
                 <img
-                    src={cinematicItem.poster_url}
-                    alt="Background"
+                    src={backdropUrl}
                     style={{
                         position: 'absolute',
-                        inset: 0,
+                        top: 0,
+                        left: 0,
                         width: '100%',
-                        height: '100%',
+                        height: '1100px', // Covers top half
                         objectFit: 'cover',
-                        filter: 'blur(28px) brightness(0.22) saturate(1.3)',
-                        opacity: 0.7,
-                        transform: 'scale(1.2)'
+                        opacity: 0.5,
+                    }}
+                />
+            ) : (
+                // Fallback: Use poster blurred if no backdrop
+                <img
+                    src={posterUrl || ''}
+                    style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '1100px',
+                        objectFit: 'cover',
+                        filter: 'blur(40px)',
+                        opacity: 0.3,
                     }}
                 />
             )}
 
-            {/* Refined Gradient Overlay */}
+            {/* 2. Gradient Overlay (The "Fade" into dark) */}
             <div style={{
                 position: 'absolute',
-                inset: 0,
-                background: 'linear-gradient(to top, #000000 0%, rgba(0, 0, 0, 0.92) 25%, rgba(0, 0, 0, 0.7) 50%, rgba(0, 0, 0, 0.3) 75%, transparent 90%)',
-                zIndex: 1
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '1200px',
+                background: 'linear-gradient(to bottom, transparent 0%, #09090b 90%)',
             }} />
 
-            {/* Main Content Container */}
+
+            {/* --- CONTENT LAYER --- */}
             <div style={{
                 position: 'relative',
-                zIndex: 2,
                 display: 'flex',
                 flexDirection: 'column',
                 height: '100%',
+                padding: '80px',
             }}>
-                {/* Content Area (everything except footer) */}
-                <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    flex: 1,
-                    padding: '180px 80px 0 80px',
-                    minHeight: 0
-                }}>
-                    {/* Top Section: User Info */}
-                    <div style={{
-                        display: 'flex',
-                        justifyContent: 'flex-start',
-                        alignItems: 'center',
-                        marginBottom: '80px',
-                        flexShrink: 0
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
-                            {profilePicUrl && (
-                                <img
-                                    src={profilePicUrl}
-                                    alt={displayName}
-                                    width={64}
-                                    height={64}
-                                    style={{
-                                        borderRadius: '50%',
-                                        border: '2px solid rgba(255, 255, 255, 0.12)',
-                                        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)'
-                                    }}
-                                />
-                            )}
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                <span style={{
-                                    fontSize: '32px',
-                                    fontWeight: 600,
-                                    color: '#fafafa',
-                                    letterSpacing: '-0.01em',
-                                    fontFamily: '"Cormorant Garamond", "Georgia", serif'
-                                }}>
-                                    {displayName}
-                                </span>
-                                <span style={{
-                                    fontSize: '24px',
-                                    color: '#a1a1aa',
-                                    fontWeight: 400,
-                                    fontFamily: '"Inter", "Helvetica", sans-serif'
-                                }}>
-                                    @{username}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
 
-                    {/* Main Content Section */}
-                    <div style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        flex: 1,
-                        justifyContent: 'flex-end',
-                        minHeight: 0,
-                        paddingBottom: '60px'
-                    }}>
-                        <div style={{
-                            display: 'flex',
-                            flexDirection: 'row',
-                            alignItems: 'flex-end',
-                            gap: '56px',
-                        }}>
-                            {/* Poster */}
-                            <div style={{ flexShrink: 0, display: 'flex' }}>
-                                {/* ✨ 5. USE THE UNIFIED ITEM */}
-                                {cinematicItem.poster_url && (
-                                    <img
-                                        src={cinematicItem.poster_url}
-                                        alt={cinematicItem.title}
-                                        width={420}
-                                        height={630}
-                                        style={{
-                                            borderRadius: '8px',
-                                            boxShadow: '0 24px 64px -12px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.08)',
-                                        }}
-                                    />
-                                )}
-                            </div>
-
-                            {/* Review Content */}
-                            <div style={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                minWidth: 0,
-                                flex: 1,
-                                paddingBottom: '16px'
-                            }}>
-                                {/* Title */}
-                                <h1 style={{
-                                    fontSize: '82px',
-                                    fontWeight: 500,
-                                    fontFamily: '"Cormorant Garamond", "Georgia", serif',
-                                    lineHeight: 1,
-                                    color: '#fafafa',
-                                    textShadow: '0 2px 24px rgba(0,0,0,0.6)',
-                                    marginBottom: '16px',
-                                    letterSpacing: '-0.015em',
-                                    margin: 0
-                                }}>
-                                    {/* ✨ 6. USE THE UNIFIED ITEM */}
-                                    {cinematicItem.title}
-                                </h1>
-
-                                {/* Year */}
-                                <span style={{
-                                    fontSize: '34px',
-                                    fontWeight: 400,
-                                    color: '#a8a8a8',
-                                    marginBottom: '44px',
-                                    letterSpacing: '0.02em'
-                                }}>
-                                    {releaseYear}
-                                </span>
-
-                                {/* Rating */}
-                                {rating > 0 && (
-                                    <div style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '6px',
-                                        marginBottom: '44px'
-                                    }}>
-                                        {stars}
-                                        <span style={{
-                                            fontSize: '34px',
-                                            fontWeight: 500,
-                                            color: '#d4af37',
-                                            marginLeft: '14px',
-                                            lineHeight: 1,
-                                            fontFamily: '"Inter", "Helvetica", sans-serif'
-                                        }}>
-                                            {rating.toFixed(1)}
-                                        </span>
-                                    </div>
-                                )}
-
-                                {/* Watched Date & Context */}
-                                <div style={{
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: '16px',
-                                    paddingLeft: '0',
-                                }}>
-                                    <span style={{
-                                        fontSize: '28px',
-                                        color: '#d4d4d8',
-                                        fontWeight: 400,
-                                        letterSpacing: '0.01em'
-                                    }}>
-                                        {watchedDate}
-                                    </span>
-                                    <ViewingContext context={viewingContext} />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Watched With Section */}
-                        {collaborators.length > 0 && (
-                            <div style={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '18px',
-                                marginTop: '56px',
-                                padding: '24px 28px',
-                                background: 'rgba(255, 255, 255, 0.04)',
-                                borderRadius: '12px',
-                                border: '1px solid rgba(255, 255, 255, 0.08)'
-                            }}>
-                                <span style={{
-                                    fontSize: '22px',
-                                    fontWeight: 500,
-                                    color: '#a8a8a8',
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.12em',
-                                    fontFamily: '"Inter", "Helvetica", sans-serif'
-                                }}>
-                                    Watched With
-                                </span>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
-                                    {collaborators.map((collab, index) => (
-                                        <div key={collab.profiles.id} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                            {collab.profiles.profile_pic_url && (
-                                                <img
-                                                    src={collab.profiles.profile_pic_url}
-                                                    alt={collab.profiles.username}
-                                                    width={48}
-                                                    height={48}
-                                                    style={{
-                                                        borderRadius: '50%',
-                                                        border: '2px solid rgba(255, 255, 255, 0.2)'
-                                                    }}
-                                                />
-                                            )}
-                                            <span style={{
-                                                fontSize: '26px',
-                                                fontWeight: 400,
-                                                color: '#e4e4e7',
-                                                fontFamily: '"Cormorant Garamond", "Georgia", serif'
-                                            }}>
-                                                {collab.profiles.username}
-                                            </span>
-                                            {index < collaborators.length - 1 && (
-                                                <span style={{
-                                                    fontSize: '26px',
-                                                    color: '#71717a',
-                                                    fontWeight: 300
-                                                }}>
-                                                    ,
-                                                </span>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Notes */}
-                        {notes && (
-                            <div style={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                marginTop: '56px',
-                                overflowY: 'auto',
-                                minHeight: 0,
-                                maxHeight: '360px',
-                                flexShrink: 1,
-                            }}>
-                                <p style={{
-                                    display: 'flex',
-                                    fontSize: '36px',
-                                    color: '#f5f5f5',
-                                    lineHeight: 1.6,
-                                    fontStyle: 'italic',
-                                    margin: 0,
-                                    position: 'relative',
-                                    paddingLeft: '60px',
-                                    paddingRight: '20px',
-                                    fontWeight: 400,
-                                    fontFamily: '"Cormorant Garamond", "Georgia", serif'
-                                }}>
-                                    <span style={{
-                                        position: 'absolute',
-                                        left: 0,
-                                        top: '-12px',
-                                        fontSize: '90px',
-                                        fontWeight: 400,
-                                        color: '#d4d4d8',
-                                        opacity: 0.4,
-                                        lineHeight: 1,
-                                        flexShrink: 0
-                                    }}>
-                                        &ldquo;
-                                    </span>
-                                    <span style={{ display: 'flex', flexGrow: 1 }}>{notes}</span>
-                                </p>
-                            </div>
-                        )}
+                {/* 1. User Header (Floating above) */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginBottom: 'auto' }}>
+                    {user.profile_pic_url && (
+                        <img
+                            src={user.profile_pic_url}
+                            width="96"
+                            height="96"
+                            style={{ borderRadius: '50%', border: '4px solid #27272a' }}
+                        />
+                    )}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0px' }}>
+                        <span style={{ fontSize: '32px', fontWeight: 700, color: '#fff' }}>{user.display_name}</span>
+                        <span style={{ fontSize: '24px', color: '#a1a1aa' }}>@{user.username}</span>
                     </div>
                 </div>
 
-                {/* Footer - Clear Branding Section */}
-                <div style={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    padding: '32px 80px',
-                    borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-                    background: 'rgba(0, 0, 0, 0.6)',
-                    backdropFilter: 'blur(10px)',
-                    flexShrink: 0
-                }}>
-                    <span style={{
-                        fontSize: '28px',
-                        fontWeight: 600,
-                        background: 'linear-gradient(135deg, #f43f5e 0%, #dc2626 50%, #991b1b 100%)',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                        letterSpacing: '0.04em',
-                        fontFamily: '"Inter", "Helvetica", sans-serif'
-                    }}>
-                        deeperweave.com
-                    </span>
+                {/* 2. Hero Section (Overlap Effect) */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '60px', marginTop: '100px' }}>
+
+                    {/* Media Row */}
+                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: '60px' }}>
+
+                        {/* Poster Card */}
+                        <div style={{
+                            display: 'flex',
+                            width: '400px',
+                            height: '600px',
+                            backgroundColor: '#18181b',
+                            borderRadius: '12px',
+                            border: '4px solid #27272a', // Zinc-800 border
+                            boxShadow: '0 32px 64px rgba(0,0,0,0.5)',
+                            overflow: 'hidden',
+                            position: 'relative',
+                            flexShrink: 0,
+                        }}>
+                            {posterUrl ? (
+                                <img src={posterUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#52525b' }}>No Poster</div>
+                            )}
+                        </div>
+
+                        {/* Title & Meta */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', flex: 1 }}>
+                            {/* Rating Stars (Above title like a badge, or below) - Let's put above */}
+                            {rating > 0 && (
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    {starArray.map((isFilled, i) => (
+                                        <StarIcon key={i} filled={isFilled} />
+                                    ))}
+                                </div>
+                            )}
+
+                            <h1 style={{
+                                fontSize: '96px',
+                                fontWeight: 300, // Light weight like SimpleDetailPage
+                                lineHeight: '1',
+                                letterSpacing: '-0.03em',
+                                color: '#ffffff',
+                                margin: 0,
+                                textShadow: '0 4px 30px rgba(0,0,0,0.5)'
+                            }}>
+                                {cinematicItem.title}
+                            </h1>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginTop: '12px' }}>
+                                <span style={{ fontSize: '36px', fontWeight: 600, color: '#d4d4d8' }}>{releaseYear}</span>
+                                {entry.viewing_context && (
+                                    <span style={{ fontSize: '36px', color: '#52525b' }}>• Watched on {entry.viewing_context}</span>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 3. Review / Notes Section */}
+                    {entry.notes && (
+                        <div style={{
+                            display: 'flex',
+                            position: 'relative',
+                            paddingTop: '60px',
+                            borderTop: '2px solid #27272a',
+                            marginTop: '20px'
+                        }}>
+                            <div style={{ position: 'absolute', top: '40px', left: '-10px', opacity: 0.5 }}>
+                                <QuoteIcon />
+                            </div>
+                            <p style={{
+                                fontSize: '48px',
+                                lineHeight: '1.4',
+                                fontWeight: 400,
+                                color: '#d4d4d8', // Zinc-300
+                                margin: 0,
+                                paddingLeft: '60px',
+                                fontFamily: '"Inter", sans-serif', // Kept Inter for consistency, or change to Serif if preferred
+                            }}>
+                                {entry.notes}
+                            </p>
+                        </div>
+                    )}
+
+                </div>
+
+                {/* 4. Footer */}
+                <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'center', paddingTop: '80px', opacity: 0.6 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        {/* Simple Logo Placeholder */}
+                        <div style={{ width: '40px', height: '40px', backgroundColor: '#fff', borderRadius: '8px' }} />
+                        <span style={{ fontSize: '32px', fontWeight: 600, letterSpacing: '0.05em' }}>DEEPERWEAVE.COM</span>
+                    </div>
                 </div>
             </div>
         </div>

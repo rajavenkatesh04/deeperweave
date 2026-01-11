@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { StarIcon as SolidStarIcon } from '@heroicons/react/24/solid';
 import {
     PencilSquareIcon,
     XMarkIcon,
@@ -17,8 +16,7 @@ import {
     DevicePhoneMobileIcon,
     QrCodeIcon,
     PhotoIcon,
-    UserGroupIcon,
-    ChatBubbleLeftRightIcon
+    ChatBubbleLeftRightIcon,
 } from '@heroicons/react/24/outline';
 import { motion, AnimatePresence } from 'framer-motion';
 import CinematicInfoCard from '@/app/ui/blog/CinematicInfoCard';
@@ -27,8 +25,7 @@ import { deleteTimelineEntry } from '@/lib/actions/timeline-actions';
 import { TimelineEntry, UserProfile } from "@/lib/definitions";
 import ImageModal from './ImageModal';
 import UserProfilePopover from './UserProfilePopover';
-import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
-import clsx from 'clsx';
+import { googleSansCode } from "@/app/ui/fonts"; //
 
 const ottPlatformDetails: { [key: string]: { logo: string; color: string } } = {
     'Netflix': { logo: '/logos/netflix.svg', color: '#E50914' },
@@ -65,7 +62,7 @@ function DropdownMenu({ entry, username, onDownload, isDownloading, safeTitle }:
 
     const handleCopyLink = () => {
         navigator.clipboard.writeText(`${window.location.origin}/profile/${username}/timeline#entry-${entry.id}`);
-        toast.success('COORDINATES COPIED');
+        toast.success('COPIED');
         setShowShareDialog(false);
     };
 
@@ -189,9 +186,9 @@ export default function TimelineEntryCard({
         else if (platform?.logo) icon = <Image src={platform.logo} alt={context} width={12} height={12} className="w-3 h-3 object-contain" />;
 
         return (
-            <div className="flex items-center gap-1 text-[10px] font-bold uppercase text-zinc-500 border border-zinc-200 dark:border-zinc-800 px-1.5 py-0.5 bg-white dark:bg-zinc-900">
+            <div className="flex items-center gap-1.5 pl-2 border-l border-zinc-300 dark:border-zinc-700">
                 {icon}
-                <span className="truncate max-w-[60px]">{context}</span>
+                <span className="truncate max-w-[70px] hidden sm:block">{context}</span>
             </div>
         );
     };
@@ -199,152 +196,137 @@ export default function TimelineEntryCard({
     return (
         <>
             <motion.div
-                className="group relative mb-4"
+                className="group relative mb-5"
                 id={`entry-${entry.id}`}
                 initial={{ opacity: 0, y: 10 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
             >
-                <div className="flex w-full bg-white dark:bg-black border border-zinc-300 dark:border-zinc-800 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
+                {/* --- CARD CONTAINER --- */}
+                <div className="flex items-stretch w-full bg-white dark:bg-black border border-zinc-300 dark:border-zinc-800 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all">
 
-                    {/* --- 1. THE POWER DATE (High Contrast Monolith) --- */}
-                    <div className="flex flex-col items-center justify-center w-14 md:w-20 shrink-0 bg-black dark:bg-white text-white dark:text-black py-2 md:py-4">
+                    {/* --- 1. DATE MONOLITH --- */}
+                    <div className="flex flex-col items-center justify-center w-14 md:w-20 shrink-0 bg-black dark:bg-white text-white dark:text-black">
                         <span className="text-[10px] md:text-xs font-black uppercase tracking-widest opacity-80">{month}</span>
                         <span className="text-2xl md:text-4xl font-black leading-none my-0.5">{day}</span>
                         <span className="text-[10px] md:text-xs font-bold opacity-60">{year}</span>
                     </div>
 
-                    {/* --- 2. MAIN CONTENT AREA --- */}
-                    <div className="flex-1 flex flex-col min-w-0">
+                    {/* --- 2. GAP --- */}
+                    <div className="w-1 shrink-0 bg-transparent"></div>
 
-                        <div className="flex p-2 md:p-4 gap-3 md:gap-5">
-                            {/* POSTER (Full Color, Compact on Mobile) */}
-                            <div
-                                className="relative shrink-0 w-12 md:w-20 aspect-[2/3] border border-zinc-200 dark:border-zinc-800 cursor-pointer shadow-sm"
+                    {/* --- 3. POSTER --- */}
+                    <div
+                        className="relative w-24 md:w-32 aspect-[2/3] shrink-0 cursor-pointer group/poster border-r border-zinc-200 dark:border-zinc-800"
+                        onClick={() => setSelectedItem({
+                            tmdb_id: cinematicItem.tmdb_id,
+                            title: cinematicItem.title,
+                            media_type: entry.movies ? 'movie' : 'tv'
+                        })}
+                    >
+                        <Image
+                            src={cinematicItem.poster_url || '/placeholder-poster.png'}
+                            alt={cinematicItem.title}
+                            fill
+                            className="object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/10 group-hover/poster:bg-transparent transition-colors" />
+                    </div>
+
+                    {/* --- 4. DETAILS PANE (Reduced Padding) --- */}
+                    <div className="flex-1 min-w-0 flex flex-col p-1.5 md:p-3 bg-white dark:bg-black">
+
+                        {/* A. HEADER (Title & Menu) */}
+                        <div className="flex justify-between items-start gap-2 mb-1">
+                            <h3
+                                className={`${googleSansCode.className} text-base md:text-xl font-bold text-zinc-900 dark:text-zinc-100 leading-tight cursor-pointer hover:underline decoration-2 line-clamp-2`}
                                 onClick={() => setSelectedItem({
                                     tmdb_id: cinematicItem.tmdb_id,
                                     title: cinematicItem.title,
                                     media_type: entry.movies ? 'movie' : 'tv'
                                 })}
                             >
-                                <Image
-                                    src={cinematicItem.poster_url || '/placeholder-poster.png'}
-                                    alt={cinematicItem.title}
-                                    fill
-                                    className="object-cover" // FULL COLOR
-                                />
-                            </div>
+                                {cinematicItem.title}
+                            </h3>
 
-                            {/* TEXT DATA */}
-                            <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
-                                <div>
-                                    <div className="flex justify-between items-start">
-                                        {/* Title */}
-                                        <h3
-                                            className={`${PlayWriteNewZealandFont.className} text-base md:text-xl font-bold text-zinc-900 dark:text-zinc-100 leading-tight cursor-pointer hover:underline decoration-2 line-clamp-2 pr-2`}
-                                            onClick={() => setSelectedItem({
-                                                tmdb_id: cinematicItem.tmdb_id,
-                                                title: cinematicItem.title,
-                                                media_type: entry.movies ? 'movie' : 'tv'
-                                            })}
-                                        >
-                                            {cinematicItem.title}
-                                        </h3>
-
-                                        {/* Menu (Desktop only, mobile moves below or stays compact) */}
-                                        {isOwnProfile && (
-                                            <div className="shrink-0 -mr-1 -mt-1">
-                                                <DropdownMenu
-                                                    entry={entry}
-                                                    username={username}
-                                                    onDownload={handleDownloadShareImage}
-                                                    isDownloading={isDownloading}
-                                                    safeTitle={safeTitle}
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Sub-header: Stars & Context */}
-                                    <div className="flex flex-wrap items-center gap-2 mt-2">
-                                        {rating > 0 ? (
-                                            <div className="flex gap-0.5">
-                                                {[...Array(5)].map((_, i) => (
-                                                    <SolidStarIcon
-                                                        key={i}
-                                                        className={`w-3 h-3 md:w-3.5 md:h-3.5 ${rating >= i + 1 ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-200 dark:text-zinc-800'}`}
-                                                    />
-                                                ))}
-                                            </div>
-                                        ) : <span className="text-[10px] text-zinc-400">NO RATING</span>}
-
-                                        <div className="hidden md:block w-px h-3 bg-zinc-300 dark:bg-zinc-700 mx-1"></div>
-                                        {renderViewingContext(entry.viewing_context)}
-                                    </div>
+                            {isOwnProfile && (
+                                <div className="shrink-0 -mt-1 -mr-1">
+                                    <DropdownMenu
+                                        entry={entry}
+                                        username={username}
+                                        onDownload={handleDownloadShareImage}
+                                        isDownloading={isDownloading}
+                                        safeTitle={safeTitle}
+                                    />
                                 </div>
-                            </div>
+                            )}
                         </div>
 
-                        {/* --- 3. FOOTER (Notes, Collabs, Evidence) --- */}
-                        {/* Only show if there's content to keep mobile compact */}
-                        {(entry.notes || entry.photo_url || entry.timeline_collaborators.length > 0) && (
-                            <div className="border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40 px-3 py-2 flex items-center justify-between gap-3 text-xs">
-
-                                <div className="flex items-center gap-3 overflow-hidden">
-                                    {/* Collaborators (Full Color) */}
-                                    {entry.timeline_collaborators.length > 0 && (
-                                        <div className="flex -space-x-1.5 shrink-0">
-                                            {entry.timeline_collaborators.map(collab => (
-                                                collab.profiles && (
-                                                    <button
-                                                        key={collab.profiles.id}
-                                                        onClick={() => setSelectedCollaborator(collab.profiles)}
-                                                        className="relative w-5 h-5 md:w-6 md:h-6 border border-white dark:border-black rounded-full overflow-hidden hover:z-10 hover:scale-110 transition-transform"
-                                                    >
-                                                        <Image
-                                                            src={collab.profiles.profile_pic_url || '/default-avatar.png'}
-                                                            alt={collab.profiles.username}
-                                                            fill
-                                                            className="object-cover" // Full Color
-                                                        />
-                                                    </button>
-                                                )
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    {/* Note Snippet */}
-                                    {entry.notes && (
-                                        <div
-                                            className="flex items-center gap-1.5 cursor-pointer group/note text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 truncate"
-                                            onClick={() => setShowNotesModal(true)}
-                                        >
-                                            <ChatBubbleLeftRightIcon className="w-3.5 h-3.5 shrink-0" />
-                                            <span className="font-mono text-[10px] md:text-xs truncate max-w-[150px] md:max-w-xs">{entry.notes}</span>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Evidence Icon / Link */}
-                                <div className="flex items-center gap-2 shrink-0">
-                                    {entry.posts?.slug && (
-                                        <Link href={`/blog/${entry.posts.slug}`} className="p-1 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100">
-                                            <PencilSquareIcon className="w-4 h-4" />
-                                        </Link>
-                                    )}
-                                    {entry.photo_url && (
-                                        <button onClick={() => setSelectedPhotoUrl(entry.photo_url)} className="p-1 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100">
-                                            <PhotoIcon className="w-4 h-4" />
-                                        </button>
-                                    )}
-                                </div>
+                        {/* B. NOTES (Compact, Text Only) */}
+                        {entry.notes && (
+                            <div
+                                className="text-[10px] md:text-sm font-mono text-zinc-600 dark:text-zinc-400 line-clamp-2 md:line-clamp-3 mb-2 cursor-pointer hover:text-black dark:hover:text-white transition-colors"
+                                onClick={() => setShowNotesModal(true)}
+                            >
+                                {entry.notes}
                             </div>
                         )}
+
+                        {/* C. META STRIP (Rating | Collabs | Source) */}
+                        <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 text-[9px] md:text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-500 pt-2 border-t border-zinc-100 dark:border-zinc-900">
+
+                            {/* 1. Rating */}
+                            <div className="text-zinc-900 dark:text-zinc-100">
+                                {rating > 0 ? `RATED [ ${displayRating} ]` : 'UNRATED'}
+                            </div>
+
+                            {/* 2. Collaborators (Watched With) */}
+                            {entry.timeline_collaborators.length > 0 && (
+                                <div className="flex items-center gap-1 pl-2 border-l border-zinc-300 dark:border-zinc-700">
+                                    <span className="hidden sm:inline">WITH:</span>
+                                    <div className="flex -space-x-1.5">
+                                        {entry.timeline_collaborators.map(collab => (
+                                            collab.profiles && (
+                                                <button
+                                                    key={collab.profiles.id}
+                                                    onClick={() => setSelectedCollaborator(collab.profiles)}
+                                                    className="relative w-4 h-4 md:w-5 md:h-5 rounded-full overflow-hidden ring-1 ring-white dark:ring-black hover:z-10 hover:scale-110 transition-transform"
+                                                >
+                                                    <Image
+                                                        src={collab.profiles.profile_pic_url || '/default-avatar.png'}
+                                                        alt={collab.profiles.username}
+                                                        fill
+                                                        className="object-cover"
+                                                    />
+                                                </button>
+                                            )
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* 3. Source */}
+                            {entry.viewing_context && renderViewingContext(entry.viewing_context)}
+
+                            {/* 4. Evidence / Links (Pushed right) */}
+                            <div className="ml-auto flex items-center gap-2">
+                                {entry.posts?.slug && (
+                                    <Link href={`/blog/${entry.posts.slug}`} className="text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100" title="Read Log">
+                                        <PencilSquareIcon className="w-3.5 h-3.5" />
+                                    </Link>
+                                )}
+                                {entry.photo_url && (
+                                    <button onClick={() => setSelectedPhotoUrl(entry.photo_url)} className="text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100" title="View Image">
+                                        <PhotoIcon className="w-3.5 h-3.5" />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </motion.div>
 
-            {/* --- MODALS (Kept Sharp) --- */}
+            {/* --- MODALS --- */}
             <AnimatePresence>
                 {showNotesModal && entry.notes && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/80 z-[80] flex items-center justify-center p-6" onClick={() => setShowNotesModal(false)}>
@@ -354,7 +336,7 @@ export default function TimelineEntryCard({
                             onClick={(e) => e.stopPropagation()}
                         >
                             <button onClick={() => setShowNotesModal(false)} className="absolute top-2 right-2"><XMarkIcon className="w-6 h-6" /></button>
-                            <h3 className="font-bold text-lg mb-4 pr-8">{cinematicItem.title}</h3>
+                            <h3 className={`${googleSansCode.className} font-bold text-lg mb-4 pr-8`}>{cinematicItem.title}</h3>
                             <div className="font-mono text-sm leading-relaxed whitespace-pre-wrap text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-900 p-4 border border-zinc-200 dark:border-zinc-800">
                                 {entry.notes}
                             </div>
