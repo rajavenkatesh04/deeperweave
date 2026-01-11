@@ -7,49 +7,30 @@ const shimmer =
 
 export function ProfileHeaderSkeleton() {
     return (
-        <div className="relative w-full border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 py-4 md:py-12">
-            <div className={`mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 ${shimmer} relative overflow-hidden`}>
+        <div className="w-full bg-white dark:bg-black border-b border-zinc-200 dark:border-zinc-800">
+            <div className={`max-w-6xl mx-auto px-4 py-6 md:px-8 md:py-8 ${shimmer} relative overflow-hidden`}>
+                <div className="flex flex-col md:flex-row gap-6 md:gap-8">
+                    {/* Avatar Skeleton */}
+                    <div className="shrink-0 w-20 h-20 md:w-24 md:h-24 bg-gray-200 dark:bg-zinc-900" />
 
-                {/* Bento Grid Layout */}
-                <div className="grid grid-cols-2 gap-2 md:grid-cols-12 md:gap-6">
-
-                    {/* BLOCK 1: VISUAL (Avatar) - Span 3 */}
-                    <div className="col-span-1 flex flex-col gap-4 md:col-span-3">
-                        <div className="relative aspect-square w-full overflow-hidden border border-zinc-200 bg-white p-1 shadow-sm dark:border-zinc-800 dark:bg-black">
-                            <div className="h-full w-full bg-gray-200 dark:bg-zinc-900" />
-                        </div>
-                        {/* Desktop Location Badge */}
-                        <div className="hidden h-10 w-full border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-black md:block" />
-                    </div>
-
-                    {/* BLOCK 2: NARRATIVE (Bio) - Span 6 */}
-                    <div className="col-span-2 flex flex-col border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-black md:col-span-6 md:p-8">
-                        <div className="mb-4 h-8 w-1/2 rounded-md bg-gray-200 dark:bg-zinc-900 md:h-12" />
-                        <div className="mb-4 h-px w-full bg-zinc-100 dark:bg-zinc-900" />
-                        <div className="space-y-2">
-                            <div className="h-4 w-full rounded-md bg-gray-200 dark:bg-zinc-900" />
-                            <div className="h-4 w-full rounded-md bg-gray-200 dark:bg-zinc-900" />
-                            <div className="h-4 w-2/3 rounded-md bg-gray-200 dark:bg-zinc-900" />
-                        </div>
-                    </div>
-
-                    {/* BLOCK 3: STATS - Span 3 */}
-                    <div className="col-span-1 flex flex-col gap-4 md:col-span-3">
-                        <div className="flex flex-1 flex-col justify-center border border-zinc-200 bg-white p-2 shadow-sm dark:border-zinc-800 dark:bg-black md:p-6">
-                            {/* Stats Rows */}
-                            <div className="flex flex-col space-y-4 md:space-y-6">
-                                {[...Array(3)].map((_, i) => (
-                                    <div key={i} className="flex flex-col gap-1 md:flex-row md:justify-between">
-                                        <div className="h-4 w-16 bg-gray-200 dark:bg-zinc-900" />
-                                        <div className="h-6 w-8 bg-gray-200 dark:bg-zinc-900" />
-                                    </div>
-                                ))}
-                                {/* Desktop Action Button */}
-                                <div className="mt-4 hidden h-10 w-full bg-zinc-900 dark:bg-zinc-100 md:block" />
+                    {/* Info Skeleton */}
+                    <div className="flex-1 space-y-4">
+                        <div className="flex justify-between items-start">
+                            <div className="space-y-2 w-full">
+                                <div className="h-8 w-48 bg-gray-200 dark:bg-zinc-900" />
+                                <div className="h-4 w-32 bg-gray-200 dark:bg-zinc-900" />
                             </div>
+                            {/* Button Skeleton */}
+                            <div className="h-9 w-24 bg-gray-200 dark:bg-zinc-900 shrink-0" />
+                        </div>
+
+                        {/* Stats Line Skeleton */}
+                        <div className="pt-4 border-t border-dashed border-gray-100 dark:border-zinc-800 flex gap-8">
+                            <div className="h-4 w-20 bg-gray-200 dark:bg-zinc-900" />
+                            <div className="h-4 w-20 bg-gray-200 dark:bg-zinc-900" />
+                            <div className="h-4 w-20 bg-gray-200 dark:bg-zinc-900" />
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>
