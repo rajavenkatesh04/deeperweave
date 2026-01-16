@@ -1,549 +1,436 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
 import Link from "next/link";
 import Image from "next/image";
 import {
-    FilmIcon, TvIcon, SparklesIcon, HeartIcon,
-    MagnifyingGlassIcon, ArrowRightIcon, StarIcon,
-    PlusIcon, XMarkIcon, Bars3Icon
+    ArrowRightIcon, MagnifyingGlassIcon, StarIcon,
+    SparklesIcon, FilmIcon, PlayCircleIcon,
+    ArrowUpRightIcon, CheckCircleIcon
 } from "@heroicons/react/24/solid";
-import { motion, AnimatePresence, Variants } from "framer-motion";
-import { searchCinematic, CinematicSearchResult } from "@/lib/actions/cinematic-actions";
-import clsx from "clsx"; // Ensure you have clsx installed, or use template literals
+import {
+    CalendarIcon, MapPinIcon
+} from "@heroicons/react/24/outline";
+import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import { dmSerif, googleSansCode, geistSans } from "@/app/ui/fonts";
 
 // --- Types ---
-interface HeroItem { label: string; bg: string; }
-interface BentoItemData { title: string; href: string; img: string; description?: string; }
-
 interface LandingPageClientProps {
     heroPosters: string[];
-    heroItems: HeroItem[];
-    searchDemoItems?: any[];
-    bentoItems: {
-        anime: BentoItemData;
-        movie: BentoItemData;
-        kdrama: BentoItemData;
-        tv: BentoItemData;
-    };
+    bentoItems: any;
 }
 
-// --- Debounce Hook for Search ---
-function useDebounce<T>(value: T, delay: number): T {
-    const [debouncedValue, setDebouncedValue] = useState(value);
+// --- ANIMATED SEARCH MOCKUP ---
+const AnimatedSearchMockup = () => {
+    const [text, setText] = useState("");
+    const [showResults, setShowResults] = useState(false);
+    const fullText = "Interstellar";
+
     useEffect(() => {
-        const handler = setTimeout(() => setDebouncedValue(value), delay);
-        return () => clearTimeout(handler);
-    }, [value, delay]);
-    return debouncedValue;
-}
+        let currentIndex = 0;
+        let timeoutId: NodeJS.Timeout;
 
-export default function LandingPageClient({
-                                              heroPosters,
-                                              bentoItems
-                                          }: LandingPageClientProps) {
-    // Search State
-    const [searchQuery, setSearchQuery] = useState("");
-    const [searchResults, setSearchResults] = useState<CinematicSearchResult[]>([]);
-    const [isSearching, setIsSearching] = useState(false);
-    const [isFocused, setIsFocused] = useState(false);
-
-    // Mobile Menu State
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-    const debouncedQuery = useDebounce(searchQuery, 300);
-    const searchRef = useRef<HTMLDivElement>(null);
-    const inputRef = useRef<HTMLInputElement>(null);
-
-    const fadeInUp: Variants = {
-        hidden: { opacity: 0, y: 20 },
-        visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
-    };
-
-    // Close search on click outside or Escape key
-    useEffect(() => {
-        function handleInteraction(event: MouseEvent | KeyboardEvent) {
-            if (event instanceof KeyboardEvent && event.key === 'Escape') {
-                setIsFocused(false);
-                inputRef.current?.blur();
+        const typeChar = () => {
+            if (currentIndex < fullText.length) {
+                setText(fullText.slice(0, currentIndex + 1));
+                currentIndex++;
+                timeoutId = setTimeout(typeChar, 150 + Math.random() * 100); // Random typing speed
+            } else {
+                setTimeout(() => setShowResults(true), 500);
             }
-            if (event instanceof MouseEvent && searchRef.current && !searchRef.current.contains(event.target as Node)) {
-                setIsFocused(false);
-            }
-        }
-        document.addEventListener("mousedown", handleInteraction);
-        document.addEventListener("keydown", handleInteraction);
-        return () => {
-            document.removeEventListener("mousedown", handleInteraction);
-            document.removeEventListener("keydown", handleInteraction);
         };
+
+        // Start typing after a delay
+        timeoutId = setTimeout(typeChar, 1000);
+
+        return () => clearTimeout(timeoutId);
     }, []);
 
-    // Perform Live Search
-    useEffect(() => {
-        const performSearch = async () => {
-            if (debouncedQuery.length < 2) {
-                setSearchResults([]);
-                return;
-            }
-            setIsSearching(true);
-            try {
-                const results = await searchCinematic(debouncedQuery);
-                setSearchResults(results.slice(0, 5));
-            } catch (error) {
-                console.error("Search failed", error);
-            } finally {
-                setIsSearching(false);
-            }
-        };
-        performSearch();
-    }, [debouncedQuery]);
-
     return (
-        <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 selection:bg-zinc-900 selection:text-white dark:selection:bg-white dark:selection:text-zinc-900">
-            {/* Global Styles for removing Scrollbars */}
-            <style jsx global>{`
-                .no-scrollbar::-webkit-scrollbar {
-                    display: none;
-                }
-                .no-scrollbar {
-                    -ms-overflow-style: none;
-                    scrollbar-width: none;
-                }
-            `}</style>
+        <div className="relative w-full max-w-lg mx-auto z-20">
+            {/* The Input Bar */}
+            <div className="relative flex items-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl rounded-xl h-14 px-4 overflow-hidden">
+                <MagnifyingGlassIcon className="w-5 h-5 text-zinc-400 shrink-0" />
+                <div className="flex items-center h-full w-full px-4">
+                    <span className="text-zinc-900 dark:text-zinc-100 font-medium text-lg relative">
+                        {text}
+                        {/* Blinking Cursor */}
+                        <span className="absolute -right-[2px] top-1 bottom-1 w-[2px] bg-amber-500 animate-pulse" />
+                    </span>
+                    {text.length === 0 && (
+                        <span className="absolute left-4 text-zinc-400 pointer-events-none">Search cinema...</span>
+                    )}
+                </div>
+                {showResults && (
+                    <div className="w-5 h-5 border-2 border-zinc-200 border-t-amber-500 rounded-full animate-spin shrink-0" />
+                )}
+            </div>
 
-            {/* --- Navigation --- */}
-            <nav className="fixed top-0 z-50 w-full bg-white/90 dark:bg-zinc-950/90 backdrop-blur-sm border-b border-zinc-200 dark:border-zinc-800">
-                <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-                    <Link href="/" className="flex items-center gap-2 group">
-                        <div className="h-6 w-6 rounded bg-gradient-to-br from-amber-500 to-orange-600" />
-                        <span className={`${PlayWriteNewZealandFont.className} text-lg font-bold text-zinc-900 dark:text-zinc-100`}>
-                            Deeper Weave
-                        </span>
-                    </Link>
+            {/* The Results Dropdown */}
+            <AnimatePresence>
+                {showResults && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10, height: 0 }}
+                        animate={{ opacity: 1, y: 0, height: 'auto' }}
+                        transition={{ duration: 0.4, ease: "easeOut" }}
+                        className="absolute top-full left-0 right-0 mt-3 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl overflow-hidden text-left"
+                    >
+                        <div className="p-2 space-y-1">
+                            {/* Result 1 */}
+                            <div className="flex items-center gap-4 p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800/50">
+                                <div className="w-10 h-14 bg-zinc-200 relative shrink-0 rounded-sm overflow-hidden">
+                                    <Image src="https://image.tmdb.org/t/p/w200/gEU2QniL6qFjqlvuymbaT47TlZL.jpg" alt="" fill className="object-cover" />
+                                </div>
+                                <div>
+                                    <div className="font-bold text-sm text-zinc-900 dark:text-zinc-100">Interstellar</div>
+                                    <div className="text-[10px] text-zinc-500 uppercase tracking-wider">2014 • Christopher Nolan</div>
+                                </div>
+                                <ArrowRightIcon className="w-4 h-4 text-zinc-400 ml-auto" />
+                            </div>
+                            {/* Result 2 (Faded) */}
+                            <div className="flex items-center gap-4 p-2 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800/30 opacity-60">
+                                <div className="w-10 h-14 bg-zinc-200 relative shrink-0 rounded-sm overflow-hidden">
+                                    <Image src="https://image.tmdb.org/t/p/w200/m2L608yUnPChZqFh1F29v4v1s.jpg" alt="" fill className="object-cover" />
+                                </div>
+                                <div>
+                                    <div className="font-bold text-sm text-zinc-900 dark:text-zinc-100">Interestellar (OST)</div>
+                                    <div className="text-[10px] text-zinc-500 uppercase tracking-wider">Album • Hans Zimmer</div>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
 
-                    {/* Desktop Menu */}
-                    <div className="hidden md:flex items-center gap-8 text-sm font-medium">
-                        <Link href="/discover" className="text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">Discover</Link>
-                        <Link href="/blog" className="text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">Community</Link>
-                        <Link href="/auth/login" className="text-zinc-900 dark:text-zinc-100 hover:underline decoration-1 underline-offset-4">Log in</Link>
-                        <Link href="/auth/sign-up" className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 px-6 py-2 rounded-none hover:opacity-90 transition-opacity">
-                            Join Free
-                        </Link>
-                    </div>
+// --- VISUAL ASSETS (Mock Components) ---
 
-                    {/* Mobile Menu Button */}
-                    <div className="md:hidden">
-                        <button
-                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                            className="p-2 text-zinc-900 dark:text-zinc-100"
-                        >
-                            {isMobileMenuOpen ? <XMarkIcon className="w-6 h-6" /> : <Bars3Icon className="w-6 h-6" />}
-                        </button>
+const MockTimelineCard = () => (
+    <div className="flex w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-500 hover:-translate-y-1 group">
+        <div className="flex flex-col items-center justify-center w-16 shrink-0 border-r border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-black/20">
+            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">OCT</span>
+            <span className="text-3xl font-black text-zinc-900 dark:text-zinc-100 my-0.5 group-hover:text-amber-600 transition-colors">31</span>
+            <span className="text-[10px] font-medium text-zinc-400">2025</span>
+        </div>
+        <div className="relative w-28 aspect-[2/3] shrink-0 bg-zinc-200">
+            <Image src="https://image.tmdb.org/t/p/w500/uXDfjJbdP4ijW5hWSBrPrlKpxab.jpg" alt="Toy Story" fill className="object-cover" />
+        </div>
+        <div className="flex-1 p-5 flex flex-col justify-between">
+            <div>
+                <div className="flex items-center gap-2 mb-2">
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-500 uppercase tracking-wider">Rewatch</span>
+                </div>
+                <h3 className={`${googleSansCode.className} text-lg font-bold text-zinc-900 dark:text-zinc-100 leading-tight`}>Toy Story</h3>
+                <p className="text-xs text-zinc-500 mt-2 line-clamp-2 leading-relaxed font-mono">
+                    "To infinity and beyond." Watching this with fresh eyes, the lighting rendering is actually insane for 1995.
+                </p>
+            </div>
+            <div className="flex items-center gap-1 pt-3 border-t border-zinc-100 dark:border-zinc-800 mt-3 text-amber-500">
+                <StarIcon className="w-3 h-3" />
+                <StarIcon className="w-3 h-3" />
+                <StarIcon className="w-3 h-3" />
+                <StarIcon className="w-3 h-3" />
+                <StarIcon className="w-3 h-3" />
+                <span className="ml-auto text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Masterpiece</span>
+            </div>
+        </div>
+    </div>
+);
+
+const MockListRow = ({ rank, title, year, poster }: any) => (
+    <div className="flex items-center gap-4 p-3 bg-white dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800/50 hover:border-zinc-300 dark:hover:border-zinc-700 rounded-lg transition-all group cursor-default shadow-sm">
+        <span className={`${googleSansCode.className} text-xl text-zinc-300 font-bold w-6 text-center group-hover:text-amber-600 transition-colors`}>{rank}</span>
+        <div className="relative w-10 h-14 bg-zinc-200 shadow-sm shrink-0 overflow-hidden rounded-sm">
+            <Image src={`https://image.tmdb.org/t/p/w200${poster}`} alt={title} fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
+        </div>
+        <div className="flex-1 min-w-0">
+            <p className="font-bold text-sm text-zinc-900 dark:text-zinc-100 truncate">{title}</p>
+            <p className="text-xs text-zinc-500 font-mono">{year}</p>
+        </div>
+    </div>
+);
+
+const MockBlogCard = () => (
+    <Link href="/blog/queen-of-the-night" className="block group w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 overflow-hidden hover:shadow-2xl transition-all duration-500 rounded-xl relative">
+        <div className="absolute top-4 right-4 z-20 bg-white/90 dark:bg-black/90 backdrop-blur px-3 py-1 rounded-full border border-zinc-200 dark:border-zinc-700">
+            <span className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
+                Featured <ArrowUpRightIcon className="w-3 h-3" />
+            </span>
+        </div>
+        <div className="relative w-full aspect-[21/9] bg-zinc-100 overflow-hidden">
+            <Image
+                src="https://jyjynjpznlvezjhnuwhi.supabase.co/storage/v1/object/public/post_banners/b78b33d1-2794-4623-b32a-9d70b2753851/2f89a499-9cec-45a8-b4e4-6d812be34989.avif"
+                alt="Queen of the Night"
+                fill
+                className="object-cover group-hover:scale-105 transition-transform duration-700"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-80" />
+
+            {/* Title Overlay on Image */}
+            <div className="absolute bottom-0 left-0 p-6 md:p-8 w-full">
+                <h3 className={`${dmSerif.className} text-3xl md:text-4xl text-white leading-none mb-2 drop-shadow-lg`}>
+                    Queen of the night?
+                </h3>
+            </div>
+        </div>
+        <div className="p-6 md:p-8">
+            <div className="flex items-start gap-4">
+                <div className="flex-1">
+                    <p className="text-sm md:text-base text-zinc-600 dark:text-zinc-300 leading-relaxed line-clamp-3 font-light mb-6">
+                        <span className="font-bold text-zinc-900 dark:text-zinc-100">Chapter 1: Chandra.</span> Well, to start off, the movie was a visual spectacle with a cyberpunk-like feel. I loved the visuals, especially the elevation shots of Chandra every time. The VFX and post-processing felt spot on...
+                    </p>
+                    <div className="flex items-center justify-between pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                        <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-full bg-zinc-200 relative overflow-hidden">
+                                <Image src="/placeholder-user.jpg" alt="User" fill className="object-cover" />
+                            </div>
+                            <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-500">DeppwerWeave Editorial</span>
+                        </div>
+                        <span className="text-[11px] font-medium text-zinc-400">4 min read</span>
                     </div>
                 </div>
+            </div>
+        </div>
+    </Link>
+);
 
-                {/* Mobile Menu Dropdown */}
-                {isMobileMenuOpen && (
-                    <div className="md:hidden border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 absolute w-full left-0 top-16 shadow-xl py-4 px-6 flex flex-col gap-4">
-                        <Link href="/discover" onClick={() => setIsMobileMenuOpen(false)} className="text-lg font-medium text-zinc-900 dark:text-zinc-100 py-2">Discover</Link>
-                        <Link href="/blog" onClick={() => setIsMobileMenuOpen(false)} className="text-lg font-medium text-zinc-900 dark:text-zinc-100 py-2">Community</Link>
-                        <hr className="border-zinc-100 dark:border-zinc-800" />
-                        <Link href="/auth/login" onClick={() => setIsMobileMenuOpen(false)} className="text-lg font-medium text-zinc-900 dark:text-zinc-100 py-2">Log in</Link>
-                        <Link href="/auth/sign-up" onClick={() => setIsMobileMenuOpen(false)} className="text-center bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 px-5 py-3 rounded-none font-medium">Join Free</Link>
+
+export default function LandingPageClient({ heroPosters }: LandingPageClientProps) {
+    // Parallax
+    const targetRef = useRef<HTMLDivElement>(null);
+    const { scrollYProgress } = useScroll({ target: targetRef });
+    const x = useTransform(scrollYProgress, [0, 1], ["0%", "-25%"]);
+
+    return (
+        <div className={`min-h-screen bg-zinc-50/50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 ${geistSans.className} selection:bg-zinc-900 selection:text-white dark:selection:bg-white dark:selection:text-black`}>
+
+            {/* --- Navigation --- */}
+            <nav className="fixed top-0 z-50 w-full bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-200/50 dark:border-zinc-800/50 transition-all">
+                <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+                    <Link href="/" className="flex items-center gap-3 group">
+                        <div className="h-8 w-8 bg-zinc-900 dark:bg-zinc-100 rounded-lg flex items-center justify-center group-hover:scale-95 transition-transform duration-300">
+                            <span className="text-white dark:text-zinc-900 font-bold text-xs tracking-tighter">DW</span>
+                        </div>
+                        <span className={`${googleSansCode.className} text-sm font-bold tracking-tight uppercase`}>DeeperWeave</span>
+                    </Link>
+                    <div className="hidden md:flex items-center gap-8 text-xs font-bold uppercase tracking-widest text-zinc-500">
+                        <Link href="/discover" className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">Platform</Link>
+                        <Link href="/features" className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">Features</Link>
+                        <Link href="/auth/login" className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">Sign In</Link>
+                        <Link href="/auth/sign-up" className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-black px-5 py-2.5 rounded-lg hover:shadow-lg hover:-translate-y-0.5 transition-all">
+                            Get Started
+                        </Link>
                     </div>
-                )}
+                </div>
             </nav>
 
-            <main className="pt-32 pb-24">
+            <main>
+                {/* --- HERO SECTION --- */}
+                <section className="relative pt-40 pb-24 md:pt-60 md:pb-40 px-6 overflow-hidden">
+                    {/* Background Noise/Gradient */}
+                    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none" />
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-amber-500/10 blur-[120px] rounded-full pointer-events-none" />
 
-                {/* --- Hero Section --- */}
-                <section className="max-w-7xl mx-auto px-6 mb-32">
-                    <div className="grid lg:grid-cols-2 gap-16 items-center">
+                    <div className="max-w-5xl mx-auto text-center relative z-10">
                         <motion.div
-                            initial="hidden"
-                            animate="visible"
-                            variants={fadeInUp}
-                            className="space-y-8"
+                            initial={{ opacity: 0, y: 30 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.8, ease: "easeOut" }}
                         >
-                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-full">
-                                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"/>
-                                <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">The Ultimate Tracker</span>
-                            </div>
-
-                            <h1 className="text-6xl lg:text-8xl font-light tracking-tight text-zinc-900 dark:text-zinc-100 leading-[0.95]">
-                                Track your <br />
-                                <span className="italic font-serif text-zinc-400">obsession.</span>
+                            <h1 className={`${dmSerif.className} text-7xl md:text-9xl text-zinc-900 dark:text-zinc-100 leading-[0.85] tracking-tight mb-12`}>
+                                Weave Your <br/>
+                                <span className="text-transparent bg-clip-text bg-gradient-to-br from-zinc-400 to-zinc-600 dark:from-zinc-500 dark:to-zinc-700">History.</span>
                             </h1>
 
-                            <p className="text-lg lg:text-xl text-zinc-500 font-light max-w-md leading-relaxed">
-                                One beautiful, unified timeline for movies, TV, anime, and dramas. No clutter, just your history.
+                            <p className="text-lg md:text-xl text-zinc-500 font-light max-w-lg mx-auto leading-relaxed mb-16">
+                                The operating system for your cinematic life. <br className="hidden md:block" /> Movies, Anime, TV—all connected in one beautiful thread.
                             </p>
 
-                            <div className="flex flex-wrap gap-4">
-                                <Link href="/auth/sign-up" className="h-12 px-8 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 flex items-center gap-2 font-medium hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors rounded-sm">
-                                    Start Logging <ArrowRightIcon className="w-4 h-4"/>
-                                </Link>
-                                <Link href="/discover" className="h-12 px-8 border border-zinc-300 dark:border-zinc-700 flex items-center gap-2 font-medium hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors rounded-sm">
-                                    View Demo
-                                </Link>
-                            </div>
-                        </motion.div>
+                            {/* THE HERO COMPONENT: Animated Search */}
+                            <AnimatedSearchMockup />
 
-                        {/* Hero Visual */}
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ duration: 0.8, delay: 0.2 }}
-                            className="relative grid grid-cols-2 gap-4"
-                        >
-                            <div className="space-y-4 pt-12">
-                                {heroPosters.slice(0, 2).map((src, i) => (
-                                    <div key={i} className="relative aspect-[2/3] bg-zinc-200 dark:bg-zinc-800 rounded-none overflow-hidden">
-                                        <Image src={`https://image.tmdb.org/t/p/w500${src}`} alt="" fill className="object-cover hover:scale-105 transition-transform duration-700" />
-                                    </div>
-                                ))}
+                        </motion.div>
+                    </div>
+                </section>
+
+                {/* --- FEATURE 1: THE TIMELINE --- */}
+                <section className="py-32 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 relative">
+                    <div className="max-w-6xl mx-auto px-6 grid lg:grid-cols-2 gap-20 items-center">
+                        <div className="relative order-2 lg:order-1">
+                            <div className="absolute inset-0 bg-gradient-to-tr from-zinc-100 to-transparent dark:from-zinc-900 rounded-full blur-3xl opacity-50" />
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                whileInView={{ opacity: 1, scale: 1 }}
+                                viewport={{ once: true }}
+                                transition={{ duration: 0.6 }}
+                                className="relative z-10 pl-8"
+                            >
+                                <div className="absolute left-0 top-0 bottom-0 w-px bg-zinc-200 dark:bg-zinc-800" />
+                                <MockTimelineCard />
+                                {/* Decorative connection */}
+                                <div className="absolute left-0 top-1/2 -translate-x-1/2 w-3 h-3 border-2 border-white dark:border-zinc-950 bg-amber-500 rounded-full shadow-sm" />
+                            </motion.div>
+                        </div>
+
+                        <div className="space-y-8 order-1 lg:order-2">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+                                <CalendarIcon className="w-3 h-3" /> The Core
                             </div>
-                            <div className="space-y-4">
-                                {heroPosters.slice(2, 4).map((src, i) => (
-                                    <div key={i} className="relative aspect-[2/3] bg-zinc-200 dark:bg-zinc-800 rounded-none overflow-hidden">
-                                        <Image src={`https://image.tmdb.org/t/p/w500${src}`} alt="" fill className="object-cover hover:scale-105 transition-transform duration-700" />
-                                    </div>
+                            <h2 className={`${dmSerif.className} text-5xl md:text-6xl text-zinc-900 dark:text-zinc-100`}>
+                                Every Frame, <br/> Accounted For.
+                            </h2>
+                            <p className="text-lg text-zinc-500 leading-relaxed font-light max-w-sm">
+                                DeeperWeave logs the <strong>context</strong>. The theatre format, the date, the rewatch count, and your raw, unfiltered notes. Not just a database, but a diary.
+                            </p>
+                            <ul className="space-y-4 pt-4">
+                                {['Detailed Logging', 'Rewatch Tracking', 'Rich Text Editor', 'Social Tagging'].map((item, i) => (
+                                    <li key={i} className="flex items-center gap-3 text-sm font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300">
+                                        <CheckCircleIcon className="w-5 h-5 text-amber-500" />
+                                        {item}
+                                    </li>
                                 ))}
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+
+                {/* --- FEATURE 2: LISTS --- */}
+                <section className="py-32 bg-zinc-50/50 dark:bg-zinc-900/30 border-t border-zinc-200 dark:border-zinc-800">
+                    <div className="max-w-6xl mx-auto px-6 grid lg:grid-cols-2 gap-20 items-center">
+                        <div className="space-y-8">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+                                <SparklesIcon className="w-3 h-3" /> Curation
+                            </div>
+                            <h2 className={`${dmSerif.className} text-5xl md:text-6xl text-zinc-900 dark:text-zinc-100`}>
+                                Curate the <br/> Chaos.
+                            </h2>
+                            <p className="text-lg text-zinc-500 leading-relaxed font-light max-w-sm">
+                                Create specific collections for "Rainy Days" or "Cyberpunk Classics". Rank them. Share them with the world or keep them for your eyes only.
+                            </p>
+                            <Link href="/auth/sign-up" className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-widest border-b border-zinc-900 dark:border-zinc-100 pb-0.5 hover:text-amber-600 hover:border-amber-600 transition-colors">
+                                Start Curating <ArrowRightIcon className="w-4 h-4" />
+                            </Link>
+                        </div>
+
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            className="bg-white dark:bg-zinc-950 p-8 border border-zinc-200 dark:border-zinc-800 shadow-2xl rounded-2xl relative"
+                        >
+                            <div className="flex items-baseline justify-between mb-8 pb-4 border-b border-zinc-100 dark:border-zinc-800">
+                                <h3 className={`${dmSerif.className} text-3xl`}>Neon Noir</h3>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">5 Items</p>
+                            </div>
+                            <div className="space-y-3">
+                                <MockListRow rank="01" title="Blade Runner 2049" year="2017" poster="/gAjx947971c2bdj8Xg99c85Q.jpg" />
+                                <MockListRow rank="02" title="Akira" year="1988" poster="/neMZH82Stu91d3iqvLdNQfqPPyl.jpg" />
+                                <MockListRow rank="03" title="Drive" year="2011" poster="/602vevIURmp436yz1vl2zenHMKJ.jpg" />
                             </div>
                         </motion.div>
                     </div>
                 </section>
 
-                {/* --- Divider --- */}
-                <div className="w-full h-px bg-zinc-200 dark:bg-zinc-800 max-w-7xl mx-auto mb-24" />
-
-                {/* --- Horizontal Scroll Shelf --- */}
-                <section className="max-w-7xl mx-auto px-6 mb-32">
-                    <div className="flex items-center justify-between mb-8">
-                        <h2 className="text-2xl font-light tracking-tight">Trending Now</h2>
-                        <div className="text-xs uppercase tracking-widest text-zinc-500">Scroll to explore</div>
+                {/* --- FEATURE 3: DISCOVERY (Horizontal) --- */}
+                <section className="py-32 overflow-hidden bg-zinc-900 dark:bg-zinc-950 text-white" ref={targetRef}>
+                    <div className="max-w-7xl mx-auto px-6 mb-16 flex items-end justify-between">
+                        <div className="max-w-md">
+                            <h2 className={`${dmSerif.className} text-4xl md:text-5xl mb-4`}>The Infinite Archive</h2>
+                            <p className="text-zinc-400 font-light">Powered by TMDB. Millions of titles at your fingertips. No algorithms, just pure discovery.</p>
+                        </div>
+                        <Link href="/discover" className="hidden md:flex items-center gap-2 text-sm font-bold uppercase tracking-widest hover:text-amber-500 transition-colors">
+                            Explore <ArrowRightIcon className="w-4 h-4" />
+                        </Link>
                     </div>
 
-                    <div className="w-full relative">
-                        {/* Gradient fades */}
-                        <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-zinc-50 dark:from-zinc-950 to-transparent z-10 pointer-events-none md:hidden" />
-                        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-zinc-50 dark:from-zinc-950 to-transparent z-10 pointer-events-none md:hidden" />
+                    <div className="relative w-full">
+                        <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-zinc-900 to-transparent z-10" />
+                        <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-zinc-900 to-transparent z-10" />
+                        <motion.div style={{ x }} className="flex gap-4 w-max pl-6">
+                            {heroPosters.concat(heroPosters).map((src, i) => (
+                                <div key={i} className="relative w-[200px] aspect-[2/3] bg-zinc-800 rounded-lg overflow-hidden shrink-0 group grayscale hover:grayscale-0 transition-all duration-500 cursor-pointer hover:scale-105 shadow-lg">
+                                    <Image src={`https://image.tmdb.org/t/p/w500${src}`} alt="" fill className="object-cover" />
+                                </div>
+                            ))}
+                        </motion.div>
+                    </div>
+                </section>
 
-                        <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory no-scrollbar">
-                            {heroPosters.slice(0, 10).map((src, i) => (
-                                <motion.div
-                                    key={i}
-                                    initial={{ opacity: 0, x: 20 }}
-                                    whileInView={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: i * 0.05 }}
-                                    viewport={{ once: true }}
-                                    className="snap-start shrink-0 w-[160px] md:w-[200px] aspect-[2/3] relative bg-zinc-100 dark:bg-zinc-900 group cursor-pointer rounded-none overflow-hidden"
-                                >
-                                    <Image
-                                        src={`https://image.tmdb.org/t/p/w500${src}`}
-                                        alt="Poster"
-                                        fill
-                                        className="object-cover transition-transform duration-500 group-hover:scale-105"
-                                    />
-                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
-                                    <div className="absolute top-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity bg-zinc-900 text-white dark:bg-white dark:text-black p-1 rounded-none shadow-none">
-                                        <PlusIcon className="w-4 h-4" />
-                                    </div>
-                                </motion.div>
+                {/* --- FEATURE 4: BLOGGING --- */}
+                <section className="py-32 px-6 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+                    <div className="max-w-5xl mx-auto flex flex-col md:flex-row gap-20 items-center">
+                        <div className="flex-1 space-y-8">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+                                <MapPinIcon className="w-3 h-3" /> Community
+                            </div>
+                            <h2 className={`${dmSerif.className} text-5xl md:text-6xl text-zinc-900 dark:text-zinc-100`}>
+                                Write Longform. <br/> Spark Debate.
+                            </h2>
+                            <p className="text-lg text-zinc-500 leading-relaxed font-light">
+                                Sometimes 280 characters isn't enough. Publish in-depth reviews, essays, and analysis using our 100% Markdown editor.
+                            </p>
+
+                            {/* --- THE BLOG MOCKUP --- */}
+                            <div className="pt-4">
+                                <MockBlogCard />
+                            </div>
+                        </div>
+
+                        {/* Stats Grid */}
+                        <div className="flex-1 grid grid-cols-2 gap-px bg-zinc-200 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden">
+                            {[
+                                { label: 'Markdown', value: '100%' },
+                                { label: 'Ads / Trackers', value: 'Zero' },
+                                { label: 'Source Code', value: 'Open' },
+                                { label: 'Membership', value: 'Free' },
+                            ].map((stat, i) => (
+                                <div key={i} className="p-10 bg-white dark:bg-zinc-950 text-center hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors">
+                                    <div className="text-4xl font-black text-zinc-900 dark:text-zinc-100 mb-2">{stat.value}</div>
+                                    <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">{stat.label}</div>
+                                </div>
                             ))}
                         </div>
                     </div>
                 </section>
 
-                {/* --- Search Section (Redesigned: Focus Mode) --- */}
-                <section className="relative z-30 mb-40">
-                    {/* Backdrop for Focus Mode */}
-                    <div
-                        className={clsx(
-                            "fixed inset-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl transition-opacity duration-500 pointer-events-none z-30",
-                            isFocused ? "opacity-100 pointer-events-auto" : "opacity-0"
-                        )}
-                        aria-hidden="true"
-                    />
+                {/* --- FOOTER --- */}
+                <footer className="py-32 px-6 bg-zinc-50 dark:bg-zinc-950 border-t border-zinc-200 dark:border-zinc-800 text-center">
+                    <div className="max-w-4xl mx-auto space-y-12">
+                        <div className="w-16 h-16 bg-zinc-900 dark:bg-zinc-100 rounded-2xl mx-auto flex items-center justify-center shadow-xl rotate-3 hover:rotate-0 transition-transform duration-500">
+                            <span className="text-white dark:text-zinc-900 font-bold text-xl tracking-tighter">DW</span>
+                        </div>
 
-                    <div className="max-w-4xl mx-auto px-6 relative z-40">
-                        <div
-                            ref={searchRef}
-                            className={clsx(
-                                "transition-all duration-500 ease-out",
-                                isFocused ? "scale-105 -translate-y-[10vh]" : "scale-100"
-                            )}
-                        >
-                            <div className="text-center mb-8 transition-opacity duration-300" style={{ opacity: isFocused ? 1 : 1 }}>
-                                <h2 className={clsx("font-medium tracking-tight mb-2 transition-all duration-500", isFocused ? "text-xl text-zinc-500" : "text-4xl md:text-5xl")}>
-                                    {isFocused ? "Searching the archives..." : "Search Everything."}
-                                </h2>
-                                {!isFocused && <p className="text-zinc-500 dark:text-zinc-400">Database powered by TMDB. No frills.</p>}
-                            </div>
+                        <div>
+                            <h2 className={`${dmSerif.className} text-6xl md:text-7xl mb-6 text-zinc-900 dark:text-zinc-100`}>Start Your Weave.</h2>
+                            <p className="text-zinc-500 text-lg font-light max-w-md mx-auto">
+                                Join the new standard for cinematic logging.
+                            </p>
+                        </div>
 
-                            {/* The Search Bar */}
-                            <div className="relative group">
-                                <div className={clsx(
-                                    "relative flex items-center bg-white dark:bg-zinc-900 overflow-hidden transition-all duration-300 shadow-xl",
-                                    isFocused ? "ring-2 ring-amber-500 shadow-amber-500/20" : "ring-1 ring-zinc-200 dark:ring-zinc-800"
-                                )}>
-                                    <div className="pl-8 text-zinc-400">
-                                        <MagnifyingGlassIcon className="w-8 h-8" />
-                                    </div>
-                                    <input
-                                        ref={inputRef}
-                                        type="text"
-                                        placeholder="Movies, Series, Anime..."
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        onFocus={() => setIsFocused(true)}
-                                        className="w-full h-24 bg-transparent border-none outline-none text-2xl md:text-3xl font-light text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-300 dark:placeholder:text-zinc-600 px-6"
-                                    />
-                                    <div className="pr-8">
-                                        {isSearching ? (
-                                            <div className="w-5 h-5 border-2 border-zinc-900 dark:border-zinc-100 border-t-transparent rounded-full animate-spin"/>
-                                        ) : (
-                                            isFocused && <span className="text-xs font-mono text-zinc-400 border border-zinc-200 dark:border-zinc-700 px-2 py-1 rounded">ESC</span>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
+                        <div className="flex flex-col md:flex-row items-center justify-center gap-6">
+                            <Link href="/auth/sign-up" className="w-full md:w-auto px-10 py-4 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-black font-bold uppercase tracking-widest hover:shadow-xl hover:-translate-y-1 transition-all rounded-lg">
+                                Create Account
+                            </Link>
+                            <Link href="/discover" className="w-full md:w-auto px-10 py-4 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 font-bold uppercase tracking-widest hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors rounded-lg">
+                                Live Demo
+                            </Link>
+                        </div>
 
-                            {/* Results Area */}
-                            <AnimatePresence>
-                                {isFocused && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: 10 }}
-                                        className="absolute top-full left-0 right-0 mt-4 bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 shadow-2xl overflow-hidden"
-                                    >
-                                        {searchResults.length > 0 ? (
-                                            <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                                                {searchResults.map((item) => (
-                                                    <Link
-                                                        href={`/discover/${item.media_type}/${item.id}`}
-                                                        key={item.id}
-                                                        className="flex items-center gap-6 p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors group"
-                                                    >
-                                                        {/* Poster Thumb */}
-                                                        <div className="w-10 h-14 relative bg-zinc-200 dark:bg-zinc-800 shrink-0 shadow-sm">
-                                                            {item.poster_path ? (
-                                                                <Image src={`https://image.tmdb.org/t/p/w92${item.poster_path}`} alt={item.title} fill className="object-cover" />
-                                                            ) : (
-                                                                <div className="w-full h-full flex items-center justify-center"><FilmIcon className="w-5 h-5 text-zinc-400"/></div>
-                                                            )}
-                                                        </div>
-
-                                                        {/* Text Info */}
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="flex items-center gap-3">
-                                                                <h4 className="text-lg font-medium text-zinc-900 dark:text-zinc-100 truncate group-hover:text-amber-600 transition-colors">
-                                                                    {item.title}
-                                                                </h4>
-                                                                <span className={clsx(
-                                                                    "text-[10px] uppercase font-bold px-1.5 py-0.5 tracking-wider border",
-                                                                    item.media_type === 'movie' ? "border-blue-200 text-blue-600 dark:border-blue-900 dark:text-blue-400" : "border-purple-200 text-purple-600 dark:border-purple-900 dark:text-purple-400"
-                                                                )}>
-                                                                    {item.media_type}
-                                                                </span>
-                                                            </div>
-                                                            <p className="text-sm text-zinc-500 dark:text-zinc-400 font-mono mt-0.5">
-                                                                {item.release_date ? item.release_date.split('-')[0] : 'TBA'}
-                                                            </p>
-                                                        </div>
-
-                                                        {/* Arrow Action */}
-                                                        <ArrowRightIcon className="w-5 h-5 text-zinc-300 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 -translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all" />
-                                                    </Link>
-                                                ))}
-                                                <div className="p-3 bg-zinc-50 dark:bg-zinc-950 text-center">
-                                                    <Link href={`/discover?q=${searchQuery}`} className="text-xs font-bold uppercase tracking-widest text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
-                                                        View all results
-                                                    </Link>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            debouncedQuery.length > 1 && !isSearching && (
-                                                <div className="p-12 text-center">
-                                                    <FilmIcon className="w-12 h-12 mx-auto text-zinc-200 dark:text-zinc-800 mb-4" />
-                                                    <p className="text-zinc-500">No results found for "{searchQuery}"</p>
-                                                </div>
-                                            )
-                                        )}
-                                        {debouncedQuery.length < 2 && (
-                                            <div className="p-8 grid grid-cols-3 gap-4 text-center">
-                                                <div className="p-4 rounded border border-dashed border-zinc-200 dark:border-zinc-800">
-                                                    <span className="text-xs font-bold uppercase text-zinc-400 block mb-2">Try Searching</span>
-                                                    <span className="text-sm font-medium">Interstellar</span>
-                                                </div>
-                                                <div className="p-4 rounded border border-dashed border-zinc-200 dark:border-zinc-800">
-                                                    <span className="text-xs font-bold uppercase text-zinc-400 block mb-2">Try Searching</span>
-                                                    <span className="text-sm font-medium">Attack on Titan</span>
-                                                </div>
-                                                <div className="p-4 rounded border border-dashed border-zinc-200 dark:border-zinc-800">
-                                                    <span className="text-xs font-bold uppercase text-zinc-400 block mb-2">Try Searching</span>
-                                                    <span className="text-sm font-medium">Succession</span>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
+                        <div className="pt-20 grid grid-cols-2 md:grid-cols-4 gap-8 text-xs text-zinc-500 font-bold uppercase tracking-widest text-left md:text-center border-t border-zinc-200 dark:border-zinc-800 mt-20">
+                            <Link href="#" className="hover:text-zinc-900 dark:hover:text-zinc-100">Twitter</Link>
+                            <Link href="#" className="hover:text-zinc-900 dark:hover:text-zinc-100">GitHub</Link>
+                            <Link href="/policies/privacy" className="hover:text-zinc-900 dark:hover:text-zinc-100">Privacy</Link>
+                            <Link href="/policies/terms" className="hover:text-zinc-900 dark:hover:text-zinc-100">Terms</Link>
+                        </div>
+                        <div className="text-center text-[10px] text-zinc-400 mt-8">
+                            © 2026 DeeperWeave Inc. All rights reserved.
                         </div>
                     </div>
-                </section>
-
-                {/* --- Bento Grid (Sharp Corners) --- */}
-                <section className="max-w-7xl mx-auto px-6 mb-32">
-                    <div className="flex items-end justify-between mb-12 border-b border-zinc-200 dark:border-zinc-800 pb-4">
-                        <h2 className="text-4xl font-light tracking-tight">Browse by Category</h2>
-                        <Link href="/discover" className="text-sm font-medium hover:underline">View All</Link>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:h-[600px]">
-                        {/* Anime */}
-                        <div className="md:col-span-8 relative group overflow-hidden bg-zinc-100 dark:bg-zinc-900 rounded-none min-h-[300px] md:min-h-0">
-                            <Link href={bentoItems.anime.href} className="block w-full h-full">
-                                <Image src={`https://image.tmdb.org/t/p/original${bentoItems.anime.img}`} alt={bentoItems.anime.title} fill className="object-cover transition-transform duration-700 ease-out group-hover:scale-105" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-90 transition-opacity duration-500" />
-                                <div className="absolute bottom-0 p-8 text-white">
-                                    <SparklesIcon className="w-8 h-8 mb-3 text-white" />
-                                    <h3 className="text-4xl font-bold tracking-tighter uppercase">{bentoItems.anime.title}</h3>
-                                    <p className="text-white/80 font-light mt-1 max-w-sm hidden md:block">{bentoItems.anime.description}</p>
-                                </div>
-                            </Link>
-                        </div>
-
-                        {/* Movie */}
-                        <div className="md:col-span-4 relative group overflow-hidden bg-zinc-100 dark:bg-zinc-900 rounded-none min-h-[300px] md:min-h-0">
-                            <Link href={bentoItems.movie.href} className="block w-full h-full">
-                                <Image src={`https://image.tmdb.org/t/p/original${bentoItems.movie.img}`} alt={bentoItems.movie.title} fill className="object-cover transition-transform duration-700 ease-out group-hover:scale-105" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-90 transition-opacity duration-500" />
-                                <div className="absolute bottom-0 p-8 text-white">
-                                    <FilmIcon className="w-8 h-8 mb-3 text-white" />
-                                    <h3 className="text-4xl font-bold tracking-tighter uppercase">{bentoItems.movie.title}</h3>
-                                </div>
-                            </Link>
-                        </div>
-
-                        {/* KDrama */}
-                        <div className="md:col-span-5 relative group overflow-hidden bg-zinc-100 dark:bg-zinc-900 rounded-none min-h-[250px] md:min-h-0">
-                            <Link href={bentoItems.kdrama.href} className="block w-full h-full">
-                                <Image src={`https://image.tmdb.org/t/p/original${bentoItems.kdrama.img}`} alt={bentoItems.kdrama.title} fill className="object-cover transition-transform duration-700 ease-out group-hover:scale-105" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-90 transition-opacity duration-500" />
-                                <div className="absolute bottom-0 p-6 text-white">
-                                    <HeartIcon className="w-6 h-6 mb-2 text-white" />
-                                    <h3 className="text-2xl font-bold tracking-tighter uppercase">{bentoItems.kdrama.title}</h3>
-                                </div>
-                            </Link>
-                        </div>
-
-                        {/* TV */}
-                        <div className="md:col-span-7 relative group overflow-hidden bg-zinc-100 dark:bg-zinc-900 rounded-none min-h-[250px] md:min-h-0">
-                            <Link href={bentoItems.tv.href} className="block w-full h-full">
-                                <Image src={`https://image.tmdb.org/t/p/original${bentoItems.tv.img}`} alt={bentoItems.tv.title} fill className="object-cover transition-transform duration-700 ease-out group-hover:scale-105" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-90 transition-opacity duration-500" />
-                                <div className="absolute bottom-0 p-6 text-white">
-                                    <TvIcon className="w-6 h-6 mb-2 text-white" />
-                                    <h3 className="text-2xl font-bold tracking-tighter uppercase">{bentoItems.tv.title}</h3>
-                                </div>
-                            </Link>
-                        </div>
-                    </div>
-                </section>
-
-                {/* --- Features Grid --- */}
-                <section className="max-w-7xl mx-auto px-6 mb-32">
-                    <div className="grid md:grid-cols-3 gap-8">
-                        {[
-                            { icon: StarIcon, title: "Rate & Review", desc: "Log every watch. Rate with precision." },
-                            { icon: HeartIcon, title: "Curate Lists", desc: "Build the ultimate watchlist." },
-                            { icon: SparklesIcon, title: "Share Thoughts", desc: "Write blogs for the community." }
-                        ].map((f, i) => (
-                            <div key={i} className="p-8 border border-zinc-200 dark:border-zinc-800 rounded-none hover:border-zinc-900 dark:hover:border-zinc-100 transition-colors group">
-                                <f.icon className="w-8 h-8 text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 mb-6 transition-colors" />
-                                <h3 className="text-lg font-bold mb-2">{f.title}</h3>
-                                <p className="text-zinc-500 font-light text-sm">{f.desc}</p>
-                            </div>
-                        ))}
-                    </div>
-                </section>
-
-                {/* --- Redesigned CTA Section (Split Deck) --- */}
-                <section className="max-w-7xl mx-auto px-6 mb-24">
-                    <div className="grid md:grid-cols-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 overflow-hidden rounded-none shadow-2xl">
-                        {/* Left: The Hook */}
-                        <div className="p-12 md:p-20 flex flex-col justify-between relative overflow-hidden">
-                            {/* Abstract decorative circle */}
-                            <div className="absolute -top-20 -left-20 w-96 h-96 bg-zinc-800 dark:bg-zinc-300 rounded-full blur-3xl opacity-50 pointer-events-none" />
-
-                            <div className="relative z-10">
-                                <StarIcon className="w-12 h-12 mb-8 text-amber-500" />
-                                <h2 className="text-5xl md:text-7xl font-bold tracking-tighter leading-[0.9] mb-6">
-                                    Start your <br />
-                                    <span className="italic font-serif text-zinc-400 dark:text-zinc-500">legacy.</span>
-                                </h2>
-                                <p className="text-lg text-zinc-400 dark:text-zinc-600 max-w-sm leading-relaxed">
-                                    Join thousands of archivists tracking their journey through cinema. The database is infinite. The account is free.
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Right: The Entry Points */}
-                        <div className="border-t md:border-t-0 md:border-l border-zinc-700 dark:border-zinc-300 flex flex-col">
-                            <Link href="/auth/sign-up" className="flex-1 flex flex-col justify-center p-12 group hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors border-b border-zinc-700 dark:border-zinc-300 relative overflow-hidden">
-                                <div className="absolute right-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-10 group-hover:translate-x-0">
-                                    <ArrowRightIcon className="w-8 h-8" />
-                                </div>
-                                <span className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">New User</span>
-                                <span className="text-3xl font-bold">Create Account</span>
-                            </Link>
-                            <Link href="/auth/login" className="flex-1 flex flex-col justify-center p-12 group hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors relative overflow-hidden">
-                                <div className="absolute right-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-10 group-hover:translate-x-0">
-                                    <ArrowRightIcon className="w-8 h-8" />
-                                </div>
-                                <span className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">Existing Member</span>
-                                <span className="text-3xl font-bold">Log In</span>
-                            </Link>
-                        </div>
-                    </div>
-                </section>
+                </footer>
 
             </main>
-
-            {/* --- Footer (Redesigned) --- */}
-            <footer className="border-t border-zinc-200 dark:border-zinc-800 py-16 bg-white dark:bg-zinc-950">
-                <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-start justify-between gap-12">
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-2">
-                            <div className="h-5 w-5 bg-zinc-900 dark:bg-white rounded-none" />
-                            <span className={`font-bold text-lg ${PlayWriteNewZealandFont.className}`}>Deeper Weave</span>
-                        </div>
-                        <p className="text-zinc-500 max-w-xs text-sm">
-                            The definitive platform for tracking, rating, and reviewing your visual consumption.
-                        </p>
-                    </div>
-                    <div className="flex gap-12 text-sm">
-                        <div className="flex flex-col gap-4">
-                            <span className="font-bold uppercase tracking-widest text-xs">Platform</span>
-                            <Link href="/discover" className="text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">Discover</Link>
-                            <Link href="/search" className="text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">Search</Link>
-                        </div>
-                        <div className="flex flex-col gap-4">
-                            <span className="font-bold uppercase tracking-widest text-xs">Social</span>
-                            <a href="#" className="text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">Twitter</a>
-                            <a href="#" className="text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">Discord</a>
-                        </div>
-                    </div>
-                </div>
-                <div className="max-w-7xl mx-auto px-6 mt-16 pt-8 border-t border-zinc-100 dark:border-zinc-900 flex justify-between items-center text-xs text-zinc-400">
-                    <span>© 2026 Deeper Weave.</span>
-                    <span>Crafted with love ❤. ️</span>
-                </div>
-            </footer>
         </div>
     );
 }

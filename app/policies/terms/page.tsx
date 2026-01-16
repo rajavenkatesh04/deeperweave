@@ -1,14 +1,28 @@
 import Link from 'next/link';
-import { ArrowLeftIcon } from '@heroicons/react/24/solid';
-import { dmSerif, googleSansCode } from '@/app/ui/fonts';
+import { ArrowLeftIcon, ArrowUpRightIcon } from '@heroicons/react/24/solid';
+import { BelanosimaFont, geistSans, googleSansCode } from '@/app/ui/fonts';
+
+// --- Navigation Items ---
+const SECTIONS = [
+    { id: 'covenant', label: '01. The Covenant' },
+    { id: 'membership', label: '02. Membership' },
+    { id: 'content', label: '03. User Content' },
+    { id: 'ip', label: '04. Intellectual Property' },
+    { id: 'termination', label: '05. Termination' },
+    { id: 'liability', label: '06. Liability' },
+    { id: 'contact', label: '07. Contact' },
+];
 
 export default function TermsOfServicePage() {
     return (
-        <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-950 dark:to-zinc-900 text-zinc-900 dark:text-zinc-100 selection:bg-amber-100 dark:selection:bg-amber-900/30">
+        <div className={`min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 ${geistSans.className}`}>
+
+            {/* --- Top Highlight Gradient --- */}
+            <div className="fixed top-0 left-0 w-full h-96 bg-gradient-to-b from-zinc-200/50 to-transparent dark:from-zinc-900/50 dark:to-transparent pointer-events-none z-0" />
 
             {/* --- Header --- */}
-            <header className="sticky top-0 z-50 backdrop-blur-md bg-white/70 dark:bg-zinc-950/70 border-b border-zinc-200/50 dark:border-zinc-800/50">
-                <div className="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between">
+            <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/70 dark:bg-zinc-950/80 border-b border-zinc-200 dark:border-zinc-800">
+                <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
                     <Link
                         href="/"
                         className="group inline-flex items-center gap-2 text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors"
@@ -16,113 +30,175 @@ export default function TermsOfServicePage() {
                         <ArrowLeftIcon className="w-4 h-4 group-hover:-translate-x-1 transition-transform duration-300" />
                         <span className={googleSansCode.className}>DEEPERWEAVE</span>
                     </Link>
-                    <span className={`text-xs font-bold uppercase tracking-widest text-zinc-400 border border-zinc-200 dark:border-zinc-800 px-3 py-1 rounded-full ${googleSansCode.className}`}>
-                        Terms
-                    </span>
+
+                    <div className="flex items-center gap-3">
+                        <span className={`hidden sm:block text-[10px] font-bold uppercase tracking-widest text-zinc-400 ${googleSansCode.className}`}>
+                            Last Updated: January 16, 2026
+                        </span>
+                        <div className="h-4 w-px bg-zinc-300 dark:bg-zinc-700 hidden sm:block" />
+                        <Link href="/auth/login" className="text-sm font-semibold hover:text-amber-600 transition-colors">
+                            Log In
+                        </Link>
+                    </div>
                 </div>
             </header>
 
-            <main className="py-20 px-6">
-                <div className="max-w-3xl mx-auto">
+            <main className="relative z-10 max-w-7xl mx-auto px-6 py-12 lg:py-20">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
 
-                    {/* --- Title Section --- */}
-                    <div className="mb-20 text-center space-y-6">
-                        <div className="inline-block p-4 rounded-full bg-zinc-100 dark:bg-zinc-900 mb-4">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 text-zinc-400">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-                            </svg>
+                    {/* --- Sidebar (Table of Contents) --- */}
+                    <aside className="lg:col-span-3 lg:block hidden">
+                        <div className="sticky top-28 space-y-8">
+                            <div>
+                                <h1 className={`${BelanosimaFont.className} text-4xl text-zinc-900 dark:text-zinc-100 mb-2`}>
+                                    Terms of <br/> Service
+                                </h1>
+                                <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                                    The rules of the set. Please read carefully before rolling camera.
+                                </p>
+                            </div>
+
+                            <nav className="space-y-1">
+                                {SECTIONS.map((section) => (
+                                    <a
+                                        key={section.id}
+                                        href={`#${section.id}`}
+                                        className={`block py-2 px-3 -mx-3 rounded-md text-sm text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:text-zinc-900 dark:hover:text-zinc-100 transition-all ${googleSansCode.className}`}
+                                    >
+                                        {section.label}
+                                    </a>
+                                ))}
+                            </nav>
                         </div>
-                        <h1 className={`${dmSerif.className} text-5xl md:text-6xl text-zinc-900 dark:text-zinc-50`}>
+                    </aside>
+
+                    {/* --- Mobile Title (Visible only on small screens) --- */}
+                    <div className="lg:hidden col-span-1">
+                        <h1 className={`${BelanosimaFont.className} text-4xl text-zinc-900 dark:text-zinc-100 mb-2`}>
                             Terms of Service
                         </h1>
-                        <p className={`text-sm text-zinc-500 uppercase tracking-widest ${googleSansCode.className}`}>
-                            Effective Date: January 16, 2026
-                        </p>
                     </div>
 
-                    {/* --- Content Sections --- */}
-                    <div className="space-y-16 relative">
-                        {/* Vertical Line Decoration */}
-                        <div className="absolute left-0 top-0 bottom-0 w-px bg-zinc-200 dark:bg-zinc-800 hidden md:block" />
+                    {/* --- Main Content --- */}
+                    <div className="lg:col-span-8 lg:col-start-5 space-y-20">
 
-                        <Section number="01" title="The Cinematic Covenant">
-                            <p>
-                                Welcome to DeeperWeave. By accessing our platform, creating timelines, or weaving your cinematic lists, you agree to these Terms. DeeperWeave is a space for film lovers to catalog and discover art. Treat it—and your fellow cinephiles—with respect.
+                        {/* Section 1 */}
+                        <section id="covenant" className="scroll-mt-32">
+                            <SectionHeader number="01" title="The Cinematic Covenant" />
+                            <p className="text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">
+                                Welcome to DeeperWeave. By accessing our platform, creating timelines, or weaving your cinematic lists, you agree to these Terms. DeeperWeave is a space for film lovers to catalog and discover art. Treat it—and your fellow cinephiles—with respect. If you disagree with any part of these terms, you may not access the Service.
                             </p>
-                        </Section>
+                        </section>
 
-                        <Section number="02" title="Membership & Accounts">
-                            <p>
-                                To curate your own deeper weave of content, you must register via Google Sign-In. You are the director of your account; you are responsible for safeguarding your access keys and for all activity that occurs under your profile.
-                            </p>
-                        </Section>
+                        {/* Section 2 */}
+                        <section id="membership" className="scroll-mt-32">
+                            <SectionHeader number="02" title="Membership & Accounts" />
+                            <div className="space-y-4 text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">
+                                <p>
+                                    To curate your own deeper weave of content, you must register via Google Sign-In. You are the director of your account; you are responsible for safeguarding your access keys and for all activity that occurs under your profile.
+                                </p>
+                                <div className="p-4 bg-zinc-100 dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 text-base">
+                                    <strong>Note:</strong> We reserve the right to reclaim usernames if they infringe on trademarks or are held by inactive accounts for extended periods.
+                                </div>
+                            </div>
+                        </section>
 
-                        <Section number="03" title="User Generated Content">
-                            <p>
+                        {/* Section 3 */}
+                        <section id="content" className="scroll-mt-32">
+                            <SectionHeader number="03" title="User Generated Content" />
+                            <p className="text-lg leading-relaxed text-zinc-600 dark:text-zinc-300 mb-4">
                                 DeeperWeave allows you to post reviews, create lists, and build timelines. By posting, you grant us a license to display and distribute this content on the platform.
                             </p>
-                            <p className="mt-4">
-                                You agree not to post content that is:
-                            </p>
-                            <ul className="list-disc pl-5 mt-2 space-y-1 marker:text-zinc-300 dark:marker:text-zinc-700">
-                                <li>Hate speech, harassment, or abusive towards other users.</li>
-                                <li>Spam, automated scripts, or unauthorized advertising.</li>
-                                <li>Pirated content or links to illegal streams.</li>
+                            <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <RuleCard title="No Hate Speech" desc="Harassment, bullying, or hate speech towards any user or group is strictly prohibited." />
+                                <RuleCard title="No Spoilers (Unmarked)" desc="Please use the spoiler tag feature when revealing key plot points." />
+                                <RuleCard title="No Illegal Content" desc="Do not post pirated content or links to illegal streaming services." />
+                                <RuleCard title="Authenticity" desc="Do not impersonate others or use automated bots to artificially inflate likes." />
                             </ul>
-                        </Section>
+                        </section>
 
-                        <Section number="04" title="Intellectual Property">
-                            <p>
-                                The DeeperWeave interface, logo, and code are our proprietary property.
+                        {/* Section 4 */}
+                        <section id="ip" className="scroll-mt-32">
+                            <SectionHeader number="04" title="Intellectual Property" />
+                            <p className="text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">
+                                The DeeperWeave interface, logo, and code are our proprietary property. You may not copy, modify, or distribute our code without permission.
                             </p>
-                            <p className="mt-4">
-                                <strong>Movie Data:</strong> Metadata, posters, and backdrops for movies and TV shows are provided by <a href="https://www.themoviedb.org/" target="_blank" className="underline hover:text-amber-600">The Movie Database (TMDb)</a>. This product uses the TMDb API but is not endorsed or certified by TMDb.
+                            <div className="mt-6 flex items-start gap-4">
+                                <div className="p-3 bg-white dark:bg-zinc-900 rounded-full shadow-sm border border-zinc-200 dark:border-zinc-800 shrink-0">
+                                    <svg className="w-6 h-6 text-blue-500" fill="currentColor" viewBox="0 0 24 24"><path d="M22.25 0h-2.5l-1.8 4.25-2.95-3h-2.5l2.4 4.5H12l-2.4-4.5H7.1l2.4 4.5H6.6L4.2 1.25H1.7l3 5.5H.5v2.5h6.15l-3 5.5h2.5l1.8-4.25 2.95 3h2.5l-2.4-4.5H14l2.4 4.5h2.5l-2.4-4.5h2.9v-2.5h-6.15l3-5.5z"/></svg>
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-zinc-900 dark:text-zinc-100">Powered by TMDB</h4>
+                                    <p className="text-sm text-zinc-500 mt-1">
+                                        Metadata, posters, and backdrops for movies and TV shows are provided by <a href="https://www.themoviedb.org/" target="_blank" className="underline hover:text-amber-600">The Movie Database (TMDb)</a>. This product uses the TMDb API but is not endorsed or certified by TMDb.
+                                    </p>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Section 5 */}
+                        <section id="termination" className="scroll-mt-32">
+                            <SectionHeader number="05" title="Termination" />
+                            <p className="text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">
+                                We may suspend or terminate your access to DeeperWeave immediately, without prior notice, if you breach these Terms. Upon termination, your right to use the Service will cease immediately. You may also delete your account at any time via the Settings page.
                             </p>
-                        </Section>
+                        </section>
 
-                        <Section number="05" title="Termination of Service">
-                            <p>
-                                We may suspend or terminate your access to DeeperWeave immediately, without prior notice, if you breach these Terms. Upon termination, your right to use the Service will cease immediately.
+                        {/* Section 6 */}
+                        <section id="liability" className="scroll-mt-32">
+                            <SectionHeader number="06" title="Limitation of Liability" />
+                            <p className="text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">
+                                DeeperWeave is provided &quot;AS IS&quot; and &quot;AS AVAILABLE&quot;. We weave the code, but we cannot guarantee it will never unravel. We are not liable for any indirect damages, loss of data (lists, watch history), or service interruptions.
                             </p>
-                        </Section>
+                        </section>
 
-                        <Section number="06" title="Limitation of Liability">
-                            <p>
-                                DeeperWeave is provided &quot;AS IS&quot;. We weave the code, but we cannot guarantee it will never unravel. We are not liable for any loss of data (lists, watch history) or service interruptions.
-                            </p>
-                        </Section>
+                        {/* Section 7 */}
+                        <section id="contact" className="scroll-mt-32">
+                            <SectionHeader number="07" title="Contact The Studio" />
+                            <div className="bg-zinc-900 text-zinc-100 p-8 rounded-xl relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-amber-500/20 transition-colors" />
 
-                        <Section number="07" title="Contact the Studio">
-                            <p>
-                                For legal inquiries or support regarding these terms, please contact us at <a href="mailto:grv.9604@gmail.com" className="text-zinc-900 dark:text-zinc-100 font-medium underline decoration-zinc-300 hover:decoration-amber-500 transition-all">grv.9604@gmail.com</a>.
-                            </p>
-                        </Section>
+                                <h3 className="text-xl font-bold mb-2">Have questions?</h3>
+                                <p className="text-zinc-400 mb-6">For legal inquiries or support regarding these terms.</p>
 
-                    </div>
+                                <a href="mailto:grv.9604@gmail.com" className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-zinc-900 rounded-lg font-medium hover:bg-zinc-200 transition-colors">
+                                    Email Support
+                                    <ArrowUpRightIcon className="w-4 h-4" />
+                                </a>
+                            </div>
+                        </section>
 
-                    <div className="mt-24 pt-8 border-t border-zinc-200 dark:border-zinc-800 text-center">
-                        <p className="text-zinc-400 text-sm">
-                            &copy; 2026 DeeperWeave. All rights reserved.
-                        </p>
                     </div>
                 </div>
+
+                <footer className="mt-32 pt-8 border-t border-zinc-200 dark:border-zinc-800 text-center text-sm text-zinc-400">
+                    &copy; 2026 DeeperWeave. All rights reserved.
+                </footer>
             </main>
         </div>
     );
 }
 
-function Section({ number, title, children }: { number: string, title: string, children: React.ReactNode }) {
+// --- Helper Components ---
+
+function SectionHeader({ number, title }: { number: string; title: string }) {
     return (
-        <div className="md:pl-12 relative group">
-            <span className={`absolute -left-3 top-1 md:left-0 md:-translate-x-1/2 w-6 h-6 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-full flex items-center justify-center text-[10px] font-bold text-zinc-400 group-hover:border-zinc-900 dark:group-hover:border-zinc-100 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors ${googleSansCode.className}`}>
+        <div className="flex items-baseline gap-4 mb-6 border-b border-zinc-200 dark:border-zinc-800 pb-4">
+            <span className={`text-sm font-bold text-amber-600 dark:text-amber-500 ${googleSansCode.className}`}>
                 {number}
             </span>
-            <h2 className={`${dmSerif.className} text-2xl md:text-3xl text-zinc-900 dark:text-zinc-100 mb-4`}>
+            <h2 className={`text-2xl md:text-3xl text-zinc-900 dark:text-zinc-100 ${BelanosimaFont.className}`}>
                 {title}
             </h2>
-            <div className="text-lg text-zinc-600 dark:text-zinc-400 leading-relaxed font-light">
-                {children}
-            </div>
+        </div>
+    );
+}
+
+function RuleCard({ title, desc }: { title: string; desc: string }) {
+    return (
+        <div className="p-4 rounded-lg bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 hover:border-amber-500/50 dark:hover:border-amber-500/50 transition-colors">
+            <h4 className="font-semibold text-zinc-900 dark:text-zinc-100 mb-1">{title}</h4>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">{desc}</p>
         </div>
     );
 }
