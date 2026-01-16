@@ -9,9 +9,45 @@ import {
     TrashIcon,
     ShieldCheckIcon,
     PencilSquareIcon,
-    BookmarkIcon
+    BookmarkIcon,
+    ChartBarIcon, // Imported for Analytics
+    ChevronRightIcon
 } from '@heroicons/react/24/outline';
 import PersonalInformation from "@/app/ui/user/PersonalInformation";
+
+// --- Helper Component for consistent look ---
+function SettingsItem({
+                          href,
+                          icon: Icon,
+                          title,
+                          subtitle
+                      }: {
+    href: string,
+    icon: any,
+    title: string,
+    subtitle: string
+}) {
+    return (
+        <Link
+            href={href}
+            className="w-full group flex items-center justify-between px-4 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800 rounded-sm"
+        >
+            <div className="flex items-center gap-4">
+                <Icon className="w-5 h-5 text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors" />
+                <div className="flex flex-col">
+                    <span className="text-sm font-bold text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors">
+                        {title}
+                    </span>
+                    <span className="text-[11px] text-zinc-400 font-medium">
+                        {subtitle}
+                    </span>
+                </div>
+            </div>
+            {/* Subtle chevron for affordance */}
+            <ChevronRightIcon className="w-4 h-4 text-zinc-300 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-300" />
+        </Link>
+    );
+}
 
 export default async function SettingsPage() {
     // 1. Fetch Data
@@ -49,50 +85,41 @@ export default async function SettingsPage() {
             <div className="max-w-4xl mx-auto px-4 md:px-6 py-8 space-y-8">
 
                 {/* 1. ACCOUNT ACTIONS */}
-                <section className="bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 overflow-hidden rounded-sm">
-                    <div className="p-2 space-y-1">
-                        <Link
-                            href="/profile/settings"
-                            className="w-full group flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800 text-left rounded-sm"
-                        >
-                            <PencilSquareIcon className="w-5 h-5 text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors" />
-                            <div className="flex flex-col">
-                                <span className="text-sm font-bold text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors">
-                                    Settings
-                                </span>
-                                <span className="text-[10px] text-zinc-400 font-medium">
-                                    Change your visibility & Preferences.
-                                </span>
-                            </div>
-                        </Link>
+                <section className="bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 overflow-hidden rounded-sm shadow-sm">
+                    <div className="p-2 flex flex-col gap-1">
 
-                        <Link
+                        <SettingsItem
+                            href="/profile/settings"
+                            icon={PencilSquareIcon}
+                            title="Edit Profile"
+                            subtitle="Change your visibility, bio & preferences."
+                        />
+
+                        <SettingsItem
                             href="/profile/saved"
-                            className="w-full group flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800 text-left rounded-sm"
-                        >
-                            <BookmarkIcon className="w-5 h-5 text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors" />
-                            <div className="flex flex-col">
-                                <span className="text-sm font-bold text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors">
-                                    Saved Collection
-                                </span>
-                                <span className="text-[10px] text-zinc-400 font-medium">
-                                    View your bookmarked movies and shows
-                                </span>
-                            </div>
-                        </Link>
+                            icon={BookmarkIcon}
+                            title="Saved Collection"
+                            subtitle="View your bookmarked movies and shows."
+                        />
+
 
                         <div className="my-2 border-t border-zinc-100 dark:border-zinc-800 mx-4" />
 
-                        <SignOutButton className="w-full group flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800 text-left rounded-sm">
+                        <SignOutButton className="w-full group flex items-center gap-4 px-4 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800 text-left rounded-sm">
                             <PowerIcon className="w-5 h-5 text-zinc-400 group-hover:text-red-600 transition-colors" />
-                            <span className="text-sm font-bold text-zinc-600 dark:text-zinc-400 group-hover:text-red-600 transition-colors">
-                                Log Out
-                            </span>
+                            <div className="flex flex-col">
+                                <span className="text-sm font-bold text-zinc-600 dark:text-zinc-400 group-hover:text-red-600 transition-colors">
+                                    Log Out
+                                </span>
+                                <span className="text-[11px] text-zinc-400 font-medium">
+                                    Sign out of your session securely.
+                                </span>
+                            </div>
                         </SignOutButton>
                     </div>
                 </section>
 
-                {/* 2. PERSONAL INFORMATION (Client Component) */}
+                {/* 2. PERSONAL INFORMATION */}
                 <PersonalInformation
                     email={user.email || ''}
                     gender={profile?.gender}
@@ -101,8 +128,8 @@ export default async function SettingsPage() {
                 />
 
                 {/* 3. DANGER ZONE */}
-                <section className="border border-red-200 dark:border-red-900/30 bg-white dark:bg-black overflow-hidden rounded-sm">
-                    <div className="px-6 py-4 border-b border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-900/10 flex items-center gap-2">
+                <section className="border border-red-100 dark:border-red-900/30 bg-white dark:bg-black overflow-hidden rounded-sm shadow-sm">
+                    <div className="px-6 py-4 border-b border-red-100 dark:border-red-900/30 bg-red-50/50 dark:bg-red-900/10 flex items-center gap-2">
                         <ShieldCheckIcon className="w-4 h-4 text-red-600" />
                         <h3 className="text-xs font-bold uppercase tracking-widest text-red-600 dark:text-red-400">
                             Danger Zone

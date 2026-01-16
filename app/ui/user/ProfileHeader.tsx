@@ -6,17 +6,16 @@ import { useState } from 'react';
 import { UserProfile } from '@/lib/definitions';
 import FollowButton from '@/app/ui/user/FollowButton';
 import {
-    PencilSquareIcon,
     MapPinIcon,
-    DocumentDuplicateIcon,
+    CalendarIcon,
     CheckIcon,
-    UsersIcon,
-    FilmIcon
+    DocumentDuplicateIcon
 } from '@heroicons/react/24/outline';
-import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
+import { geistSans } from "@/app/ui/fonts";
 
-// Compact Copy ID Component
-function CopyableId({ username }: { username: string }) {
+// --- SUB-COMPONENTS ---
+
+function CopyableHandle({ username }: { username: string }) {
     const [copied, setCopied] = useState(false);
 
     const handleCopy = () => {
@@ -28,18 +27,40 @@ function CopyableId({ username }: { username: string }) {
     return (
         <button
             onClick={handleCopy}
-            className="group flex items-center gap-1.5 text-xs font-mono text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
-            title="Copy ID"
+            className="flex items-center gap-1 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300 transition-colors cursor-pointer text-sm font-medium"
+            title="Copy Username"
         >
             <span>@{username}</span>
             {copied ? (
-                <CheckIcon className="w-3 h-3 text-green-600" />
+                <CheckIcon className="w-3.5 h-3.5 text-green-500" />
             ) : (
-                <DocumentDuplicateIcon className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <DocumentDuplicateIcon className="w-3.5 h-3.5 opacity-50" />
             )}
         </button>
     );
 }
+
+const Stat = ({ value, label, href }: { value: number; label: string; href: string }) => (
+    <Link href={href} className="flex flex-col md:flex-row items-center md:gap-1 group cursor-pointer">
+        <span className="font-bold text-lg md:text-base text-zinc-900 dark:text-zinc-100 group-hover:opacity-80">
+            {value}
+        </span>
+        <span className="text-sm md:text-base text-zinc-500 capitalize group-hover:underline decoration-zinc-400 underline-offset-4">
+            {label}
+        </span>
+    </Link>
+);
+
+const ActionButton = ({ children, onClick, href }: { children: React.ReactNode, onClick?: () => void, href?: string }) => {
+    const className = "flex items-center justify-center w-full md:w-auto px-5 py-1.5 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg text-sm font-semibold text-zinc-900 dark:text-zinc-100 transition-colors";
+
+    if (href) {
+        return <Link href={href} className={className}>{children}</Link>;
+    }
+    return <button onClick={onClick} className={className}>{children}</button>;
+};
+
+// --- MAIN COMPONENT ---
 
 export default function ProfileHeader({
                                           profile,
@@ -50,7 +71,7 @@ export default function ProfileHeader({
                                           followingCount,
                                           timelineCount,
                                       }: {
-    profile: UserProfile;
+    profile: UserProfile; // Ensure your UserProfile type includes 'created_at'
     isOwnProfile: boolean;
     isPrivate: boolean;
     initialFollowStatus: 'not_following' | 'pending' | 'accepted';
@@ -58,118 +79,111 @@ export default function ProfileHeader({
     followingCount: number;
     timelineCount: number;
 }) {
+    // 1. Calculate actual join date
+    const joinDate = new Date(profile.created_at).toLocaleDateString('en-US', {
+        month: 'long',
+        year: 'numeric'
+    });
+
     return (
-        <div className="w-full bg-white dark:bg-black border-b border-zinc-200 dark:border-zinc-800">
-            <div className="max-w-6xl mx-auto px-4 py-6 md:px-8 md:py-8">
+        <div className={`w-full bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 ${geistSans.className}`}>
+            <div className="max-w-4xl mx-auto px-4 pt-4 pb-8 md:py-10">
 
-                {/* --- FLEX CONTAINER --- */}
-                <div className="flex flex-col md:flex-row md:items-start gap-6 md:gap-8">
+                <div className="flex flex-col md:flex-row md:gap-10">
 
-                    {/* 1. VISUAL IDENTIFIER (Avatar) */}
-                    {/* Fixed Size, sharply distinct */}
-                    <div className="shrink-0 relative">
-                        <div className="w-20 h-20 md:w-24 md:h-24 relative overflow-hidden bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                            {profile.profile_pic_url ? (
-                                <Image
-                                    className="object-cover"
-                                    src={profile.profile_pic_url}
-                                    alt={profile.display_name}
-                                    fill
-                                    priority
-                                    sizes="96px"
-                                />
-                            ) : (
-                                <div className="flex items-center justify-center w-full h-full text-zinc-300">
-                                    <FilmIcon className="w-8 h-8" />
-                                </div>
-                            )}
-                            {/* Technical Frame Markers */}
-                            <div className="absolute top-0 left-0 w-1.5 h-1.5 border-t border-l border-zinc-900 dark:border-zinc-100" />
-                            <div className="absolute bottom-0 right-0 w-1.5 h-1.5 border-b border-r border-zinc-900 dark:border-zinc-100" />
-                        </div>
-                    </div>
+                    {/* --- TOP SECTION: Avatar & Mobile Stats --- */}
+                    <div className="grid grid-cols-[auto_1fr] md:flex md:items-start gap-6 md:gap-10 items-center">
 
-                    {/* 2. DATA BLOCK (Identity & Stats) */}
-                    <div className="flex-1 min-w-0 flex flex-col gap-4">
-
-                        {/* Top Row: Name & Actions */}
-                        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-
-                            {/* Identity */}
-                            <div>
-                                <h1 className={`${PlayWriteNewZealandFont.className} text-2xl md:text-3xl font-bold text-zinc-900 dark:text-zinc-100 leading-none`}>
-                                    {profile.display_name}
-                                </h1>
-                                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5">
-                                    <CopyableId username={profile.username} />
-                                    {profile.country && (
-                                        <>
-                                            <span className="text-zinc-300 dark:text-zinc-700">|</span>
-                                            <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider font-mono text-zinc-500">
-                                                <MapPinIcon className="w-3 h-3" />
-                                                {profile.country}
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
-                                {/* Optional: A truncated bio line if you really want it, otherwise leave blank for pure conciseness */}
-                                {profile.bio && (
-                                    <p className="mt-3 text-xs md:text-sm text-zinc-600 dark:text-zinc-400 line-clamp-2 max-w-2xl font-light">
-                                        {profile.bio}
-                                    </p>
-                                )}
-                            </div>
-
-                            {/* Action Button Area */}
-                            <div className="shrink-0 flex items-center gap-3">
-                                {isOwnProfile ? (
-                                    <Link
-                                        href="/profile/edit"
-                                        className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-black border border-zinc-300 dark:border-zinc-700 hover:border-zinc-900 dark:hover:border-zinc-100 text-xs font-bold uppercase tracking-wider transition-all shadow-sm hover:shadow-md"
-                                    >
-                                        <PencilSquareIcon className="w-4 h-4" />
-                                        <span>Edit</span>
-                                    </Link>
+                        {/* Avatar */}
+                        <div className="relative w-20 h-20 md:w-40 md:h-40 shrink-0">
+                            <div className="rounded-full overflow-hidden border border-zinc-200 dark:border-zinc-800 w-full h-full relative ring-2 ring-white dark:ring-black">
+                                {profile.profile_pic_url ? (
+                                    <Image
+                                        src={profile.profile_pic_url}
+                                        alt={profile.display_name}
+                                        fill
+                                        className="object-cover"
+                                        sizes="(max-width: 768px) 80px, 160px"
+                                        priority
+                                    />
                                 ) : (
-                                    <div className="w-full md:w-32">
-                                        <FollowButton
-                                            profileId={profile.id}
-                                            isPrivate={isPrivate}
-                                            initialFollowStatus={initialFollowStatus}
-                                        />
+                                    <div className="w-full h-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center text-zinc-300 text-3xl md:text-5xl font-medium">
+                                        {profile.display_name.charAt(0)}
                                     </div>
                                 )}
                             </div>
                         </div>
 
-                        {/* Bottom Row: Technical Stats Strip */}
-                        <div className="flex items-center gap-6 md:gap-10 pt-2 border-t border-dashed border-zinc-200 dark:border-zinc-800 mt-auto">
-                            <Link href={`/profile/${profile.username}/followers`} className="group flex items-baseline gap-2 hover:opacity-80 transition-opacity">
-                                <span className="text-sm md:text-lg font-bold text-zinc-900 dark:text-zinc-100 font-mono">
-                                    {followerCount}
-                                </span>
-                                <span className="text-[10px] uppercase tracking-widest text-zinc-500 group-hover:text-zinc-800 dark:group-hover:text-zinc-300">
-                                    Followers
-                                </span>
-                            </Link>
+                        {/* Stats (Mobile Only) */}
+                        <div className="flex md:hidden justify-around items-center w-full pr-2">
+                            <Stat value={timelineCount} label="logs" href={`/profile/${profile.username}/timeline`} />
+                            <Stat value={followerCount} label="followers" href={`/profile/${profile.username}/followers`} />
+                            <Stat value={followingCount} label="following" href={`/profile/${profile.username}/following`} />
+                        </div>
+                    </div>
 
-                            <Link href={`/profile/${profile.username}/following`} className="group flex items-baseline gap-2 hover:opacity-80 transition-opacity">
-                                <span className="text-sm md:text-lg font-bold text-zinc-900 dark:text-zinc-100 font-mono">
-                                    {followingCount}
-                                </span>
-                                <span className="text-[10px] uppercase tracking-widest text-zinc-500 group-hover:text-zinc-800 dark:group-hover:text-zinc-300">
-                                    Following
-                                </span>
-                            </Link>
+                    {/* --- DETAILS SECTION --- */}
+                    <div className="flex-1 mt-4 md:mt-0 flex flex-col gap-3">
 
-                            <Link href={`/profile/${profile.username}/timeline`} className="group flex items-baseline gap-2 hover:opacity-80 transition-opacity">
-                                <span className="text-sm md:text-lg font-bold text-zinc-900 dark:text-zinc-100 font-mono">
-                                    {timelineCount}
-                                </span>
-                                <span className="text-[10px] uppercase tracking-widest text-zinc-500 group-hover:text-zinc-800 dark:group-hover:text-zinc-300">
-                                    Logs
-                                </span>
-                            </Link>
+                        {/* Name & Actions */}
+                        <div className="flex flex-col md:flex-row md:items-center gap-3">
+                            <h2 className="text-xl md:text-2xl font-bold truncate mr-2">
+                                {profile.display_name}
+                            </h2>
+
+                            <div className="hidden md:flex gap-2">
+                                {isOwnProfile ? (
+                                    <ActionButton href="/profile/edit">Edit profile</ActionButton>
+                                ) : (
+                                    <div className="w-28">
+                                        <FollowButton profileId={profile.id} isPrivate={isPrivate} initialFollowStatus={initialFollowStatus} />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Handle */}
+                        <div className="-mt-1">
+                            <CopyableHandle username={profile.username} />
+                        </div>
+
+                        {/* Stats (Desktop Only) */}
+                        <div className="hidden md:flex items-center gap-8 py-3">
+                            <Stat value={timelineCount} label="logs" href={`/profile/${profile.username}/timeline`} />
+                            <Stat value={followerCount} label="followers" href={`/profile/${profile.username}/followers`} />
+                            <Stat value={followingCount} label="following" href={`/profile/${profile.username}/following`} />
+                        </div>
+
+                        {/* Bio & Meta */}
+                        <div className="space-y-3">
+                            {profile.bio && (
+                                <p className="text-sm whitespace-pre-wrap leading-relaxed max-w-lg text-zinc-800 dark:text-zinc-200">
+                                    {profile.bio}
+                                </p>
+                            )}
+
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
+                                {profile.country && (
+                                    <div className="flex items-center gap-1">
+                                        <MapPinIcon className="w-3.5 h-3.5" />
+                                        <span>{profile.country}</span>
+                                    </div>
+                                )}
+                                <div className="flex items-center gap-1">
+                                    <CalendarIcon className="w-3.5 h-3.5" />
+                                    {/* 2. Used the dynamic date here */}
+                                    <span>Joined {joinDate}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Mobile Action Button */}
+                        <div className="md:hidden mt-2">
+                            {isOwnProfile ? (
+                                <ActionButton href="/profile/edit">Edit profile</ActionButton>
+                            ) : (
+                                <FollowButton profileId={profile.id} isPrivate={isPrivate} initialFollowStatus={initialFollowStatus} />
+                            )}
                         </div>
 
                     </div>
