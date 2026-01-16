@@ -81,10 +81,10 @@ export default function FavoriteFilmsDisplay({ favoriteItems }: {
     const sortedItems = favoriteItems.sort((a, b) => a.rank - b.rank);
 
     return (
-        <section className="w-full py-12">
+        <section className="w-full">
 
             {/* Section Header */}
-            <div className="flex items-center justify-between mb-12 px-2">
+            <div className="flex items-center justify-between mb-6 px-2 ">
                 <div>
                     <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter text-zinc-900 dark:text-zinc-100">
                         The Podium
@@ -96,7 +96,7 @@ export default function FavoriteFilmsDisplay({ favoriteItems }: {
             </div>
 
             {/* Grid Content */}
-            <div className="mt-6">
+            <div className="mt-6 p-2">
                 {sortedItems.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
                         {sortedItems.map(item => {

@@ -15,9 +15,7 @@ import {
     DocumentTextIcon,
     PhotoIcon as PhotoSolidIcon,
     StarIcon,
-    CalendarIcon,
     TvIcon,
-    DevicePhoneMobileIcon,
     QrCodeIcon,
     LinkIcon
 } from '@heroicons/react/24/solid';
@@ -28,7 +26,7 @@ import { deleteTimelineEntry } from '@/lib/actions/timeline-actions';
 import { TimelineEntry, UserProfile } from "@/lib/definitions";
 import ImageModal from './ImageModal';
 import UserProfilePopover from './UserProfilePopover';
-import { googleSansCode } from "@/app/ui/fonts";
+import { googleSansCode, geistSans } from "@/app/ui/fonts";
 
 // --- HELPERS ---
 
@@ -52,7 +50,7 @@ function formatDateParts(dateString: string) {
 
 // --- SUB-COMPONENTS ---
 
-// 1. Refined Action Menu (Fusion of functionality)
+// Action Menu
 function ActionMenu({
                         entry,
                         username,
@@ -88,7 +86,7 @@ function ActionMenu({
 
     const handleCopyLink = () => {
         navigator.clipboard.writeText(`${window.location.origin}/profile/${username}/timeline#entry-${entry.id}`);
-        toast.success('Link copied to clipboard');
+        toast.success('Link copied');
         setShowShareDialog(false);
     };
 
@@ -96,7 +94,7 @@ function ActionMenu({
         <div className="relative" ref={dropdownRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                className="p-1 rounded-md text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
             >
                 <EllipsisHorizontalIcon className="w-5 h-5" />
             </button>
@@ -107,17 +105,17 @@ function ActionMenu({
                         initial={{ opacity: 0, scale: 0.95, y: 5 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 5 }}
-                        className="absolute right-0 top-8 z-40 w-48 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-xl overflow-hidden py-1"
+                        className="absolute right-0 top-8 z-50 w-44 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-xl overflow-hidden py-1"
                     >
                         <button onClick={() => { setShowShareDialog(true); setIsOpen(false); }} className="flex w-full items-center gap-3 px-4 py-2.5 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900 text-left">
-                            <ShareIcon className="w-3.5 h-3.5" /> Share Entry
+                            <ShareIcon className="w-3.5 h-3.5" /> Share
                         </button>
                         <Link
                             href={`/profile/${username}/timeline/edit/${entry.id}`}
                             className="flex w-full items-center gap-3 px-4 py-2.5 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900 text-left"
                             onClick={() => setIsOpen(false)}
                         >
-                            <PencilIcon className="w-3.5 h-3.5" /> Edit Log
+                            <PencilIcon className="w-3.5 h-3.5" /> Edit
                         </Link>
                         <div className="h-px bg-zinc-100 dark:bg-zinc-800 my-1" />
                         <button onClick={handleDelete} className="flex w-full items-center gap-3 px-4 py-2.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 text-left">
@@ -155,7 +153,7 @@ function ActionMenu({
                                 </button>
                             </div>
 
-                            {isDownloading && <p className="text-center text-[10px] text-zinc-400 animate-pulse mb-3">GENERATING IMAGE...</p>}
+                            {isDownloading && <p className="text-center text-[10px] text-zinc-400 animate-pulse mb-3">GENERATING...</p>}
 
                             <button onClick={handleCopyLink} className="w-full py-3 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-black rounded-lg text-xs font-bold uppercase tracking-wide flex items-center justify-center gap-2">
                                 <LinkIcon className="w-4 h-4" /> Copy Link
@@ -211,56 +209,54 @@ export default function TimelineEntryCard({
             a.remove();
             window.URL.revokeObjectURL(url);
             toast.dismiss();
-            toast.success('Image downloaded');
+            toast.success('Saved');
         } catch (error) {
             console.error(error);
-            toast.error('Could not generate image.');
+            toast.error('Error generating image.');
         } finally {
             setIsDownloading(false);
         }
     };
 
-    // Viewing Context Renderer
-    const renderPlatform = (context: string | null) => {
+    const renderPlatformIcon = (context: string | null) => {
         if (!context) return null;
         const platform = ottPlatformDetails[context];
-        let icon = <TvIcon className="w-3 h-3 text-zinc-400" />;
-
-        if (context === 'Theatre') icon = <BuildingLibraryIcon className="w-3 h-3 text-zinc-400"/>;
-        else if (platform?.logo) icon = <Image src={platform.logo} alt={context} width={12} height={12} className="w-3 h-3 object-contain opacity-80" />;
-
-        return (
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50">
-                {icon}
-                <span className="text-[10px] font-medium text-zinc-600 dark:text-zinc-400 uppercase tracking-wide truncate max-w-[80px]">{context}</span>
-            </div>
-        );
+        if (context === 'Theatre') return <BuildingLibraryIcon className="w-3 h-3 text-zinc-500 dark:text-zinc-400"/>;
+        if (platform?.logo) return <Image src={platform.logo} alt={context} width={14} height={14} className="w-3.5 h-3.5 object-contain" />;
+        return <TvIcon className="w-3 h-3 text-zinc-500" />;
     };
 
     return (
         <>
             <motion.div
-                className="group relative mb-6 w-full"
+                className="group relative w-full mb-6"
                 id={`entry-${entry.id}`}
                 initial={{ opacity: 0, y: 15 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-50px" }}
             >
-                {/* --- FUSED CONTAINER --- */}
-                {/* Uses the horizontal layout of Design 2, but rounded/clean aesthetics of Design 1 */}
-                <div className="flex w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
+                {/* --- BENTO CARD STRUCTURE --- */}
+                {/* We use `h-auto md:h-48` to ensure consistent height on desktop for that grid look.
+                   On mobile, it stacks gracefully.
+                */}
+                <div className="flex flex-col md:flex-row w-full bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
 
-                    {/* --- 1. DATE MONOLITH (Refined) --- */}
-                    {/* Vertical strip like Design 2, but cleaner typography */}
-                    <div className="flex flex-col items-center justify-center w-16 md:w-20 shrink-0 bg-zinc-50 dark:bg-zinc-900/30 border-r border-zinc-100 dark:border-zinc-800">
-                        <span className={`${googleSansCode.className} text-[10px] uppercase tracking-widest text-zinc-400`}>{month}</span>
-                        <span className="text-2xl md:text-3xl font-light tracking-tighter text-zinc-900 dark:text-zinc-100 my-1">{day}</span>
-                        <span className="text-[10px] font-medium text-zinc-400">{year}</span>
+                    {/* CELL 1: DATE (Left Column) */}
+                    <div className="w-full md:w-20 bg-zinc-50 dark:bg-zinc-900 border-b md:border-b-0 md:border-r border-zinc-200 dark:border-zinc-800 flex flex-row md:flex-col items-center justify-between md:justify-center p-3 md:p-0 shrink-0">
+                        {/* Mobile view text arrangement */}
+                        <div className="md:hidden text-xs font-bold text-zinc-500 uppercase">{month} {day}, {year}</div>
+
+                        {/* Desktop view centered stack */}
+                        <div className="hidden md:flex flex-col items-center">
+                            <span className={`${googleSansCode.className} text-[10px] uppercase tracking-widest text-zinc-400`}>{month}</span>
+                            <span className="text-3xl font-light text-zinc-900 dark:text-zinc-100 my-0.5">{day}</span>
+                            <span className="text-[10px] text-zinc-400 font-medium">{year}</span>
+                        </div>
                     </div>
 
-                    {/* --- 2. POSTER (Compact but detailed) --- */}
+                    {/* CELL 2: POSTER (Next to Date) */}
                     <div
-                        className="relative w-24 md:w-32 aspect-[2/3] shrink-0 cursor-pointer overflow-hidden border-r border-zinc-100 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900"
+                        className="relative w-full md:w-32 aspect-[21/9] md:aspect-auto cursor-pointer overflow-hidden border-b md:border-b-0 md:border-r border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 shrink-0 group/poster"
                         onClick={() => setSelectedItem({
                             tmdb_id: cinematicItem.tmdb_id,
                             title: cinematicItem.title,
@@ -271,112 +267,120 @@ export default function TimelineEntryCard({
                             src={cinematicItem.poster_url || '/placeholder-poster.png'}
                             alt={cinematicItem.title}
                             fill
-                            className="object-cover group-hover:scale-105 transition-transform duration-500"
+                            className="object-cover object-center group-hover/poster:scale-105 transition-transform duration-500"
                         />
-                        {/* Inner shadow from Design 1 for depth */}
-                        <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_10px_rgba(0,0,0,0.1)] dark:shadow-[inset_0_0_15px_rgba(0,0,0,0.4)]" />
                     </div>
 
-                    {/* --- 3. CONTENT (Flexible) --- */}
-                    <div className="flex-1 min-w-0 flex flex-col p-4">
+                    {/* CELL 3: INFO & CONTENT (Right Area) */}
+                    <div className="flex-1 p-4 md:p-5 flex flex-col justify-between min-w-0">
 
-                        {/* Top: Title & Actions */}
+                        {/* Top Row: Title + Menu */}
                         <div className="flex justify-between items-start gap-4 mb-3">
-                            <h3
-                                className="text-lg md:text-xl font-medium tracking-tight text-zinc-900 dark:text-zinc-100 leading-tight cursor-pointer hover:underline decoration-zinc-300 dark:decoration-zinc-700 underline-offset-4 line-clamp-2"
-                                onClick={() => setSelectedItem({
-                                    tmdb_id: cinematicItem.tmdb_id,
-                                    title: cinematicItem.title,
-                                    media_type: entry.movies ? 'movie' : 'tv'
-                                })}
-                            >
-                                {cinematicItem.title}
-                            </h3>
-                            {isOwnProfile && (
-                                <div className="shrink-0 -mt-1 -mr-1">
-                                    <ActionMenu
-                                        entry={entry}
-                                        username={username}
-                                        onDownload={handleDownloadShareImage}
-                                        isDownloading={isDownloading}
-                                    />
-                                </div>
-                            )}
-                        </div>
+                            <div>
+                                <h3
+                                    className="text-lg md:text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 leading-tight cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors line-clamp-1"
+                                    onClick={() => setSelectedItem({
+                                        tmdb_id: cinematicItem.tmdb_id,
+                                        title: cinematicItem.title,
+                                        media_type: entry.movies ? 'movie' : 'tv'
+                                    })}
+                                >
+                                    {cinematicItem.title}
+                                </h3>
 
-                        {/* Middle: Meta Strip (Fused Design) */}
-                        <div className="flex flex-wrap items-center gap-3 mb-3">
-                            {/* Rating */}
-                            <div className="flex items-center gap-1 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                                <StarIcon className="w-3.5 h-3.5 text-amber-500/90" />
-                                {rating > 0 ? displayRating : <span className="text-zinc-400 font-normal text-xs">Unrated</span>}
+                                {/* Meta Row: Rating | Platform | Review */}
+                                <div className="flex items-center gap-3 mt-1.5">
+                                    <div className="flex items-center gap-1 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                                        <StarIcon className="w-3.5 h-3.5 text-amber-500" />
+                                        {rating > 0 ? displayRating : <span className="text-xs text-zinc-400 font-normal">NR</span>}
+                                    </div>
+
+                                    {entry.viewing_context && (
+                                        <>
+                                            <div className="w-px h-3 bg-zinc-200 dark:bg-zinc-800" />
+                                            <div className="flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-400" title={entry.viewing_context}>
+                                                {renderPlatformIcon(entry.viewing_context)}
+                                                <span className="uppercase tracking-wide text-[10px] font-medium hidden sm:inline-block max-w-[80px] truncate">{entry.viewing_context}</span>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {entry.posts?.slug && (
+                                        <>
+                                            <div className="w-px h-3 bg-zinc-200 dark:bg-zinc-800" />
+                                            <Link href={`/blog/${entry.posts.slug}`} className="text-[10px] font-bold uppercase tracking-wide text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+                                                <PencilSquareIcon className="w-3 h-3"/> Review
+                                            </Link>
+                                        </>
+                                    )}
+                                </div>
                             </div>
 
-                            <div className="w-px h-3 bg-zinc-200 dark:bg-zinc-700" />
-
-                            {/* Platform */}
-                            {entry.viewing_context && renderPlatform(entry.viewing_context)}
-
-                            {/* Review Link */}
-                            {entry.posts?.slug && (
-                                <Link href={`/blog/${entry.posts.slug}`} className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-transparent hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
-                                    <PencilSquareIcon className="w-3 h-3 text-zinc-400"/>
-                                    <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">Review</span>
-                                </Link>
+                            {/* Action Menu (Top Right) */}
+                            {isOwnProfile && (
+                                <ActionMenu
+                                    entry={entry}
+                                    username={username}
+                                    onDownload={handleDownloadShareImage}
+                                    isDownloading={isDownloading}
+                                />
                             )}
                         </div>
 
-                        {/* Notes Snippet (Code style) */}
-                        {entry.notes && (
-                            <div
-                                className="mb-auto cursor-pointer group/notes"
-                                onClick={() => setShowNotesModal(true)}
-                            >
-                                <p className={`${googleSansCode.className} text-[11px] leading-5 text-zinc-500 dark:text-zinc-400 line-clamp-2 group-hover/notes:text-zinc-800 dark:group-hover/notes:text-zinc-200 transition-colors`}>
-                                    <span className="text-zinc-300 dark:text-zinc-600 mr-1.5">{'//'}</span>
+                        {/* Middle: Notes "Bento Box" */}
+                        {/* A distinct sub-container for the notes */}
+                        <div
+                            className={`
+                                relative rounded-lg p-3 mb-3 border border-zinc-100 dark:border-zinc-800/50
+                                ${entry.notes ? 'bg-zinc-50 dark:bg-zinc-900/40 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-900/60 transition-colors' : 'bg-transparent border-dashed'}
+                            `}
+                            onClick={() => entry.notes && setShowNotesModal(true)}
+                        >
+                            {entry.notes ? (
+                                <p className={`${googleSansCode.className} text-[11px] leading-relaxed text-zinc-600 dark:text-zinc-400 line-clamp-2`}>
+                                    <span className="text-zinc-400 dark:text-zinc-600 mr-2">NOTES_</span>
                                     {entry.notes}
                                 </p>
-                            </div>
-                        )}
+                            ) : (
+                                <p className={`${googleSansCode.className} text-[10px] text-zinc-300 dark:text-zinc-700 uppercase`}>// No Log Entry</p>
+                            )}
+                        </div>
 
-                        {/* Bottom: Footer Info */}
-                        <div className="mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-800/50 flex items-end justify-between">
-
+                        {/* Bottom: Footer Info (Collaborators & Evidence) */}
+                        <div className="flex items-center justify-between mt-auto">
                             {/* Collaborators */}
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 h-6">
                                 {entry.timeline_collaborators.length > 0 && (
-                                    <>
-                                        <span className={`${googleSansCode.className} text-[9px] uppercase tracking-widest text-zinc-400`}>With</span>
-                                        <div className="flex -space-x-1.5">
-                                            {entry.timeline_collaborators.map(collab => (
-                                                collab.profiles && (
-                                                    <button
-                                                        key={collab.profiles.id}
-                                                        onClick={() => setSelectedCollaborator(collab.profiles)}
-                                                        className="relative w-5 h-5 rounded-full ring-2 ring-white dark:ring-zinc-950 hover:z-10 hover:scale-110 transition-transform bg-zinc-100 dark:bg-zinc-800"
+                                    <div className="flex -space-x-2">
+                                        {entry.timeline_collaborators.map(collab => (
+                                            collab.profiles && (
+                                                <div
+                                                    key={collab.profiles.id}
+                                                    className="relative w-6 h-6 rounded-full ring-2 ring-white dark:ring-black cursor-pointer hover:z-10 hover:scale-110 transition-transform bg-zinc-100 dark:bg-zinc-800"
+                                                    onClick={() => setSelectedCollaborator(collab.profiles)}
+                                                >
+                                                    <Image
+                                                        src={collab.profiles.profile_pic_url || '/default-avatar.png'}
+                                                        alt={collab.profiles.username}
+                                                        fill
+                                                        className="object-cover rounded-full"
                                                         title={collab.profiles.username}
-                                                    >
-                                                        <Image
-                                                            src={collab.profiles.profile_pic_url || '/default-avatar.png'}
-                                                            alt={collab.profiles.username}
-                                                            fill
-                                                            className="object-cover rounded-full"
-                                                        />
-                                                    </button>
-                                                )
-                                            ))}
-                                        </div>
-                                    </>
+                                                    />
+                                                </div>
+                                            )
+                                        ))}
+                                    </div>
                                 )}
                             </div>
 
-                            {/* Evidence Pill */}
+                            {/* Evidence / Photo */}
                             {entry.photo_url && (
                                 <button
                                     onClick={() => setSelectedPhotoUrl(entry.photo_url)}
-                                    className="flex items-center gap-1.5 px-2 py-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 rounded-md text-[10px] font-bold uppercase tracking-wider hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+                                    className="flex items-center gap-1.5 pl-2 pr-1 py-1 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors text-[10px] font-bold uppercase tracking-wider group/ev"
                                 >
-                                    <PhotoIcon className="w-3 h-3" /> Pic
+                                    <PhotoIcon className="w-3.5 h-3.5" />
+                                    <span className="hidden group-hover/ev:inline">Evidence</span>
                                 </button>
                             )}
                         </div>
@@ -386,7 +390,7 @@ export default function TimelineEntryCard({
 
             {/* --- MODALS --- */}
 
-            {/* Notes Modal (Clean Design) */}
+            {/* Notes Modal */}
             <AnimatePresence>
                 {showNotesModal && entry.notes && (
                     <motion.div
@@ -400,23 +404,18 @@ export default function TimelineEntryCard({
                             onClick={(e) => e.stopPropagation()}
                         >
                             <button onClick={() => setShowNotesModal(false)} className="absolute top-4 right-4 text-zinc-400 hover:text-black dark:hover:text-white"><XMarkIcon className="w-6 h-6" /></button>
-
                             <div className="mb-6 pb-4 border-b border-zinc-100 dark:border-zinc-800">
-                                <span className={`${googleSansCode.className} text-xs text-zinc-400 uppercase tracking-widest`}>Journal Log</span>
-                                <h3 className="text-xl font-medium text-zinc-900 dark:text-zinc-100 mt-1">{cinematicItem.title}</h3>
+                                <span className={`${googleSansCode.className} text-xs text-zinc-400 uppercase tracking-widest`}>Log Entry</span>
+                                <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 mt-1">{cinematicItem.title}</h3>
                             </div>
-
                             <div className="prose dark:prose-invert max-h-[60vh] overflow-y-auto">
-                                <p className="whitespace-pre-wrap leading-loose text-zinc-700 dark:text-zinc-300 text-base font-serif">
-                                    {entry.notes}
-                                </p>
+                                <p className="whitespace-pre-wrap leading-loose text-zinc-700 dark:text-zinc-300 text-base font-serif">{entry.notes}</p>
                             </div>
                         </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            {/* Movie Info Modal */}
             {selectedItem && (
                 <CinematicInfoCard
                     tmdbId={selectedItem.tmdb_id}
@@ -427,10 +426,7 @@ export default function TimelineEntryCard({
                 />
             )}
 
-            {/* Image Viewer */}
             {selectedPhotoUrl && <ImageModal imageUrl={selectedPhotoUrl} onClose={() => setSelectedPhotoUrl(null)} />}
-
-            {/* User Popover */}
             {selectedCollaborator && <UserProfilePopover user={selectedCollaborator} onClose={() => setSelectedCollaborator(null)} />}
         </>
     );
