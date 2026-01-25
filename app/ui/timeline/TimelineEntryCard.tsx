@@ -11,10 +11,10 @@ import {
     PhotoIcon,
     StarIcon,
     ArrowPathIcon,
-    DocumentTextIcon,
     LinkIcon,
     XMarkIcon,
     QrCodeIcon,
+    DocumentTextIcon,
     PhotoIcon as PhotoSolidIcon
 } from '@heroicons/react/24/solid';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -26,14 +26,7 @@ import ImageModal from './ImageModal';
 import UserProfilePopover from './UserProfilePopover';
 import { geistSans } from "@/app/ui/fonts";
 
-// --- HELPERS ---
-
-function formatDateMinimal(dateString: string) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
-// --- ACTION MENU COMPONENT (With Share Logic Restored) ---
+// --- ACTION MENU ---
 
 function ActionMenu({
                         entry,
@@ -78,22 +71,20 @@ function ActionMenu({
 
     return (
         <div className="relative shrink-0" ref={dropdownRef}>
-            {/* Trigger Button */}
             <button
                 onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }}
-                className="p-1 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                className="p-1 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800"
             >
                 <EllipsisHorizontalIcon className="w-5 h-5" />
             </button>
 
-            {/* Dropdown Menu */}
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95, y: 5, x: -10 }}
                         animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 5 }}
-                        className="absolute right-0 top-8 w-36 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-lg z-20 py-1 ring-1 ring-black/5"
+                        className="absolute right-0 top-8 w-36 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-md shadow-lg z-20 py-1 ring-1 ring-black/5"
                     >
                         <button
                             onClick={(e) => { e.stopPropagation(); setShowShareDialog(true); setIsOpen(false); }}
@@ -119,7 +110,7 @@ function ActionMenu({
                 )}
             </AnimatePresence>
 
-            {/* Share Modal Overlay */}
+            {/* Share Modal */}
             <AnimatePresence>
                 {showShareDialog && (
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4" onClick={(e) => { e.stopPropagation(); setShowShareDialog(false); }}>
@@ -127,24 +118,24 @@ function ActionMenu({
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
-                            className="w-full max-w-sm bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-2xl relative overflow-hidden"
+                            className="w-full max-w-sm bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg p-6 shadow-2xl relative overflow-hidden"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <button onClick={() => setShowShareDialog(false)} className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"><XMarkIcon className="w-5 h-5" /></button>
 
                             <div className="flex items-center gap-2 mb-6">
-                                <div className="p-2 bg-zinc-100 dark:bg-zinc-900 rounded-lg">
+                                <div className="p-2 bg-zinc-100 dark:bg-zinc-900 rounded-md">
                                     <QrCodeIcon className="w-5 h-5 text-zinc-700 dark:text-zinc-300" />
                                 </div>
                                 <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300">Share Log</h3>
                             </div>
 
                             <div className="grid grid-cols-2 gap-3 mb-6">
-                                <button onClick={() => onDownload('notes')} disabled={isDownloading} className="flex flex-col items-center gap-3 p-4 border border-zinc-200 dark:border-zinc-800 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all group">
+                                <button onClick={() => onDownload('notes')} disabled={isDownloading} className="flex flex-col items-center gap-3 p-4 border border-zinc-200 dark:border-zinc-800 rounded-md hover:bg-zinc-50 dark:hover:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all group">
                                     <DocumentTextIcon className="w-6 h-6 text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors" />
                                     <span className="text-xs font-bold text-zinc-600 dark:text-zinc-400">With Notes</span>
                                 </button>
-                                <button onClick={() => onDownload('clean')} disabled={isDownloading} className="flex flex-col items-center gap-3 p-4 border border-zinc-200 dark:border-zinc-800 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all group">
+                                <button onClick={() => onDownload('clean')} disabled={isDownloading} className="flex flex-col items-center gap-3 p-4 border border-zinc-200 dark:border-zinc-800 rounded-md hover:bg-zinc-50 dark:hover:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all group">
                                     <PhotoSolidIcon className="w-6 h-6 text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors" />
                                     <span className="text-xs font-bold text-zinc-600 dark:text-zinc-400">Poster Only</span>
                                 </button>
@@ -152,7 +143,7 @@ function ActionMenu({
 
                             {isDownloading && <p className="text-center text-[10px] text-zinc-400 animate-pulse mb-3 font-medium tracking-wide">GENERATING IMAGE...</p>}
 
-                            <button onClick={handleCopyLink} className="w-full py-3 bg-zinc-900 dark:bg-white text-white dark:text-black rounded-xl text-xs font-bold uppercase tracking-wide flex items-center justify-center gap-2 hover:opacity-90 transition-opacity shadow-lg">
+                            <button onClick={handleCopyLink} className="w-full py-3 bg-zinc-900 dark:bg-white text-white dark:text-black rounded-md text-xs font-bold uppercase tracking-wide flex items-center justify-center gap-2 hover:opacity-90 transition-opacity shadow-lg">
                                 <LinkIcon className="w-4 h-4" /> Copy Link
                             </button>
                         </motion.div>
@@ -167,6 +158,7 @@ function ActionMenu({
 
 export default function TimelineEntryCard({
                                               entry,
+                                              index,
                                               isOwnProfile,
                                               username
                                           }: {
@@ -179,19 +171,27 @@ export default function TimelineEntryCard({
     const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null);
     const [selectedCollaborator, setSelectedCollaborator] = useState<Pick<UserProfile, 'id' | 'username' | 'profile_pic_url'> | null>(null);
     const [selectedItem, setSelectedItem] = useState<{ tmdb_id: number; title: string; media_type: 'movie' | 'tv' } | null>(null);
+    const [isDownloading, setIsDownloading] = useState(false);
+
+    // Controls the modal to see full notes
     const [showNotesModal, setShowNotesModal] = useState(false);
-    const [isDownloading, setIsDownloading] = useState(false); // Restored State
 
     if (!cinematicItem) return null;
 
-    const formattedDate = formatDateMinimal(entry.watched_on);
+    // Formatter: "Sun, Oct 25"
+    const dateObj = new Date(entry.watched_on);
+    const formattedDate = dateObj.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+    });
+
     const rating = Number(entry.rating);
     const displayRating = rating % 1 === 0 ? rating.toString() : rating.toFixed(1);
     const isRewatch = (entry).is_rewatch || false;
     const releaseYear = (cinematicItem.release_date)?.split('-')[0];
     const safeTitle = cinematicItem.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
 
-    // Restored Download Functionality
     const handleDownloadShareImage = async (mode: 'notes' | 'clean') => {
         setIsDownloading(true);
         toast.loading('Generating share image...');
@@ -232,11 +232,11 @@ export default function TimelineEntryCard({
                 className="group relative w-full mb-4"
                 id={`entry-${entry.id}`}
             >
-                <div className="flex flex-row w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
+                <div className="flex flex-row w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-md overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
 
                     {/* POSTER (Left side) */}
                     <div
-                        className="relative w-24 min-h-[130px] md:w-32 shrink-0 cursor-pointer bg-zinc-100 dark:bg-zinc-900"
+                        className="relative w-24 min-h-[140px] md:w-32 shrink-0 cursor-pointer bg-zinc-100 dark:bg-zinc-900"
                         onClick={openDetails}
                     >
                         <Image
@@ -250,10 +250,11 @@ export default function TimelineEntryCard({
                     {/* CONTENT (Right side) */}
                     <div className="flex-1 flex flex-col p-4 min-w-0 relative">
 
-                        {/* Header: Date & Menu */}
-                        <div className="flex justify-between items-start mb-1.5">
-                            <span className="text-xs text-zinc-400 dark:text-zinc-500 font-medium">{formattedDate}</span>
-                            {/* Restored fully functional ActionMenu */}
+                        {/* 1. Header: Readable Date & Action Menu */}
+                        <div className="flex justify-between items-center mb-1">
+                            <span className="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-500 font-semibold">
+                                {formattedDate}
+                            </span>
                             {isOwnProfile && (
                                 <ActionMenu
                                     entry={entry}
@@ -264,125 +265,196 @@ export default function TimelineEntryCard({
                             )}
                         </div>
 
-                        {/* Title */}
-                        <h3
-                            className="text-base md:text-lg font-bold leading-tight text-zinc-900 dark:text-zinc-100 cursor-pointer truncate pr-6 mb-2"
-                            onClick={openDetails}
-                            title={cinematicItem.title}
-                        >
-                            {cinematicItem.title}
-                        </h3>
+                        {/* 2. Title + Year (Beside) */}
+                        <div className="flex items-baseline gap-2 mb-2 pr-6">
+                            <h3
+                                className="text-base md:text-lg font-bold leading-tight text-zinc-900 dark:text-zinc-100 cursor-pointer hover:underline decoration-zinc-300 underline-offset-2 truncate"
+                                onClick={openDetails}
+                                title={cinematicItem.title}
+                            >
+                                {cinematicItem.title}
+                            </h3>
+                            {releaseYear && (
+                                <span className="text-sm font-normal text-zinc-400 shrink-0">
+                                    ({releaseYear})
+                                </span>
+                            )}
+                        </div>
 
-                        {/* RATING & METADATA ROW */}
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400 mb-auto">
-                            {/* Rating */}
+                        {/* 3. METADATA ROW: Rating • Source • Rewatch • Collaborators • Photo */}
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400 mb-2.5">
+
+                            {/* Rating (Clean, Monochrome, No Background) */}
                             {rating > 0 && (
-                                <div className="flex items-center gap-1 text-zinc-900 dark:text-zinc-100 font-bold">
-                                    <StarIcon className="w-3.5 h-3.5 text-amber-500" />
+                                <div className="flex items-center gap-1 font-bold text-zinc-900 dark:text-zinc-100">
+                                    <StarIcon className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-600" />
                                     <span>{displayRating}</span>
                                 </div>
                             )}
 
                             {/* Separator */}
-                            <span className="text-zinc-300 dark:text-zinc-700">•</span>
-                            <span>{releaseYear}</span>
+                            {(rating > 0 && entry.viewing_context) && <span className="text-zinc-300 dark:text-zinc-700">•</span>}
 
-                            {/* Platform */}
+                            {/* Source */}
                             {entry.viewing_context && (
-                                <>
-                                    <span className="text-zinc-300 dark:text-zinc-700">•</span>
-                                    <span className="truncate max-w-[100px]">{entry.viewing_context}</span>
-                                </>
+                                <span className="truncate max-w-[100px] font-medium">
+                                    {entry.viewing_context}
+                                </span>
                             )}
+
+                            {/* Separator */}
+                            {((rating > 0 || entry.viewing_context) && isRewatch) && <span className="text-zinc-300 dark:text-zinc-700">•</span>}
 
                             {/* Rewatch */}
                             {isRewatch && (
-                                <>
-                                    <span className="text-zinc-300 dark:text-zinc-700">•</span>
-                                    <span className="flex items-center gap-0.5 text-zinc-400 dark:text-zinc-500" title="Rewatch">
-                                        <ArrowPathIcon className="w-3 h-3" />
-                                    </span>
-                                </>
+                                <span className="flex items-center gap-0.5 text-zinc-400 dark:text-zinc-500" title="Rewatch">
+                                    <ArrowPathIcon className="w-3 h-3" />
+                                </span>
+                            )}
+
+                            {/* Separator (if Collabs exist) */}
+                            {((rating > 0 || entry.viewing_context || isRewatch) && entry.timeline_collaborators.length > 0) && <span className="text-zinc-300 dark:text-zinc-700">•</span>}
+
+                            {/* Collaborators (Color, Sharp) */}
+                            {entry.timeline_collaborators.length > 0 && (
+                                <div className="flex -space-x-1">
+                                    {entry.timeline_collaborators.slice(0, 3).map(collab => (
+                                        collab.profiles && (
+                                            // eslint-disable-next-line @next/next/no-img-element
+                                            <img
+                                                key={collab.profiles.id}
+                                                src={collab.profiles.profile_pic_url || '/default-avatar.png'}
+                                                alt={collab.profiles.username}
+                                                className="w-4 h-4 rounded-sm ring-1 ring-white dark:ring-zinc-950 object-cover hover:scale-110 hover:z-10 transition-transform cursor-pointer"
+                                                onClick={(e) => {e.stopPropagation(); setSelectedCollaborator(collab.profiles)}}
+                                                title={collab.profiles.username}
+                                            />
+                                        )
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Separator (if Photo exists) */}
+                            {((rating > 0 || entry.viewing_context || isRewatch || entry.timeline_collaborators.length > 0) && entry.photo_url) && <span className="text-zinc-300 dark:text-zinc-700">•</span>}
+
+                            {/* Photo Icon */}
+                            {entry.photo_url && (
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setSelectedPhotoUrl(entry.photo_url); }}
+                                    className="text-zinc-400 hover:text-zinc-900 dark:text-zinc-500 dark:hover:text-zinc-200 transition-colors"
+                                >
+                                    <PhotoIcon className="w-3.5 h-3.5" />
+                                </button>
                             )}
                         </div>
 
-                        {/* FOOTER */}
-                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-900">
-
-                            {/* Left Side: Notes & Review */}
-                            <div className="flex items-center gap-4">
-                                {entry.notes && (
-                                    <button
-                                        onClick={() => setShowNotesModal(true)}
-                                        className="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors group/noteBtn"
-                                    >
-                                        <DocumentTextIcon className="w-3.5 h-3.5 text-zinc-400 group-hover/noteBtn:text-zinc-600 dark:text-zinc-600 dark:group-hover/noteBtn:text-zinc-400" />
-                                        <span className="font-medium">Notes</span>
-                                    </button>
-                                )}
-
-                                {entry.posts?.slug && (
-                                    <Link href={`/blog/${entry.posts.slug}`} className="flex items-center gap-1 text-xs text-blue-600/80 hover:text-blue-600 dark:text-blue-400/80 dark:hover:text-blue-400 transition-colors">
-                                        <LinkIcon className="w-3.5 h-3.5" />
-                                        <span className="font-medium">Review</span>
-                                    </Link>
-                                )}
+                        {/* 4. Notes Preview (Clickable) */}
+                        {entry.notes && (
+                            <div
+                                className="mb-2 group/notes cursor-pointer"
+                                onClick={() => setShowNotesModal(true)}
+                                title="Click to read full notes"
+                            >
+                                <p className={`text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed line-clamp-2 group-hover/notes:text-zinc-900 dark:group-hover/notes:text-zinc-100 transition-colors ${geistSans.className}`}>
+                                    {entry.notes}
+                                </p>
                             </div>
+                        )}
 
-                            {/* Right Side: Collabs & Photo */}
-                            <div className="flex items-center gap-3">
-                                {entry.timeline_collaborators.length > 0 && (
-                                    <div className="flex -space-x-1.5">
-                                        {entry.timeline_collaborators.slice(0, 3).map(collab => (
-                                            collab.profiles && (
-                                                // eslint-disable-next-line @next/next/no-img-element
-                                                <img
-                                                    key={collab.profiles.id}
-                                                    src={collab.profiles.profile_pic_url || '/default-avatar.png'}
-                                                    alt={collab.profiles.username}
-                                                    className="w-5 h-5 rounded-full ring-1 ring-white dark:ring-zinc-950 object-cover grayscale hover:grayscale-0 transition-all cursor-pointer"
-                                                    onClick={(e) => {e.stopPropagation(); setSelectedCollaborator(collab.profiles)}}
-                                                />
-                                            )
-                                        ))}
-                                    </div>
-                                )}
-                                {entry.photo_url && (
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); setSelectedPhotoUrl(entry.photo_url); }}
-                                        className="text-zinc-300 hover:text-zinc-900 dark:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
-                                    >
-                                        <PhotoIcon className="w-4 h-4" />
-                                    </button>
-                                )}
+                        {/* 5. Footer: Review Link (if exists) */}
+                        {entry.posts?.slug && (
+                            <div className="mt-auto pt-1">
+                                <Link href={`/blog/${entry.posts.slug}`} className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
+                                    <LinkIcon className="w-3 h-3" />
+                                    <span>Read Review</span>
+                                </Link>
                             </div>
-                        </div>
+                        )}
+
                     </div>
                 </div>
             </motion.div>
 
             {/* --- MODALS --- */}
 
-            {/* Notes Modal */}
             <AnimatePresence>
                 {showNotesModal && entry.notes && (
                     <motion.div
-                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80] flex items-center justify-center p-4"
-                        onClick={() => setShowNotesModal(false)}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[80] flex items-center justify-center p-4 sm:p-6"
                     >
+                        {/* Backdrop with Blur */}
+                        <div
+                            className="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm"
+                            onClick={() => setShowNotesModal(false)}
+                        />
+
+                        {/* Modal Content */}
                         <motion.div
-                            initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-                            className="w-full max-w-md bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 p-6 rounded-2xl shadow-xl relative"
+                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                            animate={{
+                                opacity: 1,
+                                scale: 1,
+                                y: 0,
+                                transition: { type: "spring", duration: 0.5, bounce: 0.3 }
+                            }}
+                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                            className="relative w-full max-w-lg bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-2xl flex flex-col max-h-[85vh] overflow-hidden"
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <button onClick={() => setShowNotesModal(false)} className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-900 dark:hover:text-white"><XMarkIcon className="w-5 h-5" /></button>
-                            <h3 className="text-lg font-bold mb-4 text-zinc-900 dark:text-white">{cinematicItem.title} <span className="text-zinc-400 font-normal">Notes</span></h3>
-                            <div className="max-h-[50vh] overflow-y-auto custom-scrollbar">
-                                <p className={`${geistSans.className} whitespace-pre-wrap leading-relaxed text-zinc-700 dark:text-zinc-300 text-sm`}>
-                                    {entry.notes}
-                                </p>
+                            {/* 1. Header: Context (Poster + Title + Rating) */}
+                            <div className="shrink-0 flex items-start gap-4 p-5 border-b border-zinc-100 dark:border-zinc-900 bg-zinc-50/50 dark:bg-zinc-900/20">
+                                {/* Mini Poster */}
+                                <div className="relative w-12 h-16 shrink-0 rounded-sm overflow-hidden shadow-sm border border-zinc-200 dark:border-zinc-800">
+                                    <Image
+                                        src={cinematicItem.poster_url || '/placeholder-poster.png'}
+                                        alt="Poster"
+                                        fill
+                                        className="object-cover"
+                                    />
+                                </div>
+
+                                {/* Meta Info */}
+                                <div className="flex-1 min-w-0 pt-0.5">
+                                    <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100 leading-tight truncate pr-8">
+                                        {cinematicItem.title}
+                                    </h3>
+
+                                    <div className="flex items-center gap-2 mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+                                        <span className="font-medium">{formattedDate}</span>
+
+                                        {rating > 0 && (
+                                            <>
+                                                <span className="text-zinc-300 dark:text-zinc-700">•</span>
+                                                <div className="flex items-center gap-1 text-zinc-900 dark:text-zinc-100 font-semibold">
+                                                    <StarIcon className="w-3 h-3 text-zinc-400 dark:text-zinc-600" />
+                                                    {displayRating}
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Close Button */}
+                                <button
+                                    onClick={() => setShowNotesModal(false)}
+                                    className="absolute top-4 right-4 p-1 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors rounded-md hover:bg-zinc-200/50 dark:hover:bg-zinc-800"
+                                >
+                                    <XMarkIcon className="w-5 h-5" />
+                                </button>
                             </div>
+
+                            {/* 2. Body: The Notes (Scrollable) */}
+                            <div className="overflow-y-auto p-5 custom-scrollbar">
+                                <div className={`${geistSans.className} text-base leading-relaxed text-zinc-800 dark:text-zinc-300 whitespace-pre-wrap`}>
+                                    {entry.notes}
+                                </div>
+                            </div>
+
+                            {/* 3. Footer: Subtle fade/padding (Optional, purely aesthetic) */}
+                            <div className="shrink-0 h-4 bg-gradient-to-t from-white dark:from-zinc-950 to-transparent pointer-events-none" />
                         </motion.div>
                     </motion.div>
                 )}
