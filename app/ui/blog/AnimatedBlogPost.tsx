@@ -196,7 +196,7 @@ export default function AnimatedBlogPost({
                     <div className="lg:col-span-3">
                         <div className="lg:sticky lg:top-24 space-y-8">
                             <Link href={`/profile/${author.username}`} className="group block space-y-4">
-                                <div className="relative w-16 h-16 border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 grayscale group-hover:grayscale-0 transition-all">
+                                <div className="relative w-16 h-16 border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900  group-hover:grayscale-0 transition-all">
                                     <Image src={author.profile_pic_url || '/placeholder-user.jpg'} alt="" fill className="object-cover" />
                                 </div>
                                 <div>
@@ -230,7 +230,7 @@ export default function AnimatedBlogPost({
                                     onClick={() => setIsCinematicModalOpen(true)}
                                     className="group cursor-pointer flex flex-col md:flex-row border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/50 hover:border-zinc-900 dark:hover:border-zinc-500 transition-all duration-500"
                                 >
-                                    <div className="relative w-full md:w-32 h-48 grayscale group-hover:grayscale-0 transition-all duration-700">
+                                    <div className="relative w-full md:w-32 h-48  group-hover:grayscale-0 transition-all duration-700">
                                         {cinematicItem.poster_url ? (
                                             <Image src={cinematicItem.poster_url} alt="" fill className="object-cover" />
                                         ) : (

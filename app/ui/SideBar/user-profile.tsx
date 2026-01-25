@@ -24,7 +24,8 @@ export default function UserProfile({ user }: { user: UserProps }) {
                 <div className="shrink-0 w-8 h-8 flex items-center justify-center bg-zinc-200 dark:bg-zinc-800 rounded-full mr-3">
                     <PowerIcon className="h-4 w-4 text-zinc-500" />
                 </div>
-                <span className="opacity-0 -translate-x-4 group-hover/sidebar:opacity-100 group-hover/sidebar:translate-x-0 transition-all duration-300 whitespace-nowrap text-sm font-bold">
+                {/* Text - Added delay-200 */}
+                <span className="opacity-0 -translate-x-4 group-hover/sidebar:opacity-100 group-hover/sidebar:translate-x-0 transition-all duration-300 delay-200 whitespace-nowrap text-sm font-bold">
                     SIGN IN
                 </span>
             </Link>
@@ -52,8 +53,8 @@ export default function UserProfile({ user }: { user: UserProps }) {
                                 fill
                             />
                         </div>
-                        {/* Text */}
-                        <div className="flex flex-col opacity-0 -translate-x-4 group-hover/sidebar:opacity-100 group-hover/sidebar:translate-x-0 transition-all duration-300">
+                        {/* Text - Added delay-200 */}
+                        <div className="flex flex-col opacity-0 -translate-x-4 group-hover/sidebar:opacity-100 group-hover/sidebar:translate-x-0 transition-all duration-300 delay-200">
                             <p className="truncate text-sm font-bold text-zinc-900 dark:text-zinc-100">
                                 {user.profile.display_name}
                             </p>
@@ -71,7 +72,8 @@ export default function UserProfile({ user }: { user: UserProps }) {
                         <div className="shrink-0 w-10 h-10 flex items-center justify-center mr-3">
                             <PowerIcon className="h-5 w-5" />
                         </div>
-                        <span className="font-bold text-sm tracking-wide opacity-0 -translate-x-4 group-hover/sidebar:opacity-100 group-hover/sidebar:translate-x-0 transition-all duration-300">
+                        {/* Text - Added delay-200 */}
+                        <span className="font-bold text-sm tracking-wide opacity-0 -translate-x-4 group-hover/sidebar:opacity-100 group-hover/sidebar:translate-x-0 transition-all duration-300 delay-200">
                             LOG OUT
                         </span>
                     </button>

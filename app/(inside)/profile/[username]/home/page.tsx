@@ -4,6 +4,24 @@ import { createClient } from '@/utils/supabase/server';
 import { notFound } from 'next/navigation';
 import { ProfileSection } from '@/lib/definitions';
 
+import {Metadata} from "next";
+
+type Props = {
+    params: Promise<{ username: string }>
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+    const { username } = await params;
+    return {
+        title: `${username}'s Profile`,
+        description: `Profile of ${username} on DeeperWeave.`,
+        openGraph: {
+            title: `${username}'s Profile`,
+            description: `Check out what ${username} has been watching and reviewing lately.`,
+        },
+    };
+}
+
 // Helper to fetch full sections with nested items
 async function getProfileSections(userId: string): Promise<ProfileSection[]> {
     const supabase = await createClient();

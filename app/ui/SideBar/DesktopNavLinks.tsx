@@ -51,9 +51,9 @@ export default function DesktopNavLinks() {
                             })} />
                         </div>
 
-                        {/* Text - Animates Opacity & Position only. No width changes. */}
+                        {/* Text - Added delay-200 to sync with sidebar expansion */}
                         <span className={clsx(
-                            "whitespace-nowrap font-medium text-sm tracking-wide transition-all duration-300 ease-in-out",
+                            "whitespace-nowrap font-medium text-sm tracking-wide transition-all duration-300 ease-in-out delay-200",
                             // Start slightly to the left and invisible
                             "opacity-0 -translate-x-4",
                             // On hover, slide right and fade in

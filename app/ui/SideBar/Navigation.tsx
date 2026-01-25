@@ -13,7 +13,7 @@ export default async function Navigation() {
     return (
         <>
             {/* ====== DESKTOP SIDEBAR ====== */}
-            <aside className="hidden h-screen fixed top-0 left-0 flex-col border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-black md:flex md:w-20 md:hover:w-72 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden group/sidebar z-50 shadow-xl">
+            <aside className="hidden h-[100dvh] fixed top-0 left-0 flex-col border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-black md:flex md:w-20 md:hover:w-72 transition-[width] duration-500 ease-in-out overflow-hidden group/sidebar z-50 shadow-xl">
 
                 {/* Texture Background */}
                 <div className="absolute inset-0 opacity-[0.03] pointer-events-none z-0"
@@ -27,8 +27,8 @@ export default async function Navigation() {
                         <div className="shrink-0 w-10 h-10 bg-black dark:bg-white flex items-center justify-center text-white dark:text-black font-bold text-xs rounded-sm">
                             DW
                         </div>
-                        {/* Text - Fades in/out without affecting layout */}
-                        <div className="flex flex-col opacity-0 -translate-x-4 group-hover/sidebar:opacity-100 group-hover/sidebar:translate-x-0 transition-all duration-300 ease-out delay-75">
+                        {/* Text - Added delay-200 to wait for expansion */}
+                        <div className="flex flex-col opacity-0 -translate-x-4 group-hover/sidebar:opacity-100 group-hover/sidebar:translate-x-0 transition-all duration-300 ease-out delay-200">
                             <p className={`${PlayWriteNewZealandFont.className} text-xl font-bold text-zinc-900 dark:text-zinc-100 leading-none`}>
                                 Deeper Weave
                             </p>
