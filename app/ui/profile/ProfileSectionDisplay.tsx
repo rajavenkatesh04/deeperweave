@@ -9,7 +9,7 @@ export default function ProfileSectionDisplay({sections}: { sections: any[] }) {
     return (
         <div className="flex flex-col gap-20 md:gap-40">
             {sections.map((section, idx) => (
-                <section key={section.id} className="max-w-[1400px] mx-auto px-6 md:px-12 w-full">
+                <section key={section.id} className="max-w-[1400px] mx-auto px-3 md:px-12 w-full">
 
                     {/* --- Responsive Header Section --- */}
                     <div className="mb-8 md:mb-16">
@@ -40,7 +40,7 @@ export default function ProfileSectionDisplay({sections}: { sections: any[] }) {
                     </div>
 
                     {/* --- Evenly Spaced 2/4 Grid --- */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-12 md:gap-x-12 md:gap-y-32 justify-items-center">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-6 md:gap-x-12 md:gap-y-17 justify-items-center">
                         {section.items.map((itemRow: any) => {
                             const uiItem = normalizeItem(itemRow);
                             if (!uiItem) return null;

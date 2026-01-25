@@ -82,7 +82,7 @@ export default function ProfileItemCard({ item, rank }: { item: UnifiedProfileIt
 
                 {/* --- INFO SECTION --- */}
                 <div className="mt-4 px-1 space-y-1 transition-opacity duration-300 opacity-80 group-hover:opacity-100">
-                    <h3 className="text-base font-bold leading-tight text-zinc-900 dark:text-zinc-100 line-clamp-1 group-hover:underline decoration-1 underline-offset-4 uppercase tracking-tighter">
+                    <h3 className="text-base font-bold leading-tight text-zinc-900 dark:text-zinc-100 line-clamp-1 group-hover:underline decoration-1 underline-offset-4 tracking-tighter">
                         {item.title}
                     </h3>
 
