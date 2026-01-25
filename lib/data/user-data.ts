@@ -3,7 +3,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { unstable_noStore as noStore } from 'next/cache';
 // ✨ 1. IMPORT Series and other types
-import {Movie, UserProfile, Series, ProfileSearchResult} from "@/lib/definitions";
+import {Movie, UserProfile, Series, ProfileSearchResult, ProfileSection} from "@/lib/definitions";
 
 // ... (getUserProfile, checkProfileCompletion, getProfileByUsername, checkFollowStatus, getFollowRequests, getProfileAndFollowStatus, getProfileData are all unchanged) ...
 export async function getUserProfile() {
@@ -126,71 +126,92 @@ export async function getProfileAndFollowStatus(username: string): Promise<Profi
     return { profile, followStatus: followStatus as 'pending' | 'accepted' | 'not_following' };
 }
 
-export async function getProfileData(username: string): Promise<ProfileData> {
+/**
+ * ✨ UPDATED: Fetch Public Profile Data
+ * Now fetches ALL sections for the user to display on their profile.
+ */
+export async function getProfileData(username: string) {
     noStore();
     const supabase = await createClient();
     const { data: { user: viewer } } = await supabase.auth.getUser();
 
-    // 1. Fetch Profile + Timeline Count
-    // (We removed the join counts for followers here because they are inaccurate)
+    // 1. Fetch Profile
     const { data: profile } = await supabase
         .from('profiles')
         .select('*, timeline_count:timeline_entries!user_id(count)')
         .eq('username', username)
-        .single<UserProfile & { timeline_count: [{ count: number }] }>();
+        .single();
 
     if (!profile) {
-        return { profile: null, followStatus: 'not_following', followerCount: 0, followingCount: 0, timelineCount: 0 };
+        return {
+            profile: null,
+            followStatus: 'not_following',
+            followerCount: 0,
+            followingCount: 0,
+            timelineCount: 0,
+            sections: [] // Empty sections
+        };
     }
 
-    // 2. ✨ PARALLEL FETCH for Accurate Counts (Filtered by 'accepted')
+    // 2. Fetch ALL Sections with Items
+    const { data: sectionsData } = await supabase
+        .from('profile_sections')
+        .select(`
+            *,
+            items:section_items(
+                *,
+                movie:movies(*),
+                series:series(*),
+                person:people(*)
+            )
+        `)
+        .eq('user_id', profile.id)
+        .order('rank', { ascending: true });
+
+    // Clean up the data structure (Supabase returns arrays for relations)
+    const sections: ProfileSection[] = (sectionsData || []).map((sec: any) => ({
+        ...sec,
+        items: (sec.items || []).sort((a: any, b: any) => a.rank - b.rank).map((item: any) => ({
+            ...item,
+            movie: Array.isArray(item.movie) ? item.movie[0] : item.movie,
+            series: Array.isArray(item.series) ? item.series[0] : item.series,
+            person: Array.isArray(item.person) ? item.person[0] : item.person,
+        }))
+    }));
+
+    // 3. Fetch Counts (Existing logic)
     const [followerRes, followingRes, followStatusRes] = await Promise.all([
-        // Count Followers (status = accepted)
-        supabase.from('followers')
-            .select('*', { count: 'exact', head: true })
-            .eq('following_id', profile.id)
-            .eq('status', 'accepted'),
-
-        // Count Following (status = accepted)
-        supabase.from('followers')
-            .select('*', { count: 'exact', head: true })
-            .eq('follower_id', profile.id)
-            .eq('status', 'accepted'),
-
-        // Fetch viewer status if logged in
+        supabase.from('followers').select('*', { count: 'exact', head: true }).eq('following_id', profile.id).eq('status', 'accepted'),
+        supabase.from('followers').select('*', { count: 'exact', head: true }).eq('follower_id', profile.id).eq('status', 'accepted'),
         viewer && viewer.id !== profile.id
             ? supabase.from('followers').select('status').eq('follower_id', viewer.id).eq('following_id', profile.id).single()
             : Promise.resolve({ data: null })
     ]);
 
-    const followerCount = followerRes.count || 0;
-    const followingCount = followingRes.count || 0;
-    const timelineCount = profile.timeline_count[0]?.count || 0;
-    const followStatus = followStatusRes.data ? followStatusRes.data.status : 'not_following';
-
     return {
         profile,
-        followStatus: followStatus as 'not_following' | 'pending' | 'accepted',
-        followerCount,
-        followingCount,
-        timelineCount
+        followStatus: (followStatusRes.data?.status || 'not_following') as 'not_following' | 'pending' | 'accepted',
+        followerCount: followerRes.count || 0,
+        followingCount: followingRes.count || 0,
+        timelineCount: profile.timeline_count?.[0]?.count || 0,
+        sections // ✨ Return the new sections
     };
 }
-
 
 /**
  * =================================================================
  * ✨ 2. UPDATED: getProfileForEdit
  * =================================================================
  */
+/**
+ * ✨ UPDATED: Fetch Data for the Edit Page
+ * Now retrieves the "Top 3 Favorites" section from the new tables.
+ */
 export async function getProfileForEdit() {
     noStore();
     const supabase = await createClient();
-
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-        return null;
-    }
+    if (!user) return null;
 
     const { data: profile } = await supabase
         .from('profiles')
@@ -198,35 +219,45 @@ export async function getProfileForEdit() {
         .eq('id', user.id)
         .single<UserProfile>();
 
-    if (!profile) {
-        // ✨ 3. RENAMED prop
-        return { user, profile: null, favoriteItems: [] };
-    }
+    if (!profile) return { user, profile: null, sections: [] };
 
-    // ✨ 4. UPDATED select to fetch both movies and series
-    const { data: itemData, error } = await supabase
-        .from('favorite_films')
-        .select('rank, movies(*), series(*)') // ✨ FETCH BOTH
+    // Fetch ALL sections and their items (Polymorphic associations)
+    const { data: sectionsData } = await supabase
+        .from('profile_sections')
+        .select(`
+            *,
+            items:section_items(
+                *,
+                movie:movies(*),
+                series:series(*),
+                person:people(*)
+            )
+        `)
         .eq('user_id', user.id)
         .order('rank', { ascending: true });
 
-    if (error) {
-        console.error("Error fetching favorite items for edit page:", error);
-        // ✨ 5. RENAMED prop
-        return { user, profile, favoriteItems: [] };
-    }
+    // Format the data for the UI
+    const sections: ProfileSection[] = (sectionsData || []).map((sec: any) => ({
+        id: sec.id,
+        user_id: sec.user_id,
+        title: sec.title,
+        type: sec.type,
+        rank: sec.rank,
+        // Sort items by rank and flatten array responses
+        items: (sec.items || [])
+            .sort((a: any, b: any) => a.rank - b.rank)
+            .map((item: any) => ({
+                id: item.id,
+                section_id: item.section_id,
+                item_type: item.item_type,
+                rank: item.rank,
+                movie: Array.isArray(item.movie) ? item.movie[0] : item.movie,
+                series: Array.isArray(item.series) ? item.series[0] : item.series,
+                person: Array.isArray(item.person) ? item.person[0] : item.person,
+            }))
+    }));
 
-    // ✨ 6. Safely transform the data.
-    const favoriteItems = itemData
-        .map(fav => ({
-            rank: fav.rank,
-            movies: (Array.isArray(fav.movies) ? fav.movies[0] : fav.movies) as Movie | null,
-            series: (Array.isArray(fav.series) ? fav.series[0] : fav.series) as Series | null,
-        }))
-        .filter(fav => fav.movies || fav.series); // Ensure we don't pass any null items
-
-    // ✨ 7. RENAMED prop
-    return { user, profile, favoriteItems: favoriteItems as { rank: number; movies: Movie | null; series: Series | null }[] };
+    return { user, profile, sections };
 }
 
 // ... (getFollowers and getFollowing are unchanged) ...

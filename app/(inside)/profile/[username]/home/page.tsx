@@ -1,48 +1,51 @@
-import FavoriteFilmsDisplay from '@/app/ui/profile/FavoriteFilmsDisplay';
+import ProfileSectionDisplay from '@/app/ui/profile/ProfileSectionDisplay';
 import { getProfileByUsername } from '@/lib/data/user-data';
 import { createClient } from '@/utils/supabase/server';
 import { notFound } from 'next/navigation';
-// ✨ 1. IMPORT Series
-import { Movie, Series } from '@/lib/definitions';
+import { ProfileSection } from '@/lib/definitions';
 
-// ✨ 2. DEFINE the new return type
-type FavoriteItem = {
-    rank: number;
-    movies: Movie | null;
-    series: Series | null;
-};
-
-// ✨ 3. UPDATED this helper function
-async function getFavoriteItems(userId: string): Promise<FavoriteItem[]> {
+// Helper to fetch full sections with nested items
+async function getProfileSections(userId: string): Promise<ProfileSection[]> {
     const supabase = await createClient();
-    const { data, error } = await supabase
-        .from('favorite_films')
-        .select('rank, movies(*), series(*)') // ✨ Fetch both
-        .eq('user_id', userId)
-        .order('rank');
 
-    if (error || !data) {
-        console.error("Error fetching favorite items:", error);
+    // Fetch sections and nested items (movies, series, people)
+    const { data: sectionsData, error } = await supabase
+        .from('profile_sections')
+        .select(`
+            *,
+            items:section_items(
+                *,
+                movie:movies(*),
+                series:series(*),
+                person:people(*)
+            )
+        `)
+        .eq('user_id', userId)
+        .order('rank', { ascending: true });
+
+    if (error || !sectionsData) {
+        console.error("Error fetching profile sections:", error);
         return [];
     }
 
-    // ✨ 4. Safely map the new data structure
-    const formattedData = data
-        .map(fav => ({
-            rank: fav.rank,
-            movies: Array.isArray(fav.movies) ? fav.movies[0] : fav.movies,
-            series: Array.isArray(fav.series) ? fav.series[0] : fav.series,
-        }))
-        .filter(fav => fav.movies || fav.series); // Ensure no empty records
+    // Transform and Sort the data
+    const sections: ProfileSection[] = sectionsData.map((sec: any) => ({
+        ...sec,
+        items: (sec.items || [])
+            .sort((a: any, b: any) => a.rank - b.rank)
+            .map((item: any) => ({
+                ...item,
+                // Flatten array responses from Supabase
+                movie: Array.isArray(item.movie) ? item.movie[0] : item.movie,
+                series: Array.isArray(item.series) ? item.series[0] : item.series,
+                person: Array.isArray(item.person) ? item.person[0] : item.person,
+            }))
+    }));
 
-    return formattedData as FavoriteItem[];
+    return sections;
 }
 
-/**
- * The Page component for a user's "Home" tab.
- */
 export default async function ProfileHomePage({ params }: { params: Promise<{ username: string }> }) {
-    // Await the params Promise
     const { username } = await params;
 
     const profile = await getProfileByUsername(username);
@@ -50,13 +53,12 @@ export default async function ProfileHomePage({ params }: { params: Promise<{ us
         notFound();
     }
 
-    // ✨ 5. Renamed variable
-    const favoriteItems = await getFavoriteItems(profile.id);
+    // Fetch the new modular sections
+    const sections = await getProfileSections(profile.id);
 
     return (
         <div className="space-y-8">
-            {/* ✨ 6. Passed the correct prop name */}
-            <FavoriteFilmsDisplay favoriteItems={favoriteItems} />
+            <ProfileSectionDisplay sections={sections} />
         </div>
     );
 }

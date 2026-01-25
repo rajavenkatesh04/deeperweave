@@ -1,30 +1,47 @@
 'use client';
 
 import { useActionState, useEffect, useRef, useState } from 'react';
-import { useFormStatus } from 'react-dom';
 import Image from 'next/image';
 import Link from 'next/link';
-import { UserProfile, Movie, Series } from '@/lib/definitions';
+import { UserProfile, ProfileSection } from '@/lib/definitions';
 import { updateProfile, EditProfileState, checkUsernameAvailability } from '@/lib/actions/profile-actions';
 import { searchCinematic, type CinematicSearchResult } from '@/lib/actions/cinematic-actions';
 import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
 import {
     PhotoIcon, CheckCircleIcon, XCircleIcon, FilmIcon,
     XMarkIcon, MagnifyingGlassIcon, ArrowLeftIcon, PlusIcon,
-    ArrowPathIcon, TrashIcon
+    ArrowPathIcon, TrashIcon, Bars3Icon, UserIcon, TvIcon,
+    ChevronUpIcon, ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import LoadingSpinner from '@/app/ui/loading-spinner';
 import { clsx } from 'clsx';
 
+// --- Types for local state ---
+type EditableItem = {
+    id: number | string;
+    title: string;
+    image_path: string | null;
+    type: 'movie' | 'tv' | 'person';
+    year?: string;
+};
+
+type EditableSection = {
+    id: string; // temp id for key
+    title: string;
+    type: 'mixed' | 'movie' | 'tv' | 'person';
+    items: (EditableItem | null)[];
+};
+
 // --- SUB-COMPONENTS ---
 
-// 1. Search Modal (Unchanged)
 function SearchModal({
                          isOpen,
+                         sectionType,
                          onClose,
                          onSelect
                      }: {
     isOpen: boolean;
+    sectionType: string;
     onClose: () => void;
     onSelect: (item: CinematicSearchResult) => void;
 }) {
@@ -34,258 +51,263 @@ function SearchModal({
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-        if (isOpen) inputRef.current?.focus();
+        if (isOpen) {
+            inputRef.current?.focus();
+            setQuery('');
+            setResults([]);
+        }
     }, [isOpen]);
 
     useEffect(() => {
         const handler = setTimeout(async () => {
-            if (query.trim().length < 2) { setResults([]); return; }
+            if (query.trim().length < 2) return;
             setLoading(true);
             try {
+                // Fetch basic results
                 const data = await searchCinematic(query);
-                setResults(data);
+
+                // Filter based on Section Type
+                const filtered = data.filter(item => {
+                    if (sectionType === 'movie') return item.media_type === 'movie';
+                    if (sectionType === 'tv') return item.media_type === 'tv';
+                    if (sectionType === 'person') return item.media_type === 'person';
+                    return item.media_type !== 'person'; // Mixed usually excludes people unless specified
+                });
+
+                setResults(filtered);
             } catch (e) { console.error(e); }
             finally { setLoading(false); }
         }, 500);
         return () => clearTimeout(handler);
-    }, [query]);
+    }, [query, sectionType]);
 
     if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-zinc-900/90 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="w-full max-w-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
-                <div className="p-4 border-b border-zinc-100 dark:border-zinc-900 flex items-center justify-between bg-zinc-50 dark:bg-zinc-900/50">
-                    <h3 className={`${PlayWriteNewZealandFont.className} text-lg font-bold`}>Search Archives</h3>
-                    <button onClick={onClose} className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-full transition-colors">
-                        <XMarkIcon className="w-5 h-5" />
-                    </button>
+            <div className="w-full max-w-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 shadow-2xl overflow-hidden flex flex-col max-h-[80vh] rounded-xl">
+                <div className="p-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+                    <h3 className="font-bold">Add to {sectionType === 'mixed' ? 'Collection' : sectionType} list</h3>
+                    <button onClick={onClose}><XMarkIcon className="w-5 h-5" /></button>
                 </div>
-                <div className="p-4 relative">
+                <div className="p-4 border-b border-zinc-100 dark:border-zinc-800 relative">
                     <MagnifyingGlassIcon className="absolute left-7 top-7 w-5 h-5 text-zinc-400" />
                     <input
                         ref={inputRef}
                         type="text"
-                        placeholder="Type a movie or show title..."
+                        placeholder="Search..."
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
-                        className="w-full h-12 pl-10 pr-4 bg-zinc-100 dark:bg-zinc-900 border-none rounded-lg focus:ring-2 focus:ring-zinc-500 placeholder:text-zinc-400 text-lg"
+                        className="w-full h-12 pl-10 bg-zinc-100 dark:bg-zinc-900 rounded-lg outline-none"
                     />
                 </div>
-                <div className="flex-1 overflow-y-auto p-4 space-y-2">
-                    {loading ? (
-                        <div className="py-10 text-center"><LoadingSpinner /></div>
-                    ) : results.length > 0 ? (
+                <div className="flex-1 overflow-y-auto p-2 space-y-1">
+                    {loading ? <div className="py-10 text-center"><LoadingSpinner/></div> :
                         results.map((item) => (
                             <button
                                 key={item.id}
-                                onClick={() => { onSelect(item); onClose(); setQuery(''); setResults([]); }}
-                                className="w-full flex items-center gap-4 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-lg transition-colors group text-left"
+                                onClick={() => { onSelect(item); onClose(); }}
+                                className="w-full flex items-center gap-4 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-lg text-left"
                             >
-                                {item.poster_path ? (
-                                    <Image src={`https://image.tmdb.org/t/p/w92${item.poster_path}`} alt={item.title} width={48} height={72} className="rounded-md object-cover shadow-sm" />
+                                {item.poster_path || item.profile_path ? (
+                                    <Image src={`https://image.tmdb.org/t/p/w92${item.poster_path || item.profile_path}`} alt={item.title || item.name} width={40} height={60} className="rounded object-cover" />
                                 ) : (
-                                    <div className="w-12 h-[72px] bg-zinc-200 dark:bg-zinc-800 rounded-md flex items-center justify-center"><FilmIcon className="w-6 h-6 text-zinc-400"/></div>
+                                    <div className="w-10 h-[60px] bg-zinc-800 rounded flex items-center justify-center"><FilmIcon className="w-4 h-4 text-zinc-600"/></div>
                                 )}
                                 <div>
-                                    <h4 className="font-bold text-zinc-900 dark:text-zinc-100 group-hover:text-amber-600 transition-colors">{item.title}</h4>
-                                    <p className="text-xs text-zinc-500 uppercase tracking-wide">
-                                        {item.release_date?.split('-')[0]} • {item.media_type}
-                                    </p>
+                                    <h4 className="font-bold text-sm">{item.title || item.name}</h4>
+                                    <p className="text-xs text-zinc-500 uppercase">{item.media_type} • {item.release_date?.split('-')[0]}</p>
                                 </div>
                             </button>
-                        ))
-                    ) : query.length > 2 ? (
-                        <div className="text-center py-10 text-zinc-500">No records found.</div>
-                    ) : null}
+                        ))}
                 </div>
             </div>
         </div>
     );
 }
 
-// 2. Responsive Favorite Slot (List on Mobile, Grid on Desktop)
-function FavoriteSlot({
-                          item,
-                          index,
-                          onOpenSearch,
-                          onRemove,
-                          dragStart,
-                          dragOver,
-                          drop,
-                          isDragging
-                      }: {
-    item: CinematicSearchResult | null;
-    index: number;
-    onOpenSearch: () => void;
-    onRemove: () => void;
-    dragStart: () => void;
-    dragOver: (e: React.DragEvent) => void;
-    drop: () => void;
-    isDragging: boolean;
+function SectionEditor({
+                           section,
+                           index,
+                           onUpdate,
+                           onRemove,
+                           onMove,
+                           totalSections
+                       }: {
+    section: EditableSection,
+    index: number,
+    onUpdate: (s: EditableSection) => void,
+    onRemove: () => void,
+    onMove: (dir: -1 | 1) => void,
+    totalSections: number
 }) {
-    return (
-        <div
-            className={clsx(
-                "relative group overflow-hidden border transition-all duration-300 rounded-lg",
-                // Mobile: List Layout (Horizontal flex)
-                "flex flex-row items-center h-28 w-full p-2 gap-4",
-                // Desktop: Grid Layout (Vertical column, Aspect Ratio)
-                "md:flex-col md:items-stretch md:h-auto md:p-0 md:gap-0 md:aspect-[2/3]",
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [activeSlot, setActiveSlot] = useState<number>(0);
 
-                item
-                    ? "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900"
-                    : "border-dashed border-zinc-300 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30 hover:bg-zinc-100 dark:hover:bg-zinc-900",
-                isDragging && "opacity-50 scale-95 ring-2 ring-zinc-500"
-            )}
-            draggable={!!item}
-            onDragStart={dragStart}
-            onDragOver={dragOver}
-            onDrop={drop}
-        >
-            {/* Rank Badge */}
-            <div className="absolute top-2 left-2 md:top-3 md:left-3 z-20 w-6 h-6 md:w-8 md:h-8 flex items-center justify-center bg-zinc-900 text-white dark:bg-zinc-100 dark:text-black border border-white dark:border-zinc-900 text-xs md:text-sm font-black rounded-full shadow-md">
-                #{index + 1}
+    const handleAddItem = (result: CinematicSearchResult) => {
+        const newItems = [...section.items];
+        newItems[activeSlot] = {
+            id: result.id,
+            title: result.title || result.name,
+            image_path: result.poster_path || result.profile_path,
+            type: result.media_type as 'movie' | 'tv' | 'person',
+            year: result.release_date?.split('-')[0]
+        };
+        onUpdate({ ...section, items: newItems });
+    };
+
+    const handleRemoveItem = (slotIndex: number) => {
+        const newItems = [...section.items];
+        newItems[slotIndex] = null;
+        onUpdate({ ...section, items: newItems });
+    };
+
+    return (
+        <div className="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 relative group transition-all hover:border-zinc-400 dark:hover:border-zinc-600">
+            <SearchModal
+                isOpen={isSearchOpen}
+                sectionType={section.type}
+                onClose={() => setIsSearchOpen(false)}
+                onSelect={handleAddItem}
+            />
+
+            {/* Controls */}
+            <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3 flex-1">
+                    <div className="p-2 bg-zinc-100 dark:bg-zinc-800 rounded text-zinc-500">
+                        {section.type === 'movie' && <FilmIcon className="w-5 h-5"/>}
+                        {section.type === 'tv' && <TvIcon className="w-5 h-5"/>}
+                        {section.type === 'person' && <UserIcon className="w-5 h-5"/>}
+                        {section.type === 'mixed' && <Bars3Icon className="w-5 h-5"/>}
+                    </div>
+                    <input
+                        type="text"
+                        value={section.title}
+                        onChange={(e) => onUpdate({...section, title: e.target.value})}
+                        className="bg-transparent text-xl font-bold border-b border-transparent hover:border-zinc-700 focus:border-white outline-none w-full"
+                    />
+                </div>
+                <div className="flex items-center gap-1 ml-4">
+                    <button type="button" disabled={index === 0} onClick={() => onMove(-1)} className="p-2 hover:bg-zinc-800 rounded disabled:opacity-30"><ChevronUpIcon className="w-4 h-4"/></button>
+                    <button type="button" disabled={index === totalSections - 1} onClick={() => onMove(1)} className="p-2 hover:bg-zinc-800 rounded disabled:opacity-30"><ChevronDownIcon className="w-4 h-4"/></button>
+                    <div className="w-px h-4 bg-zinc-800 mx-2"/>
+                    <button type="button" onClick={onRemove} className="p-2 text-red-500 hover:bg-red-950/30 rounded"><TrashIcon className="w-4 h-4"/></button>
+                </div>
             </div>
 
-            {item ? (
-                <>
-                    {/* Poster Image */}
-                    <div className="relative shrink-0 w-16 h-24 md:w-full md:h-full md:absolute md:inset-0 rounded-md md:rounded-none overflow-hidden shadow-sm md:shadow-none">
-                        {item.poster_path ? (
-                            <Image src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title} fill className="object-cover" />
-                        ) : (
-                            <div className="w-full h-full bg-zinc-800 flex items-center justify-center"><FilmIcon className="w-8 h-8 text-zinc-600"/></div>
-                        )}
-                        {/* Desktop Gradient Overlay */}
-                        <div className="hidden md:block absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-60 group-hover:opacity-90 transition-opacity" />
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 md:absolute md:bottom-0 md:inset-x-0 md:p-4 md:translate-y-2 md:group-hover:translate-y-0 md:transition-transform">
-                        <h4 className="font-bold text-zinc-900 dark:text-zinc-100 md:text-white text-base md:text-lg leading-tight line-clamp-1 md:line-clamp-2">
-                            {item.title}
-                        </h4>
-                        <p className="text-zinc-500 dark:text-zinc-400 md:text-zinc-300 text-xs mt-1">
-                            {item.release_date?.split('-')[0]} <span className="md:hidden">• {item.media_type === 'movie' ? 'Film' : 'TV'}</span>
-                        </p>
-                    </div>
-
-                    {/* Desktop Actions (Hover) */}
-                    <div className="hidden md:flex absolute inset-0 items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 backdrop-blur-[2px]">
-                        <button type="button" onClick={onOpenSearch} className="p-3 bg-white text-black rounded-full hover:scale-110 transition-transform shadow-xl" title="Replace">
-                            <ArrowPathIcon className="w-5 h-5" />
-                        </button>
-                        <button type="button" onClick={(e) => { e.stopPropagation(); onRemove(); }} className="p-3 bg-red-600 text-white rounded-full hover:scale-110 transition-transform shadow-xl" title="Remove">
-                            <TrashIcon className="w-5 h-5" />
-                        </button>
-                    </div>
-
-                    {/* Mobile Actions (Visible) */}
-                    <div className="md:hidden flex flex-col gap-2">
-                        <button type="button" onClick={onOpenSearch} className="p-2 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100">
-                            <ArrowPathIcon className="w-5 h-5" />
-                        </button>
-                        <button type="button" onClick={(e) => { e.stopPropagation(); onRemove(); }} className="p-2 text-zinc-400 hover:text-red-600">
-                            <TrashIcon className="w-5 h-5" />
-                        </button>
-                    </div>
-                </>
-            ) : (
-                /* Empty State */
-                <button
-                    type="button"
-                    onClick={onOpenSearch}
-                    className="w-full h-full flex md:flex-col items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors gap-2 md:gap-0"
-                >
-                    <PlusIcon className="w-8 h-8 md:w-10 md:h-10 md:mb-2 opacity-50" />
-                    <span className="text-xs font-semibold uppercase tracking-widest">Add Favorite</span>
-                </button>
-            )}
+            {/* Items Grid */}
+            <div className="grid grid-cols-3 gap-4">
+                {[0, 1, 2].map(i => {
+                    const item = section.items[i];
+                    return (
+                        <div key={i} className="aspect-[2/3] relative bg-zinc-100 dark:bg-zinc-800 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700 group/item">
+                            {item ? (
+                                <>
+                                    {item.image_path ? (
+                                        <Image src={`https://image.tmdb.org/t/p/w342${item.image_path}`} alt={item.title} fill className="object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-zinc-600"><FilmIcon className="w-8 h-8"/></div>
+                                    )}
+                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/item:opacity-100 transition-opacity flex flex-col items-center justify-center p-2 text-center">
+                                        <p className="text-xs font-bold text-white line-clamp-2 mb-2">{item.title}</p>
+                                        <div className="flex gap-2">
+                                            <button type="button" onClick={() => { setActiveSlot(i); setIsSearchOpen(true); }} className="p-2 bg-white text-black rounded-full hover:scale-110 transition"><ArrowPathIcon className="w-4 h-4"/></button>
+                                            <button type="button" onClick={() => handleRemoveItem(i)} className="p-2 bg-red-600 text-white rounded-full hover:scale-110 transition"><TrashIcon className="w-4 h-4"/></button>
+                                        </div>
+                                    </div>
+                                </>
+                            ) : (
+                                <button type="button" onClick={() => { setActiveSlot(i); setIsSearchOpen(true); }} className="w-full h-full flex flex-col items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors">
+                                    <PlusIcon className="w-8 h-8 mb-1 opacity-50"/>
+                                    <span className="text-[10px] uppercase font-bold tracking-widest">Add</span>
+                                </button>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
         </div>
     );
 }
 
 // --- MAIN FORM ---
 
-export default function ProfileEditForm({ profile, favoriteItems }: {
-    profile: UserProfile;
-    favoriteItems: { rank: number; movies: Movie | null, series: Series | null }[]
-}) {
+export default function ProfileEditForm({ profile, sections }: { profile: UserProfile; sections: ProfileSection[] }) {
     const initialState: EditProfileState = { message: null, errors: {} };
     const [state, formAction] = useActionState(updateProfile, initialState);
 
-    // Profile & Availability State
+    // Profile State
     const [previewUrl, setPreviewUrl] = useState<string | null>(profile.profile_pic_url || null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [username, setUsername] = useState(profile.username);
     const [availability, setAvailability] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
 
-    // Favorites State
-    const [favItems, setFavItems] = useState<(CinematicSearchResult | null)[]>([null, null, null]);
-    const [isSearchOpen, setIsSearchOpen] = useState(false);
-    const [activeSlotIndex, setActiveSlotIndex] = useState<number>(0);
+    // Sections State
+    const [editableSections, setEditableSections] = useState<EditableSection[]>([]);
 
-    // Drag & Drop Refs
-    const dragItem = useRef<number | null>(null);
-    const dragOverItem = useRef<number | null>(null);
-
-    // --- Load Data ---
+    // Initialize Sections
     useEffect(() => {
-        const initialItems: (CinematicSearchResult | null)[] = [null, null, null];
-        favoriteItems.forEach(fav => {
-            const item = fav.movies || fav.series;
-            if (fav.rank >= 1 && fav.rank <= 3 && item) {
-                initialItems[fav.rank - 1] = {
-                    id: item.tmdb_id,
-                    title: item.title,
-                    release_date: item.release_date,
-                    poster_path: item.poster_url?.replace('https://image.tmdb.org/t/p/w500', '') || null,
-                    media_type: fav.movies ? 'movie' : 'tv'
-                };
-            }
-        });
-        setFavItems(initialItems);
-    }, [favoriteItems]);
+        if (sections.length > 0) {
+            setEditableSections(sections.map(s => ({
+                id: s.id,
+                title: s.title,
+                type: s.type,
+                items: [0, 1, 2].map(i => {
+                    const item = s.items.find(it => it.rank === i + 1);
+                    if (!item) return null;
+                    const obj = item.movie || item.series || item.person;
+                    if (!obj) return null;
+                    return {
+                        id: obj.tmdb_id,
+                        title: 'title' in obj ? obj.title : obj.name,
+                        image_path: 'poster_url' in obj ? obj.poster_url?.replace('https://image.tmdb.org/t/p/w500', '') : obj.profile_path,
+                        type: item.item_type,
+                        year: 'release_date' in obj ? obj.release_date?.split('-')[0] : undefined
+                    } as EditableItem;
+                })
+            })));
+        } else {
+            // Default Start: Top 3 Favorites
+            setEditableSections([{ id: 'default-1', title: 'Top 3 Favorites', type: 'mixed', items: [null, null, null] }]);
+        }
+    }, [sections]);
 
-    // --- Logic ---
+    // Handlers
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) setPreviewUrl(URL.createObjectURL(file));
     };
 
-    const handleOpenSearch = (index: number) => {
-        setActiveSlotIndex(index);
-        setIsSearchOpen(true);
+    const addSection = (type: EditableSection['type']) => {
+        const id = `new-${Date.now()}`;
+        let title = "New List";
+        if (type === 'movie') title = "Top Movies";
+        if (type === 'tv') title = "Top Series";
+        if (type === 'person') title = "Favorite Stars";
+        setEditableSections([...editableSections, { id, title, type, items: [null, null, null] }]);
     };
 
-    const handleSelectFavorite = (item: CinematicSearchResult) => {
-        if (favItems.some(f => f?.id === item.id)) {
-            alert("You've already added this title!");
-            return;
+    const updateSection = (index: number, newData: EditableSection) => {
+        const updated = [...editableSections];
+        updated[index] = newData;
+        setEditableSections(updated);
+    };
+
+    const removeSection = (index: number) => {
+        if (confirm("Delete this section?")) {
+            setEditableSections(editableSections.filter((_, i) => i !== index));
         }
-        const newItems = [...favItems];
-        newItems[activeSlotIndex] = item;
-        setFavItems(newItems);
     };
 
-    const handleRemoveFavorite = (index: number) => {
-        const newItems = [...favItems];
-        newItems[index] = null;
-        setFavItems(newItems);
+    const moveSection = (index: number, dir: -1 | 1) => {
+        const newIndex = index + dir;
+        if (newIndex < 0 || newIndex >= editableSections.length) return;
+        const updated = [...editableSections];
+        [updated[index], updated[newIndex]] = [updated[newIndex], updated[index]];
+        setEditableSections(updated);
     };
 
-    const handleDragSort = () => {
-        if (dragItem.current === null || dragOverItem.current === null) return;
-        const newFilms = [...favItems];
-        const draggedItemContent = newFilms[dragItem.current];
-        newFilms[dragItem.current] = newFilms[dragOverItem.current];
-        newFilms[dragOverItem.current] = draggedItemContent;
-        dragItem.current = null;
-        dragOverItem.current = null;
-        setFavItems(newFilms);
-    };
-
+    // Username Check
     useEffect(() => {
         if (username === profile.username || username.length < 3) { setAvailability('idle'); return; }
         const handler = setTimeout(() => {
@@ -297,129 +319,100 @@ export default function ProfileEditForm({ profile, favoriteItems }: {
 
     return (
         <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 pb-20">
-            {/* Search Modal (Portal) */}
-            <SearchModal
-                isOpen={isSearchOpen}
-                onClose={() => setIsSearchOpen(false)}
-                onSelect={handleSelectFavorite}
-            />
-
-            {/* STICKY HEADER */}
-            <header className="fixed top-0 inset-x-0 z-50 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 transition-all">
+            {/* Header */}
+            <header className="fixed top-0 inset-x-0 z-50 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800">
                 <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
-                    <Link href="/profile" className="flex items-center gap-2 text-sm font-semibold text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors">
-                        <ArrowLeftIcon className="w-4 h-4" />
-                        Back to Profile
+                    <Link href="/profile" className="flex items-center gap-2 text-sm font-semibold hover:opacity-70 transition-opacity">
+                        <ArrowLeftIcon className="w-4 h-4" /> Back to Profile
                     </Link>
-                    <span className="text-sm font-medium text-zinc-400 opacity-50 hidden md:block">Editing Profile</span>
+                    <span className="text-sm font-medium opacity-50">Editing Profile</span>
                 </div>
             </header>
 
-            {/* Main Content (Padded for Header) */}
-            <div className="pt-16">
-
-                {/* Aesthetic Hero */}
-                <div className="relative h-64 bg-zinc-900 flex items-center justify-center overflow-hidden">
-                    <div className="absolute inset-0 opacity-10"
-                         style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
-                    />
-                    <div className="relative z-10 text-center animate-in fade-in zoom-in duration-700 px-4">
-                        <h1 className={`${PlayWriteNewZealandFont.className} text-4xl font-bold text-white mb-2`}>
-                            Director's Cut.
-                        </h1>
-                        <p className="text-xs text-zinc-500 uppercase tracking-widest">
-                            Refine Your Persona
-                        </p>
-                    </div>
-                    <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-zinc-50 dark:from-zinc-950 to-transparent" />
-                </div>
-
-                {/* Form Container */}
-                <div className="max-w-3xl mx-auto px-4 sm:px-6 -mt-12 relative z-20">
-                    <form action={formAction} className="space-y-12">
-
-                        {/* 1. Avatar */}
-                        <div className="flex justify-center">
+            <div className="pt-24 max-w-4xl mx-auto px-4">
+                <form action={formAction} className="space-y-12">
+                    {/* Basic Info */}
+                    <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-8 items-start">
+                        {/* Avatar */}
+                        <div className="flex justify-center md:justify-start">
                             <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                                 <div className="w-32 h-32 rounded-full border-4 border-white dark:border-zinc-900 shadow-xl overflow-hidden bg-zinc-200 relative">
-                                    <Image src={previewUrl || '/placeholder-user.jpg'} alt="Profile" fill className="object-cover transition-transform group-hover:scale-105" />
-                                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                        <PhotoIcon className="w-8 h-8 text-white" />
-                                    </div>
+                                    <Image src={previewUrl || '/placeholder-user.jpg'} alt="Profile" fill className="object-cover" />
+                                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"><PhotoIcon className="w-8 h-8 text-white" /></div>
                                 </div>
                                 <input type="file" name="profile_pic" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
                             </div>
                         </div>
 
-                        {/* 2. Details */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold uppercase tracking-wider text-zinc-500">Display Name</label>
-                                <input type="text" name="display_name" defaultValue={profile.display_name} required className="w-full bg-transparent border-b border-zinc-300 dark:border-zinc-700 py-2 focus:border-zinc-900 dark:focus:border-white outline-none transition-colors rounded-none" />
-                                {state.errors?.display_name && <p className="text-xs text-red-500">{state.errors.display_name[0]}</p>}
+                        {/* Fields */}
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold uppercase tracking-wider text-zinc-500">Display Name</label>
+                                    <input type="text" name="display_name" defaultValue={profile.display_name} required className="w-full bg-transparent border-b border-zinc-300 dark:border-zinc-700 py-2 focus:border-zinc-900 dark:focus:border-white outline-none rounded-none" />
+                                </div>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between">
+                                        <label className="text-xs font-bold uppercase tracking-wider text-zinc-500">Username</label>
+                                        {availability === 'taken' && <span className="text-xs text-red-500 flex items-center gap-1"><XCircleIcon className="w-3 h-3"/> Taken</span>}
+                                        {availability === 'available' && <span className="text-xs text-green-500 flex items-center gap-1"><CheckCircleIcon className="w-3 h-3"/> Available</span>}
+                                    </div>
+                                    <input type="text" name="username" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))} required className={`w-full bg-transparent border-b py-2 outline-none rounded-none ${availability === 'taken' ? 'border-red-500' : 'border-zinc-300 dark:border-zinc-700 focus:border-zinc-900 dark:focus:border-white'}`} />
+                                </div>
                             </div>
                             <div className="space-y-2">
-                                <div className="flex justify-between">
-                                    <label className="text-xs font-bold uppercase tracking-wider text-zinc-500">Username</label>
-                                    {availability === 'taken' && <span className="text-xs text-red-500 flex items-center gap-1"><XCircleIcon className="w-3 h-3"/> Taken</span>}
-                                    {availability === 'available' && <span className="text-xs text-green-500 flex items-center gap-1"><CheckCircleIcon className="w-3 h-3"/> Available</span>}
-                                </div>
-                                <input type="text" name="username" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))} required className={`w-full bg-transparent border-b py-2 outline-none transition-colors rounded-none ${availability === 'taken' ? 'border-red-500 text-red-500' : 'border-zinc-300 dark:border-zinc-700 focus:border-zinc-900 dark:focus:border-white'}`} />
+                                <label className="text-xs font-bold uppercase tracking-wider text-zinc-500">Bio</label>
+                                <textarea name="bio" rows={3} defaultValue={profile.bio || ''} className="w-full bg-transparent border-b border-zinc-300 dark:border-zinc-700 py-2 focus:border-zinc-900 dark:focus:border-white outline-none resize-none rounded-none" placeholder="Your story..." />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="border-t border-zinc-200 dark:border-zinc-800 my-8"/>
+
+                    {/* Dynamic Sections */}
+                    <div className="space-y-8">
+                        <div className="flex items-center justify-between">
+                            <h2 className={`${PlayWriteNewZealandFont.className} text-2xl font-bold`}>Profile Showcase</h2>
+                            <div className="flex gap-2">
+                                <button type="button" onClick={() => addSection('mixed')} className="px-3 py-1.5 text-xs font-bold uppercase bg-zinc-100 dark:bg-zinc-800 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700 transition">+ Mixed</button>
+                                <button type="button" onClick={() => addSection('movie')} className="px-3 py-1.5 text-xs font-bold uppercase bg-zinc-100 dark:bg-zinc-800 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700 transition">+ Movie</button>
+                                <button type="button" onClick={() => addSection('tv')} className="px-3 py-1.5 text-xs font-bold uppercase bg-zinc-100 dark:bg-zinc-800 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700 transition">+ TV</button>
+                                <button type="button" onClick={() => addSection('person')} className="px-3 py-1.5 text-xs font-bold uppercase bg-zinc-100 dark:bg-zinc-800 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700 transition">+ Person</button>
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold uppercase tracking-wider text-zinc-500">Bio</label>
-                            <textarea name="bio" rows={3} defaultValue={profile.bio || ''} className="w-full bg-transparent border-b border-zinc-300 dark:border-zinc-700 py-2 focus:border-zinc-900 dark:focus:border-white outline-none resize-none rounded-none" placeholder="Your story..." />
-                        </div>
-
-                        {/* 3. Favorites Section (Responsive Grid/List) */}
-                        <div className="space-y-6 pt-6">
-                            <div className="text-center md:text-left">
-                                <h3 className={`${PlayWriteNewZealandFont.className} text-3xl font-bold`}>Top 3 Favorites</h3>
-                                <p className="text-sm text-zinc-500 mt-1">Select the films that define you.</p>
-                            </div>
-
-                            {/* Container adapts via Flex/Grid classes in Sub-component, but here we just need a flex container or grid container wrapper.
-                                Since the sub-component handles its own width/height, a simple grid wrapper works best for layout structure. */}
-                            <div className="flex flex-col md:grid md:grid-cols-3 gap-4 md:gap-6">
-                                {[0, 1, 2].map((i) => (
-                                    <FavoriteSlot
-                                        key={i}
-                                        index={i}
-                                        item={favItems[i]}
-                                        onOpenSearch={() => handleOpenSearch(i)}
-                                        onRemove={() => handleRemoveFavorite(i)}
-                                        dragStart={() => dragItem.current = i}
-                                        dragOver={(e) => { e.preventDefault(); dragOverItem.current = i; }}
-                                        drop={handleDragSort}
-                                        isDragging={dragItem.current === i}
-                                    />
-                                ))}
-                            </div>
-
-                            {/* Hidden Inputs for Server Action */}
-                            {[0, 1, 2].map((i) => (
-                                <div key={`hidden-${i}`}>
-                                    <input type="hidden" name={`fav_${i + 1}_id`} value={favItems[i]?.id || ''} />
-                                    <input type="hidden" name={`fav_${i + 1}_type`} value={favItems[i]?.media_type || ''} />
-                                </div>
+                        <div className="space-y-6">
+                            {editableSections.map((section, index) => (
+                                <SectionEditor
+                                    key={section.id}
+                                    index={index}
+                                    section={section}
+                                    onUpdate={(s) => updateSection(index, s)}
+                                    onRemove={() => removeSection(index)}
+                                    onMove={(dir) => moveSection(index, dir)}
+                                    totalSections={editableSections.length}
+                                />
                             ))}
                         </div>
+                    </div>
 
-                        {/* Actions */}
-                        <div className="pt-8 border-t border-zinc-200 dark:border-zinc-800 flex justify-end gap-4 pb-8">
-                            <Link href="/profile" className="px-8 py-3 rounded-lg border border-zinc-200 dark:border-zinc-800 text-sm font-bold hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors">Cancel</Link>
-                            <button type="submit" disabled={state.message === 'Success'} className="px-8 py-3 rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-black text-sm font-bold hover:opacity-90 transition-opacity shadow-lg">
-                                {state.message === 'Success' ? 'Saved' : 'Save Changes'}
+                    {/* Hidden Input for JSON Data */}
+                    <input type="hidden" name="sections_json" value={JSON.stringify(editableSections)} />
+
+                    {/* Footer Actions */}
+                    <div className="sticky bottom-4 z-40 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-black p-4 rounded-xl flex justify-between items-center shadow-2xl">
+                        <span className="text-sm font-medium px-2">Unsaved Changes</span>
+                        <div className="flex gap-4">
+                            <Link href="/profile" className="px-6 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition text-sm font-bold">Discard</Link>
+                            <button type="button" onClick={(e) => {
+                                const form = e.currentTarget.closest('form');
+                                if (form) form.requestSubmit();
+                            }} disabled={state.message === 'Success'} className="px-6 py-2 rounded-lg bg-white text-black dark:bg-black dark:text-white text-sm font-bold hover:scale-105 transition-transform">
+                                {state.message === 'Success' ? 'Saved!' : 'Save Profile'}
                             </button>
                         </div>
-
-                        {state.message && (
-                            <p className={`text-center text-sm font-medium ${state.message === 'Success' ? 'text-green-600' : 'text-red-600'}`}>{state.message}</p>
-                        )}
-                    </form>
-                </div>
+                    </div>
+                </form>
             </div>
         </div>
     );

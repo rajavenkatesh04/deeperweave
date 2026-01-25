@@ -10,15 +10,13 @@ export default async function ProfileLayout({
                                                 params
                                             }: {
     children: React.ReactNode;
-    params: Promise<{ username: string }>; // Updated type to reflect Promise
+    params: Promise<{ username: string }>;
 }) {
     const supabase = await createClient();
     const { data: { user: viewer } } = await supabase.auth.getUser();
 
-    // Await params before accessing its properties
     const { username } = await params;
 
-    // Use the new, powerful data fetching function
     const { profile, followStatus, followerCount, followingCount, timelineCount } = await getProfileData(username);
     if (!profile) notFound();
 
@@ -28,13 +26,14 @@ export default async function ProfileLayout({
     const canViewContent = !isPrivate || isFollowing || isOwnProfile;
 
     return (
-        <main className={`sm:p-3`}>
+        <main className="sm:p-3">
 
             <ProfileHeader
                 profile={profile}
                 isOwnProfile={isOwnProfile}
                 isPrivate={isPrivate}
-                initialFollowStatus={followStatus}
+                // ✨ FIX: Explicitly tell TypeScript this string is a valid status
+                initialFollowStatus={followStatus as 'not_following' | 'accepted' | 'pending'}
                 followerCount={followerCount}
                 followingCount={followingCount}
                 timelineCount={timelineCount}
