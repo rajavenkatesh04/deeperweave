@@ -1,6 +1,4 @@
-// tailwind.config.ts
 import type { Config } from "tailwindcss";
-
 
 const config: Config = {
     content: [
@@ -10,12 +8,18 @@ const config: Config = {
     ],
     theme: {
         extend: {
-            // ... your existing theme
+            keyframes: {
+                gradient: {
+                    "0%, 100%": { backgroundPosition: "0% 50%" },
+                    "50%": { backgroundPosition: "100% 50%" },
+                },
+            },
+            animation: {
+                gradient: "gradient 6s ease infinite",
+            },
         },
     },
-    // Add this plugins section
-    plugins: [
-        require('@tailwindcss/typography'),
-    ],
+    plugins: [],
 };
+
 export default config;

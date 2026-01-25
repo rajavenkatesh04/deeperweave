@@ -1,62 +1,44 @@
 'use client';
 
-import { useState } from 'react';
-import { Movie, Series, Person, ProfileSection } from '@/lib/definitions';
-import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
 import ProfileItemCard from './ProfileItemCard';
+import {UnifiedProfileItem} from './ProfileItemCard';
 
-// Shared type definition
-export type UnifiedProfileItem = {
-    id: number | string;
-    title: string;
-    image_url: string | null;
-    subtitle: string;
-    type: 'movie' | 'tv' | 'person';
-    originalObject: Movie | Series | Person;
-};
-
-export default function ProfileSectionDisplay({ sections }: { sections: ProfileSection[] }) {
+export default function ProfileSectionDisplay({sections}: { sections: any[] }) {
     if (!sections || sections.length === 0) return null;
 
     return (
-        <div className="space-y-24 pb-24">
-            {sections.map((section) => (
-                <section key={section.id} className="w-full">
+        <div className="flex flex-col gap-20 md:gap-32">
+            {sections.map((section, idx) => (
+                <section key={section.id} className="max-w-[1400px] mx-auto px-6 md:px-12 w-full">
 
-                    {/* --- Section Header --- */}
-                    <div className="max-w-5xl mx-auto px-4 md:px-0 mb-8 flex flex-col md:flex-row md:items-end gap-4 border-b border-zinc-200 dark:border-zinc-800 pb-4">
-                        <div className="flex flex-col gap-1">
-                            <span className="text-[10px] md:text-xs font-mono font-medium text-zinc-500 uppercase tracking-widest">
-                                {section.type === 'mixed' ? 'Collection' : `${section.type} Archive`}
+                    {/* --- Numbered Line Header --- */}
+                    <div className="mb-6 md:mb-12">
+                        <div className="flex items-baseline gap-4 md:gap-8">
+                            <div className="flex flex-col w-full">
+                                <div className="flex items-center gap-6 w-full">
+                                    <h2
+                                        className="
+        text-4xl md:text-6xl font-sans   tracking-tighter whitespace-nowrap pb-2
+        bg-gradient-to-r from-cyan-300 via-fuchsia-500 to-yellow-300
+        bg-[length:200%_auto] bg-clip-text text-transparent
+        animate-gradient
+        drop-shadow-[0_0_18px_rgba(0,255,255,0.45)]
+    "
+                                    >
+                                        {section.title}
+                                    </h2>
+                                    <div className="flex-grow border-t-2 border-dotted border-zinc-800"/>
+                                </div>
+                            </div>
+                            <span className="text-4xl md:text-8xl font-black tracking-tighter text-zinc-800 italic">
+                                {String(idx + 1).padStart(2, '0')}
                             </span>
-                            <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-zinc-900 dark:text-white leading-none">
-                                {section.title}
-                            </h2>
                         </div>
                     </div>
 
-                    {/* --- Content Layout --- */}
-
-                    {/* 1. Mobile: Horizontal Scroll */}
-                    <div className="md:hidden flex overflow-x-auto snap-x snap-mandatory gap-4 px-4 pb-8 -mx-4 scrollbar-hide">
-                        {section.items.map((itemRow) => {
-                            const uiItem = normalizeItem(itemRow);
-                            if (!uiItem) return null;
-                            return (
-                                <div key={itemRow.id} className="snap-center shrink-0 w-[40vw]"> {/* Slightly smaller on mobile for peek effect */}
-                                    <ProfileItemCard
-                                        item={uiItem}
-                                        rank={itemRow.rank}
-                                    />
-                                </div>
-                            );
-                        })}
-                        <div className="w-4 shrink-0" />
-                    </div>
-
-                    {/* 2. Desktop: Constrained Grid */}
-                    <div className="hidden md:grid max-w-5xl mx-auto grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
-                        {section.items.map((itemRow) => {
+                    {/* --- Sharp 2/4 Grid --- */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-8 md:gap-x-12 md:gap-y-32 justify-evenly content-between">
+                        {section.items.map((itemRow: any) => {
                             const uiItem = normalizeItem(itemRow);
                             if (!uiItem) return null;
                             return (
@@ -68,42 +50,24 @@ export default function ProfileSectionDisplay({ sections }: { sections: ProfileS
                             );
                         })}
                     </div>
-
                 </section>
             ))}
         </div>
     );
 }
 
-// ... normalizeItem helper remains the same ...
 function normalizeItem(itemRow: any): UnifiedProfileItem | null {
-    if (itemRow.item_type === 'movie' && itemRow.movie) {
-        return {
-            id: itemRow.movie.tmdb_id,
-            title: itemRow.movie.title,
-            image_url: itemRow.movie.poster_url ? `https://image.tmdb.org/t/p/w500${itemRow.movie.poster_url}` : null,
-            subtitle: `${new Date(itemRow.movie.release_date).getFullYear() || 'Unknown'}`,
-            type: 'movie',
-            originalObject: itemRow.movie
-        };
-    } else if (itemRow.item_type === 'tv' && itemRow.series) {
-        return {
-            id: itemRow.series.tmdb_id,
-            title: itemRow.series.title,
-            image_url: itemRow.series.poster_url ? `https://image.tmdb.org/t/p/w500${itemRow.series.poster_url}` : null,
-            subtitle: `${new Date(itemRow.series.release_date).getFullYear() || 'Unknown'}`,
-            type: 'tv',
-            originalObject: itemRow.series
-        };
-    } else if (itemRow.item_type === 'person' && itemRow.person) {
-        return {
-            id: itemRow.person.tmdb_id,
-            title: itemRow.person.name,
-            image_url: itemRow.person.profile_path ? `https://image.tmdb.org/t/p/w500${itemRow.person.profile_path}` : null,
-            subtitle: itemRow.person.known_for_department?.toUpperCase() || 'Artist',
-            type: 'person',
-            originalObject: itemRow.person
-        };
-    }
-    return null;
+    const type = itemRow.item_type;
+    const data = itemRow.movie || itemRow.series || itemRow.person;
+    if (!data) return null;
+
+    return {
+        id: data.tmdb_id,
+        title: data.title || data.name,
+        image_url: (data.poster_url || data.profile_path)
+            ? `https://image.tmdb.org/t/p/w780${data.poster_url || data.profile_path}`
+            : null,
+        subtitle: type === 'person' ? data.known_for_department : new Date(data.release_date).getFullYear().toString(),
+        type: type,
+    };
 }

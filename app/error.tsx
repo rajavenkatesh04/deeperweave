@@ -8,26 +8,26 @@ import {
     ExclamationTriangleIcon,
     HomeIcon,
     ArrowLeftIcon,
-    SignalIcon,
-    ClockIcon
+    ClockIcon,
+    WrenchScrewdriverIcon,
+    ShieldExclamationIcon
 } from '@heroicons/react/24/outline';
 import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
 
-// We need to wrap the search params logic in Suspense for Next.js client builds
 function ErrorContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
 
-    // Get error details from URL
-    const errorMsg = searchParams.get('error') || "An unexpected error occurred.";
+    // 1. Logic to determine if this is an Auth error vs a General error
     const errorCode = searchParams.get('error_code');
+    const errorType = searchParams.get('type');
+    const errorMsg = searchParams.get('error') || "An unexpected error occurred.";
     const errorDescription = searchParams.get('error_description');
 
-    // Also try to read hash fragment for Supabase redirects (often contain the real error)
+    // Check hash for Supabase specific auth errors
     const [hashError, setHashError] = useState<string | null>(null);
 
     useEffect(() => {
-        // Supabase sometimes puts errors in the URL hash (#error=...)
         if (typeof window !== 'undefined' && window.location.hash) {
             const params = new URLSearchParams(window.location.hash.substring(1));
             const desc = params.get('error_description');
@@ -35,8 +35,20 @@ function ErrorContent() {
         }
     }, []);
 
-    // Prioritize the most detailed error message we found
+    // Determine the final state
+    const isAuthError = !!errorCode || errorType === 'auth' || !!hashError;
     const finalErrorMessage = hashError || errorDescription || errorMsg;
+
+    // 2. Dynamic UI Config
+    const config = {
+        title: isAuthError ? "Authentication Failed" : "System Encountered a Glitch",
+        subtitle: isAuthError ? "Cut!" : "Technical Diff...",
+        quote: isAuthError ? "We encountered a script error." : "The scene didn't go as planned.",
+        colorClass: isAuthError ? "rose" : "amber",
+        primaryActionLabel: isAuthError ? "Sign In Again" : "Try Again",
+        primaryActionHref: isAuthError ? "/auth/login" : "/",
+        Icon: isAuthError ? ShieldExclamationIcon : WrenchScrewdriverIcon,
+    };
 
     return (
         <div className="w-full max-w-4xl">
@@ -51,43 +63,53 @@ function ErrorContent() {
                 </button>
             </div>
 
-            {/* Card Container */}
-            <div className="grid md:grid-cols-2 bg-white dark:bg-black border-2 border-rose-200 dark:border-rose-900/50 shadow-xl overflow-hidden rounded-lg">
+            {/* Main Card Container */}
+            <div className={`grid md:grid-cols-2 bg-white dark:bg-black border-2 shadow-xl overflow-hidden rounded-lg transition-colors duration-500 ${
+                isAuthError ? 'border-rose-200 dark:border-rose-900/50' : 'border-amber-200 dark:border-amber-900/50'
+            }`}>
 
-                {/* LEFT COLUMN: Visual */}
+                {/* LEFT COLUMN: Visual Branding */}
                 <div className="hidden md:flex flex-col items-center justify-center bg-zinc-950 text-white p-10 border-r border-zinc-200 dark:border-zinc-800 relative overflow-hidden min-h-[400px]">
                     <div className="absolute inset-0 opacity-10 pointer-events-none"
                          style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
                     />
-                    <div className="absolute inset-0 bg-radial-gradient from-rose-900/20 to-black/90 opacity-90" />
+                    <div className={`absolute inset-0 opacity-90 transition-colors duration-700 bg-radial-gradient to-black/90 ${
+                        isAuthError ? 'from-rose-900/20' : 'from-amber-900/20'
+                    }`} />
 
                     <div className="relative z-10 text-center space-y-6 max-w-xs">
-                        <div className="mx-auto w-32 h-32 flex items-center justify-center rounded-full bg-rose-500/10 border border-rose-500/20 backdrop-blur-sm">
-                            <ExclamationTriangleIcon className="w-16 h-16 text-rose-500" />
+                        <div className={`mx-auto w-32 h-32 flex items-center justify-center rounded-full border backdrop-blur-sm transition-colors ${
+                            isAuthError ? 'bg-rose-500/10 border-rose-500/20' : 'bg-amber-500/10 border-amber-500/20'
+                        }`}>
+                            <config.Icon className={`w-16 h-16 ${isAuthError ? 'text-rose-500' : 'text-amber-500'}`} />
                         </div>
 
                         <div className="space-y-3">
                             <h2 className={`${PlayWriteNewZealandFont.className} text-4xl font-bold text-white tracking-tight`}>
-                                Cut!
+                                {config.subtitle}
                             </h2>
                             <p className="text-sm font-medium text-zinc-400 italic">
-                                "We encountered a script error."
+                                &#34;{config.quote}&#34;
                             </p>
                         </div>
                     </div>
                 </div>
 
-                {/* RIGHT COLUMN: Action */}
+                {/* RIGHT COLUMN: Action & Details */}
                 <div className="flex flex-col justify-center p-8 md:p-10">
                     <div className="mb-6">
                         <h1 className="text-xl md:text-2xl font-bold tracking-tight mb-2 text-zinc-900 dark:text-white">
-                            Authentication Failed
+                            {config.title}
                         </h1>
-                        <p className="text-sm text-rose-600 dark:text-rose-400 font-medium leading-relaxed bg-rose-50 dark:bg-rose-900/10 p-3 border border-rose-100 dark:border-rose-900/20 rounded">
+                        <p className={`text-sm font-medium leading-relaxed p-3 border rounded transition-colors ${
+                            isAuthError
+                                ? 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/10 border-rose-100 dark:border-rose-900/20'
+                                : 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/10 border-amber-100 dark:border-amber-900/20'
+                        }`}>
                             {finalErrorMessage}
                         </p>
                         {errorCode && (
-                            <p className="mt-2 text-xs text-zinc-400 font-mono">Code: {errorCode}</p>
+                            <p className="mt-2 text-xs text-zinc-400 font-mono">Status Code: {errorCode}</p>
                         )}
                     </div>
 
@@ -98,31 +120,35 @@ function ErrorContent() {
                         <ul className="space-y-2">
                             <li className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
                                 <ArrowPathIcon className="h-4 w-4 shrink-0 text-zinc-500" />
-                                <span>Try signing in again.</span>
+                                <span>{isAuthError ? "Check your credentials and try again." : "Refresh the page to restart the session."}</span>
                             </li>
                             <li className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
                                 <ClockIcon className="h-4 w-4 shrink-0 text-zinc-500" />
-                                <span>Wait a moment and refresh.</span>
+                                <span>If the issue persists, contact support.</span>
                             </li>
                         </ul>
                     </div>
 
                     <div className="space-y-3">
                         <Link
-                            href="/auth/login"
+                            href={config.primaryActionHref}
                             className="group flex w-full h-10 items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black text-xs font-bold uppercase tracking-widest transition-all shadow-md hover:shadow-lg active:scale-95 rounded-sm"
                         >
                             <ArrowPathIcon className="h-4 w-4 transition-transform group-hover:rotate-180" />
-                            <span>Try Again</span>
+                            <span>{config.primaryActionLabel}</span>
                         </Link>
 
                         <div className="flex gap-3">
                             <Link
                                 href="/"
-                                className="group flex flex-1 h-10 items-center justify-center gap-2 bg-white hover:bg-zinc-50 dark:bg-transparent dark:hover:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 text-[10px] font-bold uppercase tracking-widest transition-colors hover:border-rose-300 dark:hover:border-rose-800 rounded-sm"
+                                className={`group flex flex-1 h-10 items-center justify-center gap-2 bg-white hover:bg-zinc-50 dark:bg-transparent dark:hover:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 text-[10px] font-bold uppercase tracking-widest transition-colors rounded-sm ${
+                                    isAuthError ? 'hover:border-rose-300 dark:hover:border-rose-800' : 'hover:border-amber-300 dark:hover:border-amber-800'
+                                }`}
                             >
-                                <HomeIcon className="h-3 w-3 text-zinc-400 group-hover:text-rose-500 dark:group-hover:text-rose-400 transition-colors" />
-                                <span>Home</span>
+                                <HomeIcon className={`h-3 w-3 text-zinc-400 transition-colors ${
+                                    isAuthError ? 'group-hover:text-rose-500' : 'group-hover:text-amber-500'
+                                }`} />
+                                <span>Return Home</span>
                             </Link>
                         </div>
                     </div>
@@ -148,7 +174,7 @@ export default function AuthErrorPage() {
                 </button>
             </div>
 
-            <Suspense fallback={<div className="text-zinc-500">Loading error details...</div>}>
+            <Suspense fallback={<div className="animate-pulse text-zinc-500 font-mono text-sm tracking-widest uppercase">Loading Script...</div>}>
                 <ErrorContent />
             </Suspense>
         </div>

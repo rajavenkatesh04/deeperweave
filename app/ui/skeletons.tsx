@@ -52,7 +52,7 @@ export function TabNavigationSkeleton() {
 }
 
 // =================================================================================
-// --- FAVORITE FILMS SKELETON (Updated for Podium Layout) ---
+// --- FAVORITE FILMS SKELETON (Updated for podium Layout) ---
 // =================================================================================
 
 function FilmCardSkeleton() {

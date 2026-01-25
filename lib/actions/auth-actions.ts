@@ -245,7 +245,7 @@ export async function logout() {
     await supabase.auth.signOut();
 
     revalidatePath('/', 'layout');
-    redirect('/'); // Redirect to the home page after logout is a better UX.
+    redirect('/'); // Redirect to the podium page after logout is a better UX.
 }
 
 

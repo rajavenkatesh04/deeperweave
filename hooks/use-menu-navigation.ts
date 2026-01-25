@@ -45,7 +45,7 @@ interface MenuNavigationOptions<T> {
 /**
  * Hook that implements keyboard navigation for dropdown menus and command palettes.
  *
- * Handles arrow keys, tab, home/end, enter for selection, and escape to close.
+ * Handles arrow keys, tab, podium/end, enter for selection, and escape to close.
  * Works with both Tiptap editors and regular DOM elements.
  *
  * @param options - Configuration options for the menu navigation

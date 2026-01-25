@@ -32,7 +32,6 @@ export default async function ProfileLayout({
                 profile={profile}
                 isOwnProfile={isOwnProfile}
                 isPrivate={isPrivate}
-                // ✨ FIX: Explicitly tell TypeScript this string is a valid status
                 initialFollowStatus={followStatus as 'not_following' | 'accepted' | 'pending'}
                 followerCount={followerCount}
                 followingCount={followingCount}
@@ -42,7 +41,7 @@ export default async function ProfileLayout({
             {canViewContent ? (
                 <div>
                     <TabNavigation username={profile.username} isOwnProfile={isOwnProfile} />
-                    <div className="py-8">{children}</div>
+                    <div className="py-2">{children}</div>
                 </div>
             ) : (
                 <PrivateProfileScreen />

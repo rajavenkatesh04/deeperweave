@@ -24,7 +24,7 @@ export default function TabNavigation({ username, isOwnProfile }: { username: st
     const baseUrl = `/profile/${username}`;
 
     const tabs = [
-        { name: 'Home', href: `${baseUrl}/home` },
+        { name: 'Podium', href: `${baseUrl}/podium` },
         { name: 'Timeline', href: `${baseUrl}/timeline` },
         { name: 'Lists', href: `/lists` },
         { name: 'Posts', href: `${baseUrl}/posts` },

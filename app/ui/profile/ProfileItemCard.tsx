@@ -3,16 +3,16 @@
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
-import { FilmIcon, TvIcon, UserIcon } from '@heroicons/react/24/outline';
-import { UnifiedProfileItem } from './ProfileSectionDisplay';
-import { PlayWriteNewZealandFont } from "@/app/ui/fonts"; // Import your custom font for the number
 
-interface ProfileItemCardProps {
-    item: UnifiedProfileItem;
-    rank: number;
-}
+export type UnifiedProfileItem = {
+    id: string | number;
+    title: string;
+    image_url: string | null;
+    subtitle: string;
+    type: 'movie' | 'tv' | 'person';
+};
 
-export default function ProfileItemCard({ item, rank }: ProfileItemCardProps) {
+export default function ProfileItemCard({ item, rank }: { item: UnifiedProfileItem, rank: number }) {
     const isPerson = item.type === 'person';
     const isMovie = item.type === 'movie';
 
@@ -20,70 +20,83 @@ export default function ProfileItemCard({ item, rank }: ProfileItemCardProps) {
         ? `/discover/actor/${item.id}`
         : `/discover/${item.type}/${item.id}`;
 
-    // Minimal badge logic just for the bottom tag
+    // --- Badge Logic from PosterCard ---
     let badgeLabel = 'TV';
-    if (isMovie) badgeLabel = 'FILM';
-    else if (isPerson) badgeLabel = 'STAR';
+    let badgeColorClass = 'bg-zinc-900/90 dark:bg-white/90 text-white dark:text-black';
+
+    if (isMovie) {
+        badgeLabel = 'FILM';
+    } else if (isPerson) {
+        badgeLabel = 'STAR';
+        badgeColorClass = 'bg-amber-500/90 text-black border-amber-400/20';
+    }
 
     return (
         <motion.div
-            layout
+            className="group relative w-full flex-shrink-0 z-0 hover:z-20"
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
-            className="group relative w-full h-full flex-shrink-0"
+            transition={{ duration: 0.5 }}
         >
             <Link href={href} className="block w-full h-full">
 
-                {/* --- CARD IMAGE CONTAINER --- */}
-                <div className="relative w-full aspect-[2/3] overflow-hidden bg-zinc-900 border border-zinc-800 transition-all duration-500 group-hover:shadow-2xl group-hover:border-zinc-600">
+                {/* --- POSTER CONTAINER --- */}
+                <div className="relative aspect-[2/3] w-full rounded-sm overflow-hidden bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl group-hover:border-zinc-400 dark:group-hover:border-zinc-100">
 
-                    {/* 1. Image */}
+                    {/* --- RANK TAG (Integrated numbering) --- */}
+                    <div className="absolute top-0 right-0 p-2 z-20">
+                        <div className="bg-white text-black font-mono text-[10px] font-bold px-2 py-0.5 shadow-md transform transition-transform group-hover:scale-110">
+                            #{rank}
+                        </div>
+                    </div>
+
+                    {/* Image */}
                     {item.image_url ? (
                         <Image
                             src={item.image_url}
                             alt={item.title}
                             fill
+                            className="object-cover transition-transform duration-700 ease-out group-hover:scale-105 group-hover:saturate-100 grayscale-[0.1] group-hover:grayscale-0"
                             sizes="(max-width: 768px) 50vw, 25vw"
-                            className="object-cover transition-transform duration-700 ease-out group-hover:scale-110 group-hover:saturate-100 grayscale-[0.2] group-hover:grayscale-0"
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center text-zinc-700">
-                            {item.type === 'person' ? <UserIcon className="w-12 h-12" /> : <FilmIcon className="w-12 h-12" />}
+                        <div className="w-full h-full flex flex-col items-center justify-center text-zinc-400 bg-zinc-100 dark:bg-zinc-900">
+                            <span className="text-[10px] uppercase font-bold tracking-widest">No Image</span>
                         </div>
                     )}
 
-                    {/* 2. Vignette Gradient (Always visible, stronger on bottom) */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/40 opacity-60 group-hover:opacity-80 transition-opacity duration-300" />
-
-                    {/* 3. RANK NUMBER (The new minimal design) */}
-                    {/* Large, stylized number in top-left */}
-                    <div className="absolute top-0 left-0 p-3 z-10">
-                        <span className={`${PlayWriteNewZealandFont.className} text-4xl leading-none text-white/90 drop-shadow-md`}>
-                            {rank}
-                            <span className="text-sm align-top text-amber-500 opacity-80">.</span>
-                        </span>
-                    </div>
-
-                    {/* 4. Type Badge (Bottom Right - appears on hover) */}
-                    <div className="absolute top-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-2 group-hover:translate-y-0">
-                        <span className="text-[9px] font-bold uppercase tracking-widest bg-white/10 backdrop-blur-md text-white px-2 py-1 rounded border border-white/10">
+                    {/* --- TYPE BADGE --- */}
+                    <div className="absolute top-0 left-0 p-2 z-10">
+                        <div className={`px-1.5 py-0.5 backdrop-blur-sm text-[9px] font-black uppercase tracking-wider shadow-sm border border-white/10 dark:border-black/10 ${badgeColorClass}`}>
                             {badgeLabel}
-                        </span>
+                        </div>
                     </div>
 
-                    {/* 5. Inner Border for definition */}
-                    <div className="absolute inset-0 border border-white/5 pointer-events-none" />
+                    {/* Inner Border */}
+                    <div className="absolute inset-0 border border-black/5 dark:border-white/5 pointer-events-none rounded-sm group-hover:opacity-0 transition-opacity" />
+
+                    {/* Hover Shine Effect */}
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-20 bg-gradient-to-tr from-transparent via-white to-transparent pointer-events-none transition-opacity duration-500" />
                 </div>
 
                 {/* --- INFO SECTION --- */}
-                <div className="mt-3 space-y-0.5 px-1">
-                    <h3 className="text-sm md:text-base font-bold leading-tight text-white group-hover:text-amber-500 transition-colors line-clamp-1">
+                <div className="mt-4 px-1 space-y-1 transition-opacity duration-300 opacity-80 group-hover:opacity-100">
+                    <h3 className="text-base font-bold leading-tight text-zinc-900 dark:text-zinc-100 line-clamp-1 group-hover:underline decoration-1 underline-offset-4 uppercase tracking-tighter">
                         {item.title}
                     </h3>
-                    <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
-                        {item.subtitle}
-                    </p>
+
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono text-zinc-500 dark:text-zinc-400">
+                            {item.subtitle}
+                        </span>
+
+                        <span className="h-px w-3 bg-zinc-300 dark:bg-zinc-700" />
+
+                        <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest">
+                            {item.type}
+                        </span>
+                    </div>
                 </div>
             </Link>
         </motion.div>

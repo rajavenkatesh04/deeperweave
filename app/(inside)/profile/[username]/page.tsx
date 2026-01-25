@@ -14,6 +14,6 @@ export default async function ProfilePage({
 }) {
     const { username } = await params;
 
-    // Redirect to the home tab as the default
-    redirect(`/profile/${username}/home`);
+    // Redirect to the podium tab as the default
+    redirect(`/profile/${username}/podium`);
 }

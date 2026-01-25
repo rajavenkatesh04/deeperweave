@@ -3,8 +3,8 @@ import { getProfileByUsername } from '@/lib/data/user-data';
 import { createClient } from '@/utils/supabase/server';
 import { notFound } from 'next/navigation';
 import { ProfileSection } from '@/lib/definitions';
-
-import {Metadata} from "next";
+import { PlayWriteNewZealandFont } from "@/app/ui/fonts"; // Ensure correct import path
+import { Metadata } from "next";
 
 type Props = {
     params: Promise<{ username: string }>
@@ -15,18 +15,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return {
         title: `${username}'s Profile`,
         description: `Profile of ${username} on DeeperWeave.`,
-        openGraph: {
-            title: `${username}'s Profile`,
-            description: `Check out what ${username} has been watching and reviewing lately.`,
-        },
     };
 }
 
-// Helper to fetch full sections with nested items
 async function getProfileSections(userId: string): Promise<ProfileSection[]> {
     const supabase = await createClient();
-
-    // Fetch sections and nested items (movies, series, people)
     const { data: sectionsData, error } = await supabase
         .from('profile_sections')
         .select(`
@@ -41,42 +34,48 @@ async function getProfileSections(userId: string): Promise<ProfileSection[]> {
         .eq('user_id', userId)
         .order('rank', { ascending: true });
 
-    if (error || !sectionsData) {
-        console.error("Error fetching profile sections:", error);
-        return [];
-    }
+    if (error || !sectionsData) return [];
 
-    // Transform and Sort the data
-    const sections: ProfileSection[] = sectionsData.map((sec: any) => ({
+    return sectionsData.map((sec: any) => ({
         ...sec,
         items: (sec.items || [])
             .sort((a: any, b: any) => a.rank - b.rank)
             .map((item: any) => ({
                 ...item,
-                // Flatten array responses from Supabase
                 movie: Array.isArray(item.movie) ? item.movie[0] : item.movie,
                 series: Array.isArray(item.series) ? item.series[0] : item.series,
                 person: Array.isArray(item.person) ? item.person[0] : item.person,
             }))
     }));
-
-    return sections;
 }
 
 export default async function ProfileHomePage({ params }: { params: Promise<{ username: string }> }) {
     const { username } = await params;
-
     const profile = await getProfileByUsername(username);
-    if (!profile) {
-        notFound();
-    }
+    if (!profile) notFound();
 
-    // Fetch the new modular sections
     const sections = await getProfileSections(profile.id);
 
     return (
-        <div className="space-y-8">
-            <ProfileSectionDisplay sections={sections} />
+        <div className="min-h-screen bg-black text-white selection:bg-white selection:text-black">
+            <div className="w-full text-center content-center border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-black py-10 px-6">
+                <div className="max-w-4xl mx-auto flex flex-col md:flex-row md:items-end justify-between gap-6">
+                    {/* Title Section */}
+                    <div>
+                        <h1 className={`${PlayWriteNewZealandFont.className} text-4xl md:text-5xl font-bold text-zinc-900 dark:text-zinc-100 mb-3`}>
+                            Podium
+                        </h1>
+                        <p className="text-sm text-zinc-500">
+                            Award your Ranks
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+
+            <main className="pt-15 pb-32">
+                <ProfileSectionDisplay sections={sections} />
+            </main>
         </div>
     );
 }
