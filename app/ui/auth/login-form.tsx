@@ -1,13 +1,14 @@
-// app/auth/login/page.tsx
+// app/ui/auth/login-form.tsx
 'use client';
 
 import { useActionState, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
-import { login, type AuthState } from '@/lib/actions/auth-actions';
+import { login, type AuthState } from '@/lib/actions/auth-actions'; // Removed signInWithGoogle import
 import LoadingSpinner from "@/app/ui/loading-spinner";
 import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
 import { ArrowLeftIcon, EyeIcon, EyeSlashIcon, FilmIcon } from "@heroicons/react/24/outline";
+import { GoogleButton } from './google-button'; // Import the new component
 
 function LoginButton() {
     const { pending } = useFormStatus();
@@ -113,7 +114,17 @@ export default function LoginForm({ item, type }: { item?: string; type?: string
                                 </p>
                             </div>
 
-                            {/* Form */}
+                            {/* Reusable Google Button */}
+                            <GoogleButton />
+
+                            {/* DIVIDER */}
+                            <div className="relative flex py-2 items-center mb-6">
+                                <div className="flex-grow border-t border-zinc-200 dark:border-zinc-800"></div>
+                                <span className="flex-shrink-0 mx-4 text-xs text-zinc-400 uppercase tracking-wider">Or with email</span>
+                                <div className="flex-grow border-t border-zinc-200 dark:border-zinc-800"></div>
+                            </div>
+
+                            {/* EMAIL SIGN IN Form */}
                             <form action={dispatch} className="space-y-6">
 
                                 {/* These hidden inputs pass the values to the server action */}

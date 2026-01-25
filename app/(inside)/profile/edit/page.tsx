@@ -24,9 +24,6 @@ export default async function ProfileEditPage() {
                 <Suspense fallback={`loading...`}>
                     <ProfileEditForm
                         profile={userData.profile}
-                        // ✨ THIS IS THE FIX:
-                        // Pass 'favoriteItems' (from user-data.ts)
-                        // instead of 'favoriteFilms'
                         favoriteItems={userData.favoriteItems || []}
                     />
                 </Suspense>

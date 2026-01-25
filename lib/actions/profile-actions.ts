@@ -40,7 +40,6 @@ const OnboardingSchema = z.object({
     }),
 });
 
-// ... (completeProfile function is unchanged) ...
 export async function completeProfile(prevState: OnboardingState, formData: FormData): Promise<OnboardingState> {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -55,6 +54,8 @@ export async function completeProfile(prevState: OnboardingState, formData: Form
         };
     }
     const { username, display_name, date_of_birth, country, gender } = validatedFields.data;
+
+    // Check for username uniqueness
     const { data: existingProfile } = await supabase
         .from('profiles').select('username').eq('username', username).neq('id', user.id).maybeSingle();
     if (existingProfile) {
@@ -63,14 +64,24 @@ export async function completeProfile(prevState: OnboardingState, formData: Form
             message: 'Username is unavailable.',
         };
     }
+
+    // --- FIX: USE UPSERT INSTEAD OF UPDATE ---
     const { error } = await supabase
         .from('profiles')
-        .update({ username, display_name, date_of_birth, country, gender })
-        .eq('id', user.id);
+        .upsert({
+            id: user.id,
+            username,
+            display_name,
+            date_of_birth,
+            country,
+            gender
+        }); // Upsert ensures row is created if missing
+
     if (error) {
         console.error('Profile update error:', error);
-        return { message: 'Database error: Could not update profile.' };
+        return { message: 'Database error: Could not save profile.' };
     }
+
     revalidatePath('/profile', 'layout');
     redirect('/profile');
 }

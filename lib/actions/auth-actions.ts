@@ -7,6 +7,7 @@ import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { checkProfileCompletion } from '@/lib/data/user-data';
+import {headers} from "next/headers";
 
 export type AuthState = {
     message?: string | null;
@@ -79,7 +80,6 @@ export async function login(prevState: AuthState, formData: FormData): Promise<A
 }
 
 // --- SIGNUP ACTION ---
-// --- SIGNUP ACTION (Updated) ---
 export async function signup(prevState: AuthState, formData: FormData): Promise<AuthState> {
     const supabase = await createClient();
 
@@ -246,4 +246,31 @@ export async function logout() {
 
     revalidatePath('/', 'layout');
     redirect('/'); // Redirect to the home page after logout is a better UX.
+}
+
+
+
+export async function signInWithGoogle() {
+    const supabase = await createClient();
+    const origin = (await headers()).get('origin');
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+            redirectTo: `${origin}/auth/confirm`,
+            queryParams: {
+                access_type: 'offline',
+                prompt: 'consent',
+            },
+        },
+    });
+
+    if (error) {
+        console.error('Google Sign In Error:', error);
+        return { message: 'Could not authenticate with Google' };
+    }
+
+    if (data.url) {
+        redirect(data.url);
+    }
 }

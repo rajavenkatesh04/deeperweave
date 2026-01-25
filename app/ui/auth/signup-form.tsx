@@ -4,10 +4,11 @@
 import { useActionState, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
-import { signup, type AuthState } from '@/lib/actions/auth-actions';
+import { signup, type AuthState } from '@/lib/actions/auth-actions'; // Removed signInWithGoogle
 import LoadingSpinner from "@/app/ui/loading-spinner";
 import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
 import { ArrowLeftIcon, EyeIcon, EyeSlashIcon, VideoCameraIcon } from "@heroicons/react/24/outline";
+import { GoogleButton } from '@/app/ui/auth/google-button'; // Import reusable component
 
 function SignupButton() {
     const { pending } = useFormStatus();
@@ -73,7 +74,7 @@ export default function SignupForm() {
                                     Act One.
                                 </h2>
                                 <p className="text-sm font-medium text-zinc-400 italic">
-                                    "Every great story has a beginning."
+                                    &#34;Every great story has a beginning.&#34;
                                 </p>
                             </div>
                         </div>
@@ -113,7 +114,17 @@ export default function SignupForm() {
                                 </p>
                             </div>
 
-                            {/* Form */}
+                            {/* Reusable Google Button */}
+                            <GoogleButton />
+
+                            {/* DIVIDER */}
+                            <div className="relative flex py-2 items-center mb-6">
+                                <div className="flex-grow border-t border-zinc-200 dark:border-zinc-800"></div>
+                                <span className="flex-shrink-0 mx-4 text-xs text-zinc-400 uppercase tracking-wider">Or with email</span>
+                                <div className="flex-grow border-t border-zinc-200 dark:border-zinc-800"></div>
+                            </div>
+
+                            {/* Email Form */}
                             <form action={dispatch} className="space-y-6">
 
                                 <div className="space-y-2">
