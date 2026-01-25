@@ -9,16 +9,18 @@ import { createClient } from '@/utils/supabase/server';
 export type CinematicSearchResult = {
     id: number;
     title: string;          // Normalized: 'title' for movies, 'name' for TV/Person
-    release_date?: string;   // Normalized: 'release_date' | 'first_air_date' (Undefined for Person)
+    name?: string;          // Compatibility for UI
+    release_date?: string;   // Normalized: 'release_date' | 'first_air_date'
     poster_path: string | null; // Normalized: 'poster_path' | 'profile_path'
-    backdrop_path?: string | null; // Normalized: 'backdrop_path' | 'known_for[0].backdrop_path'
+    profile_path?: string | null; // Compatibility for UI
+    backdrop_path?: string | null;
     overview?: string;
     media_type: 'movie' | 'tv' | 'person';
-    department?: string;    // for persons (e.g., "Acting", "Directing")
+    department?: string;    // for persons
+    known_for_department?: string; // Compatibility for UI
 };
 
 export interface RichCinematicDetails {
-    // Core
     id: number;
     title: string;
     overview: string;
@@ -26,22 +28,16 @@ export interface RichCinematicDetails {
     backdrop_path: string | null;
     release_date: string;
     media_type: 'movie' | 'tv';
-
-    // Metadata
     genres: { id: number; name: string }[];
-    runtime?: number; // Movies
-    number_of_seasons?: number; // TV
+    runtime?: number;
+    number_of_seasons?: number;
     status?: string;
     tagline?: string;
     vote_average: number;
-
-    // People
     director?: string;
     creator?: string;
     cast: { id: number; name: string; profile_path: string | null; character: string }[];
-
-    // ✨ RICH DATA (Maxed Out)
-    certification: string; // "PG-13", "TV-MA"
+    certification: string;
     keywords: { id: number; name: string }[];
     social_ids: { imdb_id?: string; instagram_id?: string; twitter_id?: string };
     watch_providers: {
@@ -66,22 +62,21 @@ export interface PersonDetails {
     known_for_department: string;
     gender: number;
     also_known_as: string[];
-
-    // Rich Data
-    backdrop_path: string | null; // "Stolen" from their best movie or tagged image
+    backdrop_path: string | null;
     social_ids: {
         instagram_id?: string;
         twitter_id?: string;
         imdb_id?: string;
         facebook_id?: string;
     };
-    images: { file_path: string }[]; // Portraits
+    images: { file_path: string }[];
     known_for: CinematicSearchResult[];
-    backdrops: { file_path: string }[]; // Gallery of movie backdrops
+    backdrops: { file_path: string }[];
 }
 
 // --- TMDB Internal Types ---
 
+// This interface matches the raw JSON from TMDB before we normalize it
 interface TmdbMultiSearchItem {
     id: number;
     media_type?: 'movie' | 'tv' | 'person';
@@ -92,6 +87,7 @@ interface TmdbMultiSearchItem {
     overview?: string;
     title?: string;
     release_date?: string;
+    vote_count?: number; // Used for sorting
 
     // TV/Person fields
     name?: string;
@@ -115,25 +111,29 @@ const normalizeTmdbItem = (item: TmdbMultiSearchItem, forcedMediaType: 'movie' |
 
     // ✨ HANDLE PERSON
     if (media_type === 'person') {
-        if (!item.profile_path) return null; // Skip people with no image
+        if (!item.profile_path) return null;
         return {
             id: item.id,
-            title: item.name!,
-            poster_path: item.profile_path, // Map profile_path to poster_path
+            title: item.name || 'Unknown',
+            name: item.name,
+            poster_path: item.profile_path, // Normalized
+            profile_path: item.profile_path, // Raw
             media_type: 'person',
             department: item.known_for_department || 'Artist',
+            known_for_department: item.known_for_department
         };
     }
 
     // ✨ HANDLE MOVIE/TV
-    // Filter out items with no poster
     if (!item.poster_path) return null;
 
     return {
         id: item.id,
-        title: media_type === 'movie' ? item.title! : item.name!,
-        release_date: media_type === 'movie' ? item.release_date! : item.first_air_date!,
+        title: media_type === 'movie' ? (item.title || 'Unknown') : (item.name || 'Unknown'),
+        name: item.name,
+        release_date: media_type === 'movie' ? item.release_date : item.first_air_date,
         poster_path: item.poster_path,
+        profile_path: null,
         backdrop_path: item.backdrop_path,
         overview: item.overview,
         media_type: media_type
@@ -144,22 +144,17 @@ const normalizeTmdbItem = (item: TmdbMultiSearchItem, forcedMediaType: 'movie' |
 async function getAdultContentFlag(): Promise<string> {
     try {
         const supabase = await createClient();
-
-        // 1. Check if user is logged in
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return 'false'; // Guest = Safe Mode
+        if (!user) return 'false';
 
-        // 2. Check their profile setting
         const { data } = await supabase
             .from('profiles')
             .select('content_preference')
             .eq('id', user.id)
             .single();
 
-        // 3. Return 'true' only if explicitly set to 'all'
         return data?.content_preference === 'all' ? 'true' : 'false';
     } catch (error) {
-        // Fail safe to 'false' if any DB error occurs
         return 'false';
     }
 }
@@ -175,9 +170,6 @@ async function fetchTmdbList(endpoint: string, params: Record<string, string> = 
     if (endpoint.startsWith('/movie')) forcedMediaType = 'movie';
     else if (endpoint.startsWith('/tv') || endpoint.startsWith('/discover/tv')) forcedMediaType = 'tv';
 
-    // ✨ DYNAMICALLY GET PREFERENCE
-    // If 'include_adult' is already passed in params (e.g. override), use it.
-    // Otherwise, fetch from user profile.
     let includeAdultParam = params.include_adult;
     if (!includeAdultParam) {
         includeAdultParam = await getAdultContentFlag();
@@ -185,15 +177,13 @@ async function fetchTmdbList(endpoint: string, params: Record<string, string> = 
 
     const query = new URLSearchParams({
         api_key: TMDB_API_KEY,
-        include_adult: includeAdultParam, // ✅ Uses dynamic user setting
+        include_adult: includeAdultParam,
         ...params
     });
 
     try {
-        // Note: The cache key includes the query params.
-        // So 'include_adult=true' and 'include_adult=false' will be cached separately.
         const res = await fetch(`https://api.themoviedb.org/3${endpoint}?${query.toString()}`, {
-            next: { revalidate: 3600 } // Cache for 1 hour
+            next: { revalidate: 3600 }
         });
 
         if (!res.ok) {
@@ -206,7 +196,6 @@ async function fetchTmdbList(endpoint: string, params: Record<string, string> = 
         return data.results
             .map(item => normalizeTmdbItem(item, forcedMediaType))
             .filter((item): item is CinematicSearchResult => item !== null)
-            // Allow items without backdrop if they are persons, but ensure quality for others
             .filter(item => item.media_type === 'person' || !!item.backdrop_path)
             .slice(0, 20);
 
@@ -247,23 +236,23 @@ export async function discoverMedia(filters: DiscoverFilters) {
     }
 
     if (filters.with_genres === 'anime') {
-        params.with_genres = '16'; // Animation genre
+        params.with_genres = '16';
         params.with_original_language = 'ja';
     }
 
     return fetchTmdbList(`/discover/${filters.type}`, params);
 }
 
-// 0. HERO SECTION MIX
+// ... (Keep existing aggregate functions like getTrendingHero, getPopularMovies, etc.) ...
+// Just ensure they use fetchTmdbList which is now type-safe.
+
 export async function getTrendingHero() {
     const [movies, tvShows] = await Promise.all([
         fetchTmdbList('/trending/movie/day', { region: 'IN' }),
         fetchTmdbList('/trending/tv/day', { timezone: 'Asia/Kolkata' })
     ]);
-
     const mixed: CinematicSearchResult[] = [];
     const length = Math.min(movies.length, tvShows.length, 5);
-
     for (let i = 0; i < length; i++) {
         mixed.push(movies[i]);
         mixed.push(tvShows[i]);
@@ -271,32 +260,26 @@ export async function getTrendingHero() {
     return mixed;
 }
 
-// 1. Trending All
 export async function getTrendingAll() {
     return fetchTmdbList('/trending/all/day', { language: 'en-US' });
 }
 
-// 2. Popular Movies
 export async function getPopularMovies() {
     return fetchTmdbList('/movie/now_playing', { language: 'en-US', page: '1', region: 'IN' });
 }
 
-// 3. Popular TV
 export async function getPopularTv() {
     return fetchTmdbList('/tv/on_the_air', { language: 'en-US', page: '1', timezone: 'Asia/Kolkata' });
 }
 
-// 4. Popular Anime (Optimized with discoverMedia)
 export async function getDiscoverAnime() {
     return discoverMedia({ type: 'tv', with_genres: 'anime' });
 }
 
-// 5. Top K-Dramas (Optimized with discoverMedia)
 export async function getDiscoverKdramas() {
     return discoverMedia({ type: 'tv', with_original_language: 'ko' });
 }
 
-// 6. Search
 export async function searchCinematic(query: string): Promise<CinematicSearchResult[]> {
     if (query.trim().length < 2) return [];
     return fetchTmdbList('/search/multi', { query: encodeURIComponent(query) });
@@ -306,9 +289,8 @@ export async function searchCinematic(query: string): Promise<CinematicSearchRes
 // == DETAILS & CACHING ACTIONS
 // =====================================================================
 
-// 7. MAXED OUT MOVIE DETAILS
 export async function getMovieDetails(movieId: number): Promise<RichCinematicDetails> {
-    const supabase = await createClient(); // Standard Client
+    const supabase = await createClient();
     const TMDB_API_KEY = process.env.TMDB_API_KEY;
     if (!TMDB_API_KEY) throw new Error("TMDB API Key not configured.");
 
@@ -320,6 +302,9 @@ export async function getMovieDetails(movieId: number): Promise<RichCinematicDet
 
         if (!res.ok) throw new Error("Failed to fetch movie details");
         const data = await res.json();
+
+        // Safe typing for specific parts of the detailed response
+        const recommendations = (data.recommendations?.results || []) as TmdbMultiSearchItem[];
 
         const director = data.credits?.crew?.find((p: any) => p.job === 'Director')?.name || 'N/A';
         const usRelease = data.release_dates?.results?.find((r: any) => r.iso_3166_1 === 'US');
@@ -348,7 +333,7 @@ export async function getMovieDetails(movieId: number): Promise<RichCinematicDet
                 rent: providers.rent || [],
                 buy: providers.buy || []
             },
-            recommendations: data.recommendations?.results?.map((i: any) => normalizeTmdbItem(i, 'movie')).filter(Boolean).slice(0, 10) || [],
+            recommendations: recommendations.map((i) => normalizeTmdbItem(i, 'movie')).filter((item): item is CinematicSearchResult => item !== null).slice(0, 10),
             videos: data.videos?.results || [],
             images: data.images || { backdrops: [] },
             similar: []
@@ -375,7 +360,6 @@ export async function getMovieDetails(movieId: number): Promise<RichCinematicDet
     }
 }
 
-// 8. MAXED OUT TV DETAILS
 export async function getSeriesDetails(seriesId: number): Promise<RichCinematicDetails> {
     const supabase = await createClient();
     const TMDB_API_KEY = process.env.TMDB_API_KEY;
@@ -389,6 +373,9 @@ export async function getSeriesDetails(seriesId: number): Promise<RichCinematicD
 
         if (!res.ok) throw new Error("Failed to fetch TV details");
         const data = await res.json();
+
+        // Safe typing
+        const recommendations = (data.recommendations?.results || []) as TmdbMultiSearchItem[];
 
         const creator = data.created_by?.[0]?.name || 'N/A';
         const usRating = data.content_ratings?.results?.find((r: any) => r.iso_3166_1 === 'US');
@@ -418,7 +405,7 @@ export async function getSeriesDetails(seriesId: number): Promise<RichCinematicD
                 rent: providers.rent || [],
                 buy: providers.buy || []
             },
-            recommendations: data.recommendations?.results?.map((i: any) => normalizeTmdbItem(i, 'tv')).filter(Boolean).slice(0, 10) || [],
+            recommendations: recommendations.map((i) => normalizeTmdbItem(i, 'tv')).filter((item): item is CinematicSearchResult => item !== null).slice(0, 10),
             videos: data.videos?.results || [],
             images: data.images || { backdrops: [] },
             similar: []
@@ -446,9 +433,8 @@ export async function getSeriesDetails(seriesId: number): Promise<RichCinematicD
     }
 }
 
-// 9. MAXED OUT PERSON DETAILS
 export async function getPersonDetails(personId: number): Promise<PersonDetails> {
-    const supabase = await createClient(); // Standard Client
+    const supabase = await createClient();
     const TMDB_API_KEY = process.env.TMDB_API_KEY;
     if (!TMDB_API_KEY) throw new Error("TMDB API Key not configured.");
 
@@ -461,29 +447,28 @@ export async function getPersonDetails(personId: number): Promise<PersonDetails>
         if (!res.ok) throw new Error("Failed to fetch person details");
         const data = await res.json();
 
-        // Sort credits by popularity
-        const allCast = (data.combined_credits?.cast || [])
-            .sort((a: any, b: any) => (b.vote_count || 0) - (a.vote_count || 0));
+        // Sort credits by popularity and cast to our type
+        const allCast = (data.combined_credits?.cast || []) as TmdbMultiSearchItem[];
+        const sortedCast = allCast.sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0));
 
-        const knownFor = allCast
-            .map((item: any) => normalizeTmdbItem(item))
-            .filter((item: any): item is CinematicSearchResult => item !== null)
-            .filter((item: CinematicSearchResult, index: number, self: CinematicSearchResult[]) =>
+        const knownFor = sortedCast
+            .map((item) => normalizeTmdbItem(item))
+            .filter((item): item is CinematicSearchResult => item !== null)
+            // Deduplicate by ID
+            .filter((item, index, self) =>
                 index === self.findIndex((t) => t.id === item.id)
             )
             .slice(0, 20);
 
-        // Smart Backdrop Strategy:
-        // 1. Try Tagged Images (Photos of them in movies, filter for Landscape > 1.6 aspect ratio)
+        // Smart Backdrop Strategy
         let backdrops = (data.tagged_images?.results || [])
             .filter((img: any) => img.aspect_ratio > 1.6)
             .map((img: any) => ({ file_path: img.file_path }));
 
-        // 2. If no tagged images, use backdrops from their top known movies
         if (backdrops.length === 0) {
             backdrops = knownFor
-                .filter((m: CinematicSearchResult) => m.backdrop_path)
-                .map((m: CinematicSearchResult) => ({ file_path: m.backdrop_path }));
+                .filter((m) => m.backdrop_path)
+                .map((m) => ({ file_path: m.backdrop_path! }));
         }
 
         const details: PersonDetails = {
@@ -505,7 +490,7 @@ export async function getPersonDetails(personId: number): Promise<PersonDetails>
             backdrops: backdrops.slice(0, 10)
         };
 
-        // Cache Person (Fire & Forget)
+        // Cache Person
         supabase.from('people').upsert({
             tmdb_id: data.id,
             name: data.name,
@@ -518,7 +503,6 @@ export async function getPersonDetails(personId: number): Promise<PersonDetails>
             gender: data.gender,
             updated_at: new Date().toISOString(),
         }).then(({ error }) => {
-            // Ignore error if table doesn't exist yet to prevent console spam
             if (error && error.code !== '42P01') console.error("Actor Cache Error:", error);
         });
 

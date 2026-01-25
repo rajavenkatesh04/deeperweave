@@ -14,7 +14,6 @@ import {
     ChevronUpIcon, ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import LoadingSpinner from '@/app/ui/loading-spinner';
-import { clsx } from 'clsx';
 
 // --- Types for local state ---
 type EditableItem = {
@@ -71,7 +70,7 @@ function SearchModal({
                     if (sectionType === 'movie') return item.media_type === 'movie';
                     if (sectionType === 'tv') return item.media_type === 'tv';
                     if (sectionType === 'person') return item.media_type === 'person';
-                    return item.media_type !== 'person'; // Mixed usually excludes people unless specified
+                    return item.media_type !== 'person'; // Mixed excludes people by default
                 });
 
                 setResults(filtered);
@@ -103,23 +102,40 @@ function SearchModal({
                 </div>
                 <div className="flex-1 overflow-y-auto p-2 space-y-1">
                     {loading ? <div className="py-10 text-center"><LoadingSpinner/></div> :
-                        results.map((item) => (
-                            <button
-                                key={item.id}
-                                onClick={() => { onSelect(item); onClose(); }}
-                                className="w-full flex items-center gap-4 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-lg text-left"
-                            >
-                                {item.poster_path || item.profile_path ? (
-                                    <Image src={`https://image.tmdb.org/t/p/w92${item.poster_path || item.profile_path}`} alt={item.title || item.name} width={40} height={60} className="rounded object-cover" />
-                                ) : (
-                                    <div className="w-10 h-[60px] bg-zinc-800 rounded flex items-center justify-center"><FilmIcon className="w-4 h-4 text-zinc-600"/></div>
-                                )}
-                                <div>
-                                    <h4 className="font-bold text-sm">{item.title || item.name}</h4>
-                                    <p className="text-xs text-zinc-500 uppercase">{item.media_type} • {item.release_date?.split('-')[0]}</p>
-                                </div>
-                            </button>
-                        ))}
+                        results.map((item) => {
+                            // ✨ SAFE VARIABLES: Pre-calculate to satisfy TypeScript
+                            const imagePath = item.poster_path || item.profile_path;
+                            const displayTitle = item.title || item.name || 'Unknown';
+                            const year = item.release_date?.split('-')[0] || '';
+
+                            return (
+                                <button
+                                    key={item.id}
+                                    onClick={() => { onSelect(item); onClose(); }}
+                                    className="w-full flex items-center gap-4 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-lg text-left"
+                                >
+                                    {imagePath ? (
+                                        <Image
+                                            src={`https://image.tmdb.org/t/p/w92${imagePath}`}
+                                            alt={displayTitle}
+                                            width={40}
+                                            height={60}
+                                            className="rounded object-cover"
+                                        />
+                                    ) : (
+                                        <div className="w-10 h-[60px] bg-zinc-800 rounded flex items-center justify-center">
+                                            <FilmIcon className="w-4 h-4 text-zinc-600"/>
+                                        </div>
+                                    )}
+                                    <div>
+                                        <h4 className="font-bold text-sm">{displayTitle}</h4>
+                                        <p className="text-xs text-zinc-500 uppercase">
+                                            {item.media_type} {year && `• ${year}`}
+                                        </p>
+                                    </div>
+                                </button>
+                            );
+                        })}
                 </div>
             </div>
         </div>
@@ -146,10 +162,15 @@ function SectionEditor({
 
     const handleAddItem = (result: CinematicSearchResult) => {
         const newItems = [...section.items];
+
+        // Handle "Person" vs "Movie/TV" field names safely
+        const title = result.title || result.name || 'Unknown';
+        const imagePath = result.poster_path || result.profile_path || null;
+
         newItems[activeSlot] = {
             id: result.id,
-            title: result.title || result.name,
-            image_path: result.poster_path || result.profile_path,
+            title: title,
+            image_path: imagePath ? imagePath.replace('https://image.tmdb.org/t/p/w500', '') : null,
             type: result.media_type as 'movie' | 'tv' | 'person',
             year: result.release_date?.split('-')[0]
         };
@@ -257,10 +278,17 @@ export default function ProfileEditForm({ profile, sections }: { profile: UserPr
                     if (!item) return null;
                     const obj = item.movie || item.series || item.person;
                     if (!obj) return null;
+
+                    // Handle polymorphic object properties safely
+                    const title = 'title' in obj ? obj.title : obj.name;
+                    const imagePath = 'poster_url' in obj
+                        ? obj.poster_url?.replace('https://image.tmdb.org/t/p/w500', '')
+                        : obj.profile_path?.replace('https://image.tmdb.org/t/p/w500', '');
+
                     return {
                         id: obj.tmdb_id,
-                        title: 'title' in obj ? obj.title : obj.name,
-                        image_path: 'poster_url' in obj ? obj.poster_url?.replace('https://image.tmdb.org/t/p/w500', '') : obj.profile_path,
+                        title: title,
+                        image_path: imagePath,
                         type: item.item_type,
                         year: 'release_date' in obj ? obj.release_date?.split('-')[0] : undefined
                     } as EditableItem;
