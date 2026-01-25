@@ -252,7 +252,7 @@ export default function TimelineEntryCard({
 
                         {/* 1. Header: Readable Date & Action Menu */}
                         <div className="flex justify-between items-center mb-1">
-                            <span className="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-500 font-semibold">
+                            <span className="text-xs uppercase tracking-wide font-semibold italic">
                                 {formattedDate}
                             </span>
                             {isOwnProfile && (
@@ -297,7 +297,7 @@ export default function TimelineEntryCard({
 
                             {/* Source */}
                             {entry.viewing_context && (
-                                <span className="truncate max-w-[100px] font-medium">
+                                <span className="truncate max-w-[100px] font-extrabold">
                                     {entry.viewing_context}
                                 </span>
                             )}
@@ -323,7 +323,7 @@ export default function TimelineEntryCard({
                                             // eslint-disable-next-line @next/next/no-img-element
                                             <img
                                                 key={collab.profiles.id}
-                                                src={collab.profiles.profile_pic_url || '/default-avatar.png'}
+                                                src={collab.profiles.profile_pic_url || '/placeholder-user.jpg'}
                                                 alt={collab.profiles.username}
                                                 className="w-4 h-4 rounded-sm ring-1 ring-white dark:ring-zinc-950 object-cover hover:scale-110 hover:z-10 transition-transform cursor-pointer"
                                                 onClick={(e) => {e.stopPropagation(); setSelectedCollaborator(collab.profiles)}}
