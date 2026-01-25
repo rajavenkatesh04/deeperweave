@@ -73,7 +73,7 @@ export default async function ProfileHomePage({ params }: { params: Promise<{ us
             </div>
 
 
-            <main className="pt-5 pb-32">
+            <main className="max-w-7xl mx-auto pt-5 pb-32">
                 <ProfileSectionDisplay sections={sections} />
             </main>
         </div>

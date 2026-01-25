@@ -41,7 +41,7 @@ export default async function ProfileLayout({
             {canViewContent ? (
                 <div>
                     <TabNavigation username={profile.username} isOwnProfile={isOwnProfile} />
-                    <div className="py-2">{children}</div>
+                    <div className="">{children}</div>
                 </div>
             ) : (
                 <PrivateProfileScreen />
