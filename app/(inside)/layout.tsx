@@ -6,19 +6,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return (
         <div className="flex h-screen flex-col md:flex-row md:overflow-hidden bg-zinc-50 dark:bg-zinc-950">
 
-            {/* SIDEBAR WRAPPER
-                - Updated width to 'md:w-72' to match the new Navigation component exactly.
-                - 'flex-none' ensures it doesn't shrink.
+            {/* SIDEBAR WRAPPER / SPACER
+                - Changed from 'md:w-72' to 'md:w-20'
+                - This acts as a "Ghost" spacer. It reserves the 80px rail space
+                  so your content doesn't hide behind the fixed sidebar.
             */}
-            <div className="w-full flex-none md:w-72">
+            <div className="w-full flex-none md:w-20">
                 <Navigation />
             </div>
 
             {/* MAIN CONTENT AREA
-                - 'flex-grow': Fills remaining space.
-                - 'md:overflow-y-auto': Allows independent scrolling of content (sidebar stays fixed).
-                - 'pb-20': Adds padding on mobile so the bottom navigation bar doesn't cover content.
-                - 'md:pb-0': Removes that padding on desktop since the bottom bar is gone.
+                - Now occupies all space minus the 20 units reserved above.
             */}
             <div className="flex-grow md:overflow-y-auto pb-20 md:pb-0">
                 {children}

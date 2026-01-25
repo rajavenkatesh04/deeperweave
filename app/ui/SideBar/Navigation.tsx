@@ -13,7 +13,7 @@ export default async function Navigation() {
     return (
         <>
             {/* ====== DESKTOP SIDEBAR ====== */}
-            <div className="hidden h-screen sticky top-0 flex-col border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-black md:flex md:w-72 overflow-hidden">
+            <aside className="hidden h-screen fixed top-0 left-0 flex-col border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-black md:flex md:w-20 md:hover:w-72 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden group/sidebar z-50 shadow-xl">
 
                 {/* Texture Background */}
                 <div className="absolute inset-0 opacity-[0.03] pointer-events-none z-0"
@@ -21,39 +21,36 @@ export default async function Navigation() {
                 />
 
                 {/* Logo Section */}
-                <div className="relative z-10 flex-none h-24 flex items-center px-6 border-b border-zinc-200 dark:border-zinc-800">
-                    <Link href="/" className="group flex items-center gap-3">
-                        <div className="w-8 h-8 bg-black dark:bg-white flex items-center justify-center text-white dark:text-black font-bold text-xs">
+                <div className="relative z-10 flex-none h-24 flex items-center px-5 border-b border-zinc-200 dark:border-zinc-800 whitespace-nowrap overflow-hidden">
+                    <Link href="/" className="flex items-center gap-4">
+                        {/* Fixed Logo Box - Pinned Position */}
+                        <div className="shrink-0 w-10 h-10 bg-black dark:bg-white flex items-center justify-center text-white dark:text-black font-bold text-xs rounded-sm">
                             DW
                         </div>
-                        <div className="flex flex-col">
+                        {/* Text - Fades in/out without affecting layout */}
+                        <div className="flex flex-col opacity-0 -translate-x-4 group-hover/sidebar:opacity-100 group-hover/sidebar:translate-x-0 transition-all duration-300 ease-out delay-75">
                             <p className={`${PlayWriteNewZealandFont.className} text-xl font-bold text-zinc-900 dark:text-zinc-100 leading-none`}>
                                 Deeper Weave
                             </p>
-                            <span className="text-[9px] uppercase tracking-[0.2em] text-zinc-400 mt-1 group-hover:text-red-500 transition-colors">
-                                Cinematic Log
-                            </span>
                         </div>
                     </Link>
                 </div>
 
                 {/* Nav Links */}
-                <div className="relative z-10 flex-1 py-8 px-4 overflow-y-auto">
+                <div className="relative z-10 flex-1 py-8 px-3 overflow-y-auto overflow-x-hidden">
                     <DesktopNavLinks />
                 </div>
 
                 {/* User Profile */}
-                <div className="relative z-10 flex-none p-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 backdrop-blur-sm">
+                <div className="relative z-10 flex-none p-3 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 backdrop-blur-sm whitespace-nowrap overflow-hidden">
                     <UserProfile user={{ profile, email: userData?.user?.email }} />
                 </div>
-            </div>
+            </aside>
 
             {/* ====== MOBILE BOTTOM BAR ====== */}
             <div className="fixed bottom-0 left-0 right-0 z-50 h-16 bg-white/90 dark:bg-black/90 backdrop-blur-xl border-t border-zinc-200 dark:border-zinc-800 md:hidden pb-safe">
                 <div className="flex h-full items-center justify-around px-2">
                     <MobileNavLinks />
-
-                    {/* Mobile Profile Link */}
                     <Link
                         href={profile ? "/profile" : "/auth/login"}
                         className="flex flex-col items-center justify-center w-16 h-full gap-1 group"
@@ -66,7 +63,6 @@ export default async function Navigation() {
                                 fill
                             />
                         </div>
-                        {/* <span className="text-[9px] uppercase tracking-widest text-zinc-400">You</span> */}
                     </Link>
                 </div>
             </div>
