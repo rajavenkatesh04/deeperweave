@@ -1,328 +1,488 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from "next/link";
 import Image from "next/image";
 import {
-    StarIcon, MagnifyingGlassIcon,
-    ArrowRightIcon, ChartBarIcon,
-    ListBulletIcon, PencilSquareIcon,
-    ClockIcon, FireIcon
+    FilmIcon, TvIcon, SparklesIcon, HeartIcon,
+    MagnifyingGlassIcon, ArrowRightIcon, StarIcon,
+    PlusIcon, XMarkIcon, Bars3Icon, UserIcon,
+    ListBulletIcon, ChatBubbleLeftIcon, ShareIcon
 } from "@heroicons/react/24/solid";
-import { motion, AnimatePresence } from "framer-motion";
-import { dmSerif, geistSans } from "@/app/ui/fonts";
+import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
+import { searchCinematic, CinematicSearchResult } from "@/lib/actions/cinematic-actions";
+import clsx from "clsx";
 
-// --- TYPES ---
+// --- Types ---
+interface HeroItem { label: string; bg: string; }
+interface BentoItemData { title: string; href: string; img: string; description?: string; }
+
 interface LandingPageClientProps {
     heroPosters: string[];
-    heroItems?: any[];
+    heroItems: HeroItem[];
     searchDemoItems?: any[];
-    bentoItems?: any;
+    bentoItems: {
+        anime: BentoItemData;
+        movie: BentoItemData;
+        kdrama: BentoItemData;
+        tv: BentoItemData;
+    };
 }
 
-// --- UTILS ---
-const cn = (...classes: (string | undefined | null | false)[]) => classes.filter(Boolean).join(" ");
-
-// --- MOCK COMPONENTS (Preserved but Styled) ---
-
-const MockTimelineRow = ({ date, title, rating, img }: { date: string, title: string, rating: number, img: string }) => (
-    <div className="flex items-center gap-4 py-3 border-b border-zinc-100 dark:border-zinc-800 last:border-0 group">
-        <div className="flex flex-col items-center w-10 shrink-0 opacity-60">
-            <span className="text-[10px] font-bold uppercase tracking-wider">{date.split(' ')[0]}</span>
-            <span className="text-lg font-bold leading-none">{date.split(' ')[1]}</span>
-        </div>
-        <div className="relative w-10 h-14 bg-zinc-200 dark:bg-zinc-800 shrink-0 shadow-sm">
-            <Image
-                src={`https://image.tmdb.org/t/p/w200${img}`}
-                alt={title}
-                fill
-                className="object-cover"
-            />
-        </div>
-        <div className="flex-1 min-w-0">
-            <h4 className="text-sm font-bold truncate">{title}</h4>
-            <div className="flex gap-0.5 text-amber-500">
-                {[...Array(5)].map((_, i) => (
-                    <StarIcon key={i} className={`w-3 h-3 ${i < rating ? 'opacity-100' : 'opacity-20 text-zinc-400'}`} />
-                ))}
-            </div>
-        </div>
-    </div>
-);
-
-const MockListCard = () => (
-    <div className="w-full h-full flex flex-col justify-between">
-        <div>
-            <div className="flex items-center justify-between mb-4">
-                <h3 className={`${dmSerif.className} text-2xl`}>Neon Noir</h3>
-                <span className="text-[10px] border border-zinc-300 dark:border-zinc-700 px-2 py-0.5 uppercase tracking-wider font-bold">Public</span>
-            </div>
-            <div className="space-y-3">
-                {[
-                    { r: '01', t: 'Blade Runner 2049', y: '2017' },
-                    { r: '02', t: 'Akira', y: '1988' },
-                    { r: '03', t: 'Drive', y: '2011' },
-                    { r: '04', t: 'Nightcrawler', y: '2014' },
-                ].map((item) => (
-                    <div key={item.r} className="flex items-center gap-4 group cursor-pointer">
-                        <span className="text-sm font-mono text-zinc-400 font-bold">{item.r}</span>
-                        <div className="h-px flex-1 bg-zinc-100 dark:bg-zinc-800 group-hover:bg-zinc-300 dark:group-hover:bg-zinc-600 transition-colors" />
-                        <p className="text-sm font-medium whitespace-nowrap">{item.t}</p>
-                    </div>
-                ))}
-            </div>
-        </div>
-        <div className="mt-6 flex items-center gap-2 text-xs text-zinc-500">
-            <div className="w-6 h-6 bg-gradient-to-tr from-blue-500 to-purple-500 rounded-full" />
-            <span>Curated by <strong>Alex</strong></span>
-        </div>
-    </div>
-);
-
-// --- SEARCH COMPONENT (Improved Layout) ---
-const MinimalSearch = () => {
-    const [text, setText] = useState("");
-    const [focused, setFocused] = useState(false);
-
-    // Auto-type effect only runs once on mount
+// --- Helper: Debounce ---
+function useDebounce<T>(value: T, delay: number): T {
+    const [debouncedValue, setDebouncedValue] = useState(value);
     useEffect(() => {
-        const fullText = "Interstellar";
-        let currentIndex = 0;
-        const interval = setInterval(() => {
-            if (currentIndex <= fullText.length) {
-                setText(fullText.slice(0, currentIndex));
-                currentIndex++;
-            } else {
-                clearInterval(interval);
+        const handler = setTimeout(() => setDebouncedValue(value), delay);
+        return () => clearTimeout(handler);
+    }, [value, delay]);
+    return debouncedValue;
+}
+
+// --- Components: Feature Mockups ---
+const RatingCardMockup = ({ poster }: { poster: string }) => (
+    <div className="bg-white dark:bg-zinc-900 shadow-sm p-5 w-full max-w-xs border border-zinc-200 dark:border-zinc-800 hover:-translate-y-1 transition-transform duration-300">
+        <div className="flex gap-4">
+            <div className="w-14 h-20 bg-zinc-100 dark:bg-zinc-800 relative overflow-hidden shrink-0">
+                <Image src={`https://image.tmdb.org/t/p/w200${poster}`} alt="Poster" fill className="object-cover" />
+            </div>
+            <div className="flex-1 space-y-2">
+                <div className="h-3 w-3/4 bg-zinc-100 dark:bg-zinc-800 animate-pulse" />
+                <div className="flex text-zinc-900 dark:text-white">
+                    <StarIcon className="w-3.5 h-3.5" />
+                    <StarIcon className="w-3.5 h-3.5" />
+                    <StarIcon className="w-3.5 h-3.5" />
+                    <StarIcon className="w-3.5 h-3.5" />
+                    <StarIcon className="w-3.5 h-3.5 text-zinc-200 dark:text-zinc-700" />
+                </div>
+                <div className="text-[10px] text-zinc-400 font-mono">Oct 24, 2024</div>
+            </div>
+        </div>
+        <div className="mt-4 pt-3 border-t border-zinc-100 dark:border-zinc-800">
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">"Visually stunning. A masterclass in cinematography."</p>
+        </div>
+    </div>
+);
+
+const ListStackMockup = ({ posters }: { posters: string[] }) => (
+    <div className="relative w-full max-w-xs h-44 group cursor-pointer">
+        {posters.slice(0, 3).map((poster, i) => (
+            <div
+                key={i}
+                className={clsx(
+                    "absolute top-0 w-40 h-28 bg-zinc-800 shadow-md border border-white dark:border-zinc-900 overflow-hidden transition-all duration-300 ease-out",
+                    i === 0 && "z-30 left-0 top-0 group-hover:-translate-y-1.5",
+                    i === 1 && "z-20 left-3 top-3 group-hover:translate-x-1.5",
+                    i === 2 && "z-10 left-6 top-6 group-hover:translate-x-3 group-hover:translate-y-1.5"
+                )}
+            >
+                <Image src={`https://image.tmdb.org/t/p/w500${poster}`} alt="List Item" fill className="object-cover opacity-70" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-3">
+                    {i === 0 && <span className="text-white font-medium text-xs">Essential Sci-Fi</span>}
+                </div>
+            </div>
+        ))}
+    </div>
+);
+
+export default function LandingPageClient({
+                                              heroPosters,
+                                              bentoItems
+                                          }: LandingPageClientProps) {
+    // --- State ---
+    const [searchQuery, setSearchQuery] = useState("");
+    const [searchResults, setSearchResults] = useState<CinematicSearchResult[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [isSearchFocused, setIsSearchFocused] = useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [scrolled, setScrolled] = useState(false);
+
+    const debouncedQuery = useDebounce(searchQuery, 300);
+    const searchContainerRef = useRef<HTMLDivElement>(null);
+    const { scrollY } = useScroll();
+
+    // Scroll listener for navbar style
+    useEffect(() => {
+        const handleScroll = () => setScrolled(window.scrollY > 20);
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    // Search Logic
+    useEffect(() => {
+        const performSearch = async () => {
+            if (debouncedQuery.length < 2) {
+                setSearchResults([]);
+                return;
             }
-        }, 100);
-        return () => clearInterval(interval);
+            setIsSearching(true);
+            try {
+                const results = await searchCinematic(debouncedQuery);
+                setSearchResults(results.slice(0, 5));
+            } catch (error) {
+                console.error("Search failed", error);
+            } finally {
+                setIsSearching(false);
+            }
+        };
+        performSearch();
+    }, [debouncedQuery]);
+
+    // Close search on click outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+                setIsSearchFocused(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
     return (
-        <div className="relative w-full max-w-md z-30">
-            <div
-                className={cn(
-                    "flex items-center bg-white dark:bg-black border h-14 px-4 shadow-sm transition-all duration-200",
-                    focused ? "border-zinc-900 ring-1 ring-zinc-900 dark:border-zinc-100 dark:ring-zinc-100" : "border-zinc-300 dark:border-zinc-700"
-                )}
-            >
-                <MagnifyingGlassIcon className="w-5 h-5 text-zinc-400" />
-                <input
-                    type="text"
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    onFocus={() => setFocused(true)}
-                    onBlur={() => setFocused(false)}
-                    className="ml-3 w-full bg-transparent outline-none font-medium text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400"
-                    placeholder="Search movies..."
-                />
-                <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold border border-zinc-200 dark:border-zinc-800 px-1.5 py-0.5 text-zinc-400 bg-zinc-50 dark:bg-zinc-900 rounded-sm">⌘K</span>
-                </div>
-            </div>
+        <div className="min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans selection:bg-zinc-200 dark:selection:bg-zinc-800">
+            {/* Global Scrollbar Hide */}
+            <style jsx global>{`
+                .no-scrollbar::-webkit-scrollbar { display: none; }
+                .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+            `}</style>
 
-            {/* Result Dropdown */}
+            {/* --- Navigation --- */}
+            <nav className={clsx(
+                "fixed top-0 w-full z-50 transition-all duration-300 border-b",
+                scrolled
+                    ? "bg-white/90 dark:bg-zinc-950/90 backdrop-blur-lg border-zinc-200 dark:border-zinc-800 py-3"
+                    : "bg-transparent border-transparent py-4"
+            )}>
+                <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between">
+                    <Link href="/" className="flex items-center gap-2 group">
+                        <div className="h-6 w-6 bg-zinc-900 dark:bg-white flex items-center justify-center text-white dark:text-zinc-900 group-hover:rotate-180 transition-transform duration-500">
+                            <FilmIcon className="w-3 h-3" />
+                        </div>
+                        <span className="text-base font-normal tracking-tight">
+                            Deeper Weave
+                        </span>
+                    </Link>
+
+                    {/* Desktop Nav */}
+                    <div className="hidden md:flex items-center gap-8">
+                        {['Discover', 'Features', 'Community'].map((item) => (
+                            <Link key={item} href={`/${item.toLowerCase()}`} className="text-sm font-light text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
+                                {item}
+                            </Link>
+                        ))}
+                    </div>
+
+                    <div className="hidden md:flex items-center gap-4">
+                        <Link href="/auth/login" className="text-sm font-medium hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">Log in</Link>
+                        <Link href="/auth/sign-up" className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 px-4 py-2 text-sm font-medium hover:-translate-y-0.5 transition-transform">
+                            Sign up
+                        </Link>
+                    </div>
+
+                    {/* Mobile Toggle */}
+                    <button onClick={() => setIsMobileMenuOpen(true)} className="md:hidden p-2">
+                        <Bars3Icon className="w-5 h-5" />
+                    </button>
+                </div>
+            </nav>
+
+            {/* Mobile Menu Overlay */}
             <AnimatePresence>
-                {text.length > 3 && (
+                {isMobileMenuOpen && (
                     <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 10 }}
-                        className="absolute top-16 left-0 right-0 bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 shadow-xl overflow-hidden"
+                        initial={{ opacity: 0, x: '100%' }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: '100%' }}
+                        transition={{ type: 'tween', duration: 0.3 }}
+                        className="fixed inset-0 z-[60] bg-white dark:bg-zinc-950 p-6 md:hidden"
                     >
-                        <div className="flex gap-4 p-3 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors cursor-pointer group">
-                            <div className="w-12 aspect-[2/3] bg-zinc-200 relative shrink-0">
-                                {/* Fixed Image Src Logic */}
-                                <Image src="https://image.tmdb.org/t/p/w200/gEU2QniL6qFjqlvuymbaT47TlZL.jpg" alt="Interstellar" fill className="object-cover" />
-                            </div>
-                            <div className="flex flex-col justify-center">
-                                <span className="font-bold text-base text-zinc-900 dark:text-zinc-100 group-hover:underline">Interstellar</span>
-                                <span className="text-xs text-zinc-500 font-mono mt-1">2014 • Christopher Nolan</span>
-                                <div className="flex items-center gap-1 mt-2">
-                                    <StarIcon className="w-3 h-3 text-amber-500" />
-                                    <span className="text-xs font-bold">8.4</span>
-                                </div>
-                            </div>
+                        <div className="flex justify-between items-center mb-12">
+                            <span className="text-lg">Menu</span>
+                            <button onClick={() => setIsMobileMenuOpen(false)}><XMarkIcon className="w-6 h-6" /></button>
+                        </div>
+                        <div className="flex flex-col gap-8 text-xl font-light">
+                            <Link href="/discover" onClick={() => setIsMobileMenuOpen(false)}>Discover</Link>
+                            <Link href="/features" onClick={() => setIsMobileMenuOpen(false)}>Features</Link>
+                            <Link href="/community" onClick={() => setIsMobileMenuOpen(false)}>Community</Link>
+                            <div className="h-px bg-zinc-200 dark:bg-zinc-800 my-4" />
+                            <Link href="/auth/login" onClick={() => setIsMobileMenuOpen(false)}>Log In</Link>
+                            <Link href="/auth/sign-up" onClick={() => setIsMobileMenuOpen(false)} className="font-medium">Sign Up</Link>
                         </div>
                     </motion.div>
                 )}
             </AnimatePresence>
-        </div>
-    );
-};
 
-export default function LandingPageClient({ heroPosters }: LandingPageClientProps) {
-    return (
-        <div className={`min-h-screen bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 ${geistSans.className}`}>
+            <main>
+                {/* --- Hero Section --- */}
+                <section className="relative pt-20 pb-12 md:pt-32 md:pb-20 overflow-hidden">
+                    {/* Minimalist geometric background */}
+                    <div className="absolute inset-0 z-0 opacity-[0.03] dark:opacity-[0.06] pointer-events-none">
+                        <div className="absolute top-20 right-0 w-[600px] h-[600px] border border-zinc-900 dark:border-white rounded-full" />
+                        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] border border-zinc-900 dark:border-white rounded-full" />
+                    </div>
 
-            {/* Background Grid Pattern */}
-            <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
-                <div className="absolute inset-0 bg-gradient-to-b from-white via-transparent to-white dark:from-black dark:via-transparent dark:to-black"></div>
-            </div>
+                    <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10">
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.8 }}
+                            className="space-y-6 md:space-y-8"
+                        >
+                            <div className="inline-block">
+                                <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                                    <div className="h-px w-8 bg-zinc-300 dark:bg-zinc-700" />
+                                    Cinematic Archiving Redefined
+                                </div>
+                            </div>
 
-            {/* --- NAV --- */}
-            <nav className="fixed top-0 z-50 w-full bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800">
-                <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-                    <Link href="/" className="flex items-center gap-2 font-bold tracking-tight text-xl">
-                        <div className="w-5 h-5 bg-zinc-900 dark:bg-white rounded-none" />
-                        <span>DeeperWeave</span>
-                    </Link>
-                    <div className="hidden md:flex items-center gap-8 text-sm font-medium text-zinc-600 dark:text-zinc-400">
-                        <Link href="/discover" className="hover:text-black dark:hover:text-white transition-colors">Discover</Link>
-                        <Link href="/auth/login" className="hover:text-black dark:hover:text-white transition-colors">Log In</Link>
-                        <Link href="/auth/sign-up" className="bg-zinc-900 dark:bg-white text-white dark:text-black px-5 py-2 hover:opacity-90 transition-opacity font-bold rounded-sm">
-                            Sign Up
-                        </Link>
+                            <h1 className="text-[clamp(2.5rem,8vw,5.5rem)] font-light tracking-tight text-zinc-900 dark:text-white leading-[1.1] max-w-4xl">
+                                Your personal film diary,
+                                <br />
+                                <span className="font-semibold italic">designed to last</span>
+                            </h1>
+
+                            <p className="text-base md:text-lg text-zinc-600 dark:text-zinc-400 max-w-xl leading-relaxed font-light">
+                                A thoughtfully crafted space for tracking what you watch. Rate films, curate lists, and discover new favorites—without the noise.
+                            </p>
+
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 pt-4">
+                                <Link href="/auth/sign-up" className="group inline-flex items-center gap-2 px-6 py-3 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-medium hover:gap-3 transition-all">
+                                    Start Your Archive
+                                    <ArrowRightIcon className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                                </Link>
+                                <Link href="/discover" className="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 underline underline-offset-4 decoration-zinc-300 dark:decoration-zinc-700 hover:decoration-zinc-900 dark:hover:decoration-zinc-100 transition-colors">
+                                    Browse the catalog
+                                </Link>
+                            </div>
+                        </motion.div>
+                    </div>
+                </section>
+
+                {/* --- Search Feature Showcase --- */}
+                <section className="max-w-5xl mx-auto px-4 sm:px-6 mb-24 md:mb-32 relative z-20">
+                    <div
+                        ref={searchContainerRef}
+                        className={clsx(
+                            "bg-white dark:bg-zinc-900 shadow-sm transition-all duration-300 border border-zinc-200 dark:border-zinc-800 overflow-hidden",
+                            isSearchFocused ? "ring-1 ring-zinc-900 dark:ring-white" : ""
+                        )}
+                    >
+                        <div className="flex items-center p-1">
+                            <div className="pl-4 pr-3 text-zinc-400">
+                                <MagnifyingGlassIcon className="w-5 h-5" />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Search titles, people, genres..."
+                                className="flex-1 h-12 md:h-14 bg-transparent outline-none text-base md:text-lg text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 font-light"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onFocus={() => setIsSearchFocused(true)}
+                            />
+                            {isSearching && (
+                                <div className="pr-4">
+                                    <div className="w-4 h-4 border border-zinc-300 dark:border-zinc-700 border-t-zinc-900 dark:border-t-white rounded-full animate-spin" />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Search Dropdown */}
+                        <AnimatePresence>
+                            {(isSearchFocused && searchResults.length > 0) && (
+                                <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: 'auto', opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    className="border-t border-zinc-100 dark:border-zinc-800"
+                                >
+                                    {searchResults.map((item) => (
+                                        <Link
+                                            href={`/discover/${item.media_type}/${item.id}`}
+                                            key={item.id}
+                                            className="flex items-center gap-3 p-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors"
+                                        >
+                                            <div className="w-8 h-12 bg-zinc-100 dark:bg-zinc-800 overflow-hidden relative shrink-0">
+                                                {item.poster_path && <Image src={`https://image.tmdb.org/t/p/w92${item.poster_path}`} alt="" fill className="object-cover" />}
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <h4 className="font-medium text-sm text-zinc-900 dark:text-zinc-100 truncate">{item.title}</h4>
+                                                <div className="flex items-center gap-2 mt-0.5">
+                                                    <span className="text-[10px] uppercase font-mono tracking-wide px-1 py-0.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-500">
+                                                        {item.media_type}
+                                                    </span>
+                                                    <span className="text-xs text-zinc-400">{item.release_date?.split('-')[0]}</span>
+                                                </div>
+                                            </div>
+                                        </Link>
+                                    ))}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+                </section>
+
+                {/* --- Feature 1: Tracking --- */}
+                <section className="max-w-6xl mx-auto px-4 sm:px-6 py-16 md:py-24">
+                    <div className="grid md:grid-cols-2 gap-12 md:gap-20 items-center">
+                        <div className="space-y-5 order-2 md:order-1">
+                            <div className="flex items-center gap-3">
+                                <div className="h-px w-6 bg-zinc-300 dark:bg-zinc-700" />
+                                <span className="text-xs font-mono uppercase tracking-wider text-zinc-500">Feature 01</span>
+                            </div>
+                            <h2 className="text-[clamp(1.75rem,5vw,3rem)] font-light tracking-tight leading-tight">
+                                Every viewing,
+                                <br />
+                                <span className="italic font-normal">meticulously logged</span>
+                            </h2>
+                            <p className="text-base text-zinc-600 dark:text-zinc-400 leading-relaxed max-w-md">
+                                Track your watch history with precision. Star ratings, watch dates, personal notes—all organized in one elegant timeline.
+                            </p>
+                            <div className="pt-2 space-y-2">
+                                {['Detailed watch history', 'Custom rating system', 'Private or public logs'].map((item) => (
+                                    <div key={item} className="flex items-start gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+                                        <div className="w-1 h-1 rounded-full bg-zinc-400 mt-2 shrink-0" />
+                                        <span>{item}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="order-1 md:order-2 relative">
+                            <div className="relative max-w-sm mx-auto md:ml-auto">
+                                <RatingCardMockup poster={heroPosters[0]} />
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* --- Feature 2: Lists --- */}
+                <section className="max-w-6xl mx-auto px-4 sm:px-6 py-16 md:py-24">
+                    <div className="grid md:grid-cols-2 gap-12 md:gap-20 items-center">
+                        <div className="relative">
+                            <div className="relative max-w-sm mx-auto md:mr-auto">
+                                <ListStackMockup posters={[heroPosters[1], heroPosters[2], heroPosters[3]]} />
+                            </div>
+                        </div>
+                        <div className="space-y-5">
+                            <div className="flex items-center gap-3">
+                                <div className="h-px w-6 bg-zinc-300 dark:bg-zinc-700" />
+                                <span className="text-xs font-mono uppercase tracking-wider text-zinc-500">Feature 02</span>
+                            </div>
+                            <h2 className="text-[clamp(1.75rem,5vw,3rem)] font-light tracking-tight leading-tight">
+                                Curate with
+                                <br />
+                                <span className="italic font-normal">intention</span>
+                            </h2>
+                            <p className="text-base text-zinc-600 dark:text-zinc-400 leading-relaxed max-w-md">
+                                Build collections that matter. Weekend favorites, underrated gems, films to revisit. Your taste, your rules.
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                {/* --- Bento Grid Discovery --- */}
+                <section className="py-20 md:py-32">
+                    <div className="max-w-6xl mx-auto px-4 sm:px-6">
+                        <div className="mb-12 md:mb-16 space-y-3">
+                            <div className="flex items-center gap-3">
+                                <div className="h-px w-6 bg-zinc-300 dark:bg-zinc-700" />
+                                <span className="text-xs font-mono uppercase tracking-wider text-zinc-500">Browse by Type</span>
+                            </div>
+                            <h2 className="text-[clamp(2rem,5vw,3.5rem)] font-light tracking-tight leading-tight max-w-2xl">
+                                Millions of titles. <br className="hidden sm:block"/>
+                                <span className="italic font-normal">Every format imaginable.</span>
+                            </h2>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 md:gap-4">
+                            {/* Anime - Large */}
+                            <Link href={bentoItems.anime.href} className="lg:col-span-7 group relative overflow-hidden min-h-[280px] sm:min-h-[360px] border border-zinc-200 dark:border-zinc-800">
+                                <Image src={`https://image.tmdb.org/t/p/original${bentoItems.anime.img}`} alt={bentoItems.anime.title} fill className="object-cover transition-transform duration-700 group-hover:scale-105" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                                <div className="absolute bottom-0 left-0 p-6 md:p-8 text-white">
+                                    <div className="text-[10px] font-mono uppercase tracking-widest mb-3 text-white/60">Anime</div>
+                                    <h3 className="text-2xl md:text-4xl font-light tracking-tight">{bentoItems.anime.title}</h3>
+                                </div>
+                            </Link>
+
+                            {/* Movie - Tall */}
+                            <Link href={bentoItems.movie.href} className="lg:col-span-5 group relative overflow-hidden min-h-[280px] sm:min-h-[360px] border border-zinc-200 dark:border-zinc-800">
+                                <Image src={`https://image.tmdb.org/t/p/original${bentoItems.movie.img}`} alt={bentoItems.movie.title} fill className="object-cover transition-transform duration-700 group-hover:scale-105" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+                                <div className="absolute bottom-0 left-0 p-6 md:p-8 text-white">
+                                    <div className="text-[10px] font-mono uppercase tracking-widest mb-3 text-white/60">Films</div>
+                                    <h3 className="text-2xl md:text-3xl font-light tracking-tight">{bentoItems.movie.title}</h3>
+                                </div>
+                            </Link>
+
+                            {/* KDrama */}
+                            <Link href={bentoItems.kdrama.href} className="lg:col-span-5 group relative overflow-hidden min-h-[240px] border border-zinc-200 dark:border-zinc-800">
+                                <Image src={`https://image.tmdb.org/t/p/original${bentoItems.kdrama.img}`} alt={bentoItems.kdrama.title} fill className="object-cover transition-transform duration-700 group-hover:scale-105" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                                <div className="absolute bottom-0 left-0 p-6 text-white">
+                                    <div className="text-[10px] font-mono uppercase tracking-widest mb-2 text-white/60">Drama</div>
+                                    <h3 className="text-xl md:text-2xl font-light tracking-tight">{bentoItems.kdrama.title}</h3>
+                                </div>
+                            </Link>
+
+                            {/* TV */}
+                            <Link href={bentoItems.tv.href} className="lg:col-span-7 group relative overflow-hidden min-h-[240px] border border-zinc-200 dark:border-zinc-800">
+                                <Image src={`https://image.tmdb.org/t/p/original${bentoItems.tv.img}`} alt={bentoItems.tv.title} fill className="object-cover transition-transform duration-700 group-hover:scale-105" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                                <div className="absolute bottom-0 left-0 p-6 text-white">
+                                    <div className="text-[10px] font-mono uppercase tracking-widest mb-2 text-white/60">Television</div>
+                                    <h3 className="text-xl md:text-2xl font-light tracking-tight">{bentoItems.tv.title}</h3>
+                                </div>
+                            </Link>
+                        </div>
+                    </div>
+                </section>
+
+                {/* --- Final CTA --- */}
+                <section className="py-20 md:py-32 bg-zinc-900 dark:bg-white relative overflow-hidden">
+                    <div className="absolute inset-0 opacity-5">
+                        <div className="absolute top-0 right-0 w-96 h-96 border border-white dark:border-black rounded-full" />
+                        <div className="absolute bottom-0 left-0 w-64 h-64 border border-white dark:border-black rounded-full" />
+                    </div>
+                    <div className="max-w-4xl mx-auto px-4 sm:px-6 relative z-10">
+                        <div className="space-y-8 text-center">
+                            <h2 className="text-[clamp(2.5rem,7vw,5rem)] font-light tracking-tight text-white dark:text-zinc-900 leading-[1.1]">
+                                Start archiving
+                                <br />
+                                <span className="italic font-normal">today</span>
+                            </h2>
+                            <p className="text-base md:text-lg text-white/60 dark:text-zinc-900/60 max-w-xl mx-auto leading-relaxed">
+                                Join a community of cinephiles building their personal film libraries. Free, forever.
+                            </p>
+                            <div className="pt-4">
+                                <Link href="/auth/sign-up" className="inline-block px-8 py-3.5 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm font-medium hover:-translate-y-0.5 transition-transform">
+                                    Create Account
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+
+            {/* --- Footer --- */}
+            <footer className="py-12 bg-white dark:bg-zinc-950 border-t border-zinc-200 dark:border-zinc-900 text-sm">
+                <div className="max-w-6xl mx-auto px-4 sm:px-6">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+                        <div className="flex items-center gap-2 text-zinc-400">
+                            <div className="h-3 w-3 bg-current" />
+                            <span className="font-mono text-xs tracking-wide">Deeper Weave</span>
+                        </div>
+                        <div className="flex flex-wrap gap-6 md:gap-8 text-zinc-500 text-xs">
+                            <Link href="/policies/privacy" className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">Privacy</Link>
+                            <Link href="/policies/terms" className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">Terms</Link>
+                            <Link href="https://github.com" className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">GitHub</Link>
+                        </div>
+                        <div className="text-zinc-400 text-xs font-mono">
+                            © 2026
+                        </div>
                     </div>
                 </div>
-            </nav>
-
-            <main className="relative z-10 pt-24 px-6 max-w-7xl mx-auto">
-
-                {/* --- NEW HERO: Split Layout --- */}
-                <section className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center min-h-[70vh] mb-24">
-
-                    {/* Left: Content */}
-                    <div className="flex flex-col items-center lg:items-start text-center lg:text-left space-y-8">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-full">
-                            <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                            </span>
-                            <span className="text-xs font-medium uppercase tracking-wide text-zinc-600 dark:text-zinc-400">v2.0 Now Live</span>
-                        </div>
-
-                        <h1 className={`${dmSerif.className} text-6xl md:text-7xl lg:text-8xl leading-[0.9] text-zinc-900 dark:text-white`}>
-                            Track what <br /> you watch.
-                        </h1>
-
-                        <p className="text-lg text-zinc-500 dark:text-zinc-400 max-w-md leading-relaxed">
-                            The minimal diary for film lovers. Keep a log of every movie, show, and anime. Rate them, list them, review them.
-                        </p>
-
-                        <div className="w-full pt-4 flex flex-col items-center lg:items-start">
-                            <MinimalSearch />
-                            <p className="text-xs text-zinc-400 mt-4">Try searching for "Interstellar" or "The Bear"</p>
-                        </div>
-                    </div>
-
-                    {/* Right: Visual Wall (Responsive) */}
-                    <div className="relative h-[400px] lg:h-[600px] w-full hidden md:block overflow-hidden mask-linear-fade-bottom">
-                        {/* A masonry layout of posters */}
-                        <div className="grid grid-cols-3 gap-4 rotate-[-6deg] scale-110 translate-x-10 opacity-80 hover:opacity-100 transition-opacity duration-700">
-                            {[...heroPosters, ...heroPosters].slice(0, 9).map((src, i) => (
-                                <motion.div
-                                    key={i}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: i * 0.1 }}
-                                    className={`relative aspect-[2/3] bg-zinc-100 shadow-lg ${i % 2 === 0 ? 'translate-y-8' : ''}`}
-                                >
-                                    <Image src={`https://image.tmdb.org/t/p/w300${src}`} alt="" fill className="object-cover" />
-                                </motion.div>
-                            ))}
-                        </div>
-                    </div>
-                </section>
-
-
-                {/* --- FEATURES: Sharp Bento Grid --- */}
-                <section className="pb-32">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-[minmax(300px,auto)]">
-
-                        {/* CARD 1: HISTORY (Tall) */}
-                        <div className="row-span-2 bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 p-6 flex flex-col rounded-sm hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors">
-                            <div className="flex items-center gap-2 mb-6 text-zinc-500">
-                                <ClockIcon className="w-5 h-5" />
-                                <span className="text-xs font-bold uppercase tracking-widest">Your Timeline</span>
-                            </div>
-                            <h2 className={`${dmSerif.className} text-3xl mb-4`}>History</h2>
-                            <p className="text-zinc-500 mb-8 text-sm">Every movie, TV show, and anime you've ever watched, in one scannable list.</p>
-
-                            <div className="flex-1 overflow-hidden relative mask-linear-fade-bottom">
-                                <div className="space-y-0">
-                                    <MockTimelineRow date="OCT 31" title="Toy Story" rating={5} img="/uXDfjJbdP4ijW5hWSBrPrlKpxab.jpg" />
-                                    <MockTimelineRow date="OCT 28" title="The Substance" rating={4} img="/lqoMzCcZYEFK729d6qzt349fB4o.jpg" />
-                                    <MockTimelineRow date="OCT 24" title="Alien: Romulus" rating={3} img="/b33nnKl1GSFbao4l3fZDDqsMx0F.jpg" />
-                                    <MockTimelineRow date="OCT 20" title="Dune: Part Two" rating={5} img="/1pdfLvkbY9ohJlCjQH2CZjjYVvJ.jpg" />
-                                    <MockTimelineRow date="OCT 15" title="The Bear" rating={5} img="/n1AtC6s8Bf2Y5N7gD5c9Y6G5w6.jpg" />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* CARD 2: LISTS (Square) */}
-                        <div className="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 p-6 flex flex-col rounded-sm hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors">
-                            <div className="flex items-center gap-2 mb-4 text-zinc-500">
-                                <ListBulletIcon className="w-5 h-5" />
-                                <span className="text-xs font-bold uppercase tracking-widest">Collections</span>
-                            </div>
-                            <MockListCard />
-                        </div>
-
-                        {/* CARD 3: STATS (Square) */}
-                        <div className="bg-zinc-900 dark:bg-zinc-100 text-zinc-100 dark:text-black border border-zinc-900 dark:border-zinc-100 p-6 flex flex-col justify-between rounded-sm">
-                            <div>
-                                <div className="flex items-center gap-2 mb-4 opacity-70">
-                                    <ChartBarIcon className="w-5 h-5" />
-                                    <span className="text-xs font-bold uppercase tracking-widest">Insights</span>
-                                </div>
-                                <h3 className={`${dmSerif.className} text-3xl`}>Data, not clutter.</h3>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4 mt-8">
-                                <div>
-                                    <p className="text-4xl font-bold font-mono">1,240</p>
-                                    <p className="text-[10px] uppercase opacity-60 mt-1">Hours Watched</p>
-                                </div>
-                                <div>
-                                    <p className="text-4xl font-bold font-mono">12</p>
-                                    <p className="text-[10px] uppercase opacity-60 mt-1">This Month</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* CARD 4: REVIEWS (Wide) */}
-                        <div className="md:col-span-2 bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-zinc-800 border border-zinc-200 dark:border-zinc-800 p-8 flex flex-col justify-center rounded-sm relative overflow-hidden group">
-                            <div className="relative z-10 max-w-lg">
-                                <div className="flex items-center gap-2 mb-4 text-amber-500">
-                                    <PencilSquareIcon className="w-5 h-5" />
-                                    <span className="text-xs font-bold uppercase tracking-widest text-zinc-500">Journal</span>
-                                </div>
-                                <h3 className={`${dmSerif.className} text-3xl md:text-4xl mb-4`}>Write Reviews.</h3>
-                                <p className="text-zinc-600 dark:text-zinc-300 text-lg leading-relaxed mb-6">
-                                    "The cinematography in the final act was breathtaking. It reminded me why I fell in love with sci-fi in the first place."
-                                </p>
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-zinc-300 overflow-hidden relative">
-                                        <Image src="https://image.tmdb.org/t/p/w200/neMZH82Stu91d3iqvLdNQfqPPyl.jpg" alt="" fill className="object-cover" />
-                                    </div>
-                                    <span className="text-sm font-bold">Read full review of <em>Akira</em> <ArrowRightIcon className="w-3 h-3 inline ml-1" /></span>
-                                </div>
-                            </div>
-
-                            {/* Abstract bg element */}
-                            <div className="absolute top-0 right-0 w-64 h-full bg-zinc-200 dark:bg-zinc-800/50 skew-x-12 translate-x-20 group-hover:translate-x-16 transition-transform duration-700"></div>
-                        </div>
-
-                    </div>
-                </section>
-
-                {/* --- FOOTER --- */}
-                <footer className="border-t border-zinc-200 dark:border-zinc-800 py-12 flex flex-col md:flex-row justify-between items-center gap-6">
-                    <div className="text-center md:text-left">
-                        <div className="font-bold text-lg mb-1">DeeperWeave</div>
-                        <p className="text-xs text-zinc-500">© 2026. Simple cinema tracking.</p>
-                    </div>
-                    <div className="flex gap-8 text-sm font-medium text-zinc-600 dark:text-zinc-400">
-                        <Link href="/about" className="hover:text-black dark:hover:text-white">About</Link>
-                        <Link href="/discover" className="hover:text-black dark:hover:text-white">Browse</Link>
-                        <Link href="/policies" className="hover:text-black dark:hover:text-white">Policies</Link>
-                    </div>
-                </footer>
-
-            </main>
+            </footer>
         </div>
     );
 }
