@@ -16,10 +16,9 @@ import {
     CheckCircleIcon,
     ExclamationCircleIcon,
     ShieldCheckIcon,
-    SparklesIcon // Added for welcome screen
+    SparklesIcon
 } from '@heroicons/react/24/outline';
 import LoadingSpinner from '@/app/ui/loading-spinner';
-// Removed specific font import to use default sans
 import { countries } from '@/lib/data/countries';
 import Link from 'next/link';
 
@@ -139,7 +138,7 @@ function ModernDatePicker({ value, onChange }: { value: string; onChange: (date:
                                 {view === 'days' && (
                                     <button type="button" onClick={handlePrevMonth} className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full"><ChevronLeftIcon className="w-4 h-4 text-zinc-600 dark:text-zinc-400" /></button>
                                 )}
-                                <button type="button" onClick={handleYearClick} className="text-sm font-bold hover:bg-zinc-100 dark:hover:bg-zinc-800 px-2 py-1 rounded mx-auto">
+                                <button type="button" onClick={handleYearClick} className="text-sm font-bold hover:bg-zinc-100 dark:hover:bg-zinc-800 px-2 py-1 rounded mx-auto text-zinc-900 dark:text-zinc-100">
                                     {monthNames[viewDate.getMonth()]} {viewDate.getFullYear()}
                                 </button>
                                 {view === 'days' && (
@@ -158,7 +157,7 @@ function ModernDatePicker({ value, onChange }: { value: string; onChange: (date:
                                             const dateStr = getLocalDateString(new Date(viewDate.getFullYear(), viewDate.getMonth(), day));
                                             const isSelected = value === dateStr;
                                             return (
-                                                <button key={day} type="button" onClick={() => handleSelectDay(day)} className={`h-8 w-8 text-xs rounded-full flex items-center justify-center transition-all ${isSelected ? 'bg-zinc-900 text-white dark:bg-white dark:text-black font-bold' : 'hover:bg-zinc-100 dark:hover:bg-zinc-800'}`}>
+                                                <button key={day} type="button" onClick={() => handleSelectDay(day)} className={`h-8 w-8 text-xs rounded-full flex items-center justify-center transition-all ${isSelected ? 'bg-zinc-900 text-white dark:bg-white dark:text-black font-bold' : 'hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300'}`}>
                                                     {day}
                                                 </button>
                                             );
@@ -168,7 +167,7 @@ function ModernDatePicker({ value, onChange }: { value: string; onChange: (date:
                             ) : (
                                 <div className="h-48 overflow-y-auto grid grid-cols-3 gap-2 scrollbar-thin scrollbar-thumb-zinc-200 dark:scrollbar-thumb-zinc-800 pr-1">
                                     {years.map(year => (
-                                        <button key={year} type="button" onClick={() => handleSelectYear(year)} className={`py-2 text-xs rounded-md ${year === viewDate.getFullYear() ? 'bg-zinc-900 text-white font-bold' : 'hover:bg-zinc-100'}`}>
+                                        <button key={year} type="button" onClick={() => handleSelectYear(year)} className={`py-2 text-xs rounded-md text-zinc-700 dark:text-zinc-300 ${year === viewDate.getFullYear() ? 'bg-zinc-900 text-white dark:bg-white dark:text-black font-bold' : 'hover:bg-zinc-100 dark:hover:bg-zinc-800'}`}>
                                             {year}
                                         </button>
                                     ))}
@@ -241,36 +240,42 @@ export function OnboardingForm({ profile, randomMovie, email }: { profile: UserP
         country: '',
     });
 
-    // ✨ 1. Prepopulation with Email Fallback & Auto-Check Username
+    // Prepopulation Logic
     useEffect(() => {
-        let defaultUsername = '';
-        let defaultDisplayName = '';
+        let derivedUsername = '';
+        let derivedDisplayName = '';
 
         if (email) {
             const emailPrefix = email.split('@')[0];
-            defaultUsername = emailPrefix.replace(/[^a-zA-Z0-9._]/g, '');
-            defaultDisplayName = emailPrefix.split(/[._]/).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+            derivedUsername = emailPrefix.replace(/[^a-zA-Z0-9._]/g, '').toLowerCase();
+            derivedDisplayName = emailPrefix
+                .split(/[._]/)
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
         }
 
-        const initialUsername = profile?.username || defaultUsername;
+        const currentDbUsername = profile?.username || '';
+        const isRandomDefault = currentDbUsername.startsWith('user_') || currentDbUsername.length === 0;
+
+        const finalUsername = (!isRandomDefault && currentDbUsername) ? currentDbUsername : derivedUsername;
+        const finalDisplayName = profile?.display_name || derivedDisplayName;
 
         setFormData(prev => ({
             ...prev,
-            username: initialUsername,
-            display_name: profile?.display_name || defaultDisplayName,
-            date_of_birth: profile?.date_of_birth || getLocalDateString(),
-            gender: profile?.gender || '',
-            country: profile?.country || '',
+            username: finalUsername,
+            display_name: finalDisplayName,
+            date_of_birth: profile?.date_of_birth || prev.date_of_birth || getLocalDateString(),
+            gender: profile?.gender || prev.gender || '',
+            country: profile?.country || prev.country || '',
         }));
 
-        // ✨ AUTO-TRIGGER USERNAME CHECK ON MOUNT
-        if (initialUsername && initialUsername.length >= 3) {
-            triggerUsernameCheck(initialUsername);
+        if (finalUsername && finalUsername.length >= 3) {
+            triggerUsernameCheck(finalUsername);
         }
 
     }, [profile, email]);
 
-    // ✨ 2. Safe Auto-detect Country
+    // Auto-detect Country
     useEffect(() => {
         const detectCountry = async () => {
             if (formData.country) return;
@@ -288,7 +293,7 @@ export function OnboardingForm({ profile, randomMovie, email }: { profile: UserP
         detectCountry();
     }, []);
 
-    // ✨ 3. Username Logic extracted for reuse
+    // Username Logic
     const triggerUsernameCheck = async (username: string) => {
         setUsernameStatus('checking');
         try {
@@ -307,17 +312,12 @@ export function OnboardingForm({ profile, randomMovie, email }: { profile: UserP
         const val = e.target.value.toLowerCase().replace(/[^a-z0-9._]/g, '');
         setFormData(prev => ({ ...prev, username: val }));
 
-        // Reset status immediately on typing
         setUsernameStatus('checking');
-
         if (usernameCheckTimeoutRef.current) clearTimeout(usernameCheckTimeoutRef.current);
-
         if (val.length < 3) {
             setUsernameStatus('invalid');
             return;
         }
-
-        // Debounce server check (500ms)
         usernameCheckTimeoutRef.current = setTimeout(() => {
             triggerUsernameCheck(val);
         }, 500);
@@ -335,14 +335,12 @@ export function OnboardingForm({ profile, randomMovie, email }: { profile: UserP
         if (currentStep === 1) {
             if (usernameStatus === 'taken' || usernameStatus === 'invalid') return;
         }
-
         if (currentStep === 2) {
             if (!isLegalAge(formData.date_of_birth)) {
                 setShowAgeError(true);
                 return;
             }
         }
-
         if (currentStep < 3) {
             setDirection(1);
             setCurrentStep(prev => prev + 1);
@@ -356,14 +354,10 @@ export function OnboardingForm({ profile, randomMovie, email }: { profile: UserP
         }
     };
 
-    // ✨ FIX: "Stuck" Welcome Screen
-    // Instead of setting isSubmitting=true forever, we check for errors in useEffect
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!termsAccepted) return;
-
-        setIsSubmitting(true); // Show welcome screen
-
+        setIsSubmitting(true);
         const formEl = e.target as HTMLFormElement;
         const formDataToDispatch = new FormData(formEl);
         if (!formDataToDispatch.get('date_of_birth')) {
@@ -374,10 +368,9 @@ export function OnboardingForm({ profile, randomMovie, email }: { profile: UserP
         });
     };
 
-    // ✨ Watch for server errors to turn OFF the welcome screen
     useEffect(() => {
         if (state.message || (state.errors && Object.keys(state.errors).length > 0)) {
-            setIsSubmitting(false); // Hide welcome screen if error returns
+            setIsSubmitting(false);
         }
     }, [state]);
 
@@ -391,8 +384,6 @@ export function OnboardingForm({ profile, randomMovie, email }: { profile: UserP
 
     return (
         <div className="min-h-screen flex items-center justify-center p-4 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans">
-
-            {/* Age Gate Modal */}
             <AnimatePresence>
                 {showAgeError && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
@@ -407,8 +398,6 @@ export function OnboardingForm({ profile, randomMovie, email }: { profile: UserP
             </AnimatePresence>
 
             <div className="w-full max-w-4xl grid md:grid-cols-2 bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 shadow-xl min-h-[500px] rounded-xl relative">
-
-                {/* Visual Side */}
                 <div className="hidden md:flex flex-col items-center justify-center bg-zinc-950 text-white p-12 border-r border-zinc-200 dark:border-zinc-800 relative overflow-hidden md:rounded-l-xl">
                     {randomMovie?.backdrop_url && (
                         <div className="absolute inset-0 opacity-40 grayscale mix-blend-overlay" style={{ backgroundImage: `url(${randomMovie.backdrop_url})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
@@ -420,16 +409,12 @@ export function OnboardingForm({ profile, randomMovie, email }: { profile: UserP
                             <UserIcon className="w-16 h-16 text-zinc-200" />
                         </div>
                         <div className="space-y-2">
-                            {/* Replaced weird mono font with standard sans-serif but kept styling */}
-                            <h2 className="text-3xl font-bold text-white tracking-tight">
-                                The Protagonist.
-                            </h2>
+                            <h2 className="text-3xl font-bold text-white tracking-tight">The Protagonist.</h2>
                             <p className="text-xs font-medium text-zinc-500 uppercase tracking-widest">Casting in progress</p>
                         </div>
                     </div>
                 </div>
 
-                {/* Form Side */}
                 <div className="flex flex-col h-full relative md:rounded-r-xl">
                     <div className="absolute top-0 left-0 h-1 bg-zinc-100 dark:bg-zinc-800 w-full md:rounded-tr-xl">
                         <motion.div className="h-full bg-zinc-900 dark:bg-zinc-100" initial={{ width: "33%" }} animate={{ width: `${(currentStep / 3) * 100}%` }} transition={{ duration: 0.5, ease: "easeInOut" }} />
@@ -463,10 +448,9 @@ export function OnboardingForm({ profile, randomMovie, email }: { profile: UserP
                                                         <span className="absolute left-0 top-1/2 -translate-y-1/2 text-zinc-400 font-medium">@</span>
                                                         <input
                                                             name="username" type="text" value={formData.username} onChange={handleUsernameChange} placeholder="username"
-                                                            className="block w-full h-10 border-b border-zinc-200 bg-transparent pl-5 pr-8 text-base focus:border-zinc-900 focus:outline-none dark:border-zinc-800 dark:focus:border-zinc-100 transition-colors"
+                                                            className="block w-full h-10 border-b border-zinc-200 bg-transparent pl-5 pr-8 text-base focus:border-zinc-900 focus:outline-none dark:border-zinc-800 dark:focus:border-zinc-100 transition-colors text-zinc-900 dark:text-zinc-100"
                                                             required autoFocus
                                                         />
-                                                        {/* Status Indicator */}
                                                         <div className="absolute right-0 top-1/2 -translate-y-1/2">
                                                             {usernameStatus === 'checking' && <LoadingSpinner className="h-4 w-4 text-zinc-400" />}
                                                             {usernameStatus === 'available' && <CheckCircleIcon className="h-5 w-5 text-emerald-500" />}
@@ -481,7 +465,7 @@ export function OnboardingForm({ profile, randomMovie, email }: { profile: UserP
                                                 </div>
                                                 <div className="space-y-2">
                                                     <label className="text-xs font-bold uppercase tracking-wider text-zinc-500">Display Name</label>
-                                                    <input name="display_name" type="text" value={formData.display_name} onChange={handleInputChange} placeholder="Your Name" className="block w-full h-10 border-b border-zinc-200 bg-transparent px-0 text-base focus:border-zinc-900 focus:outline-none dark:border-zinc-800 dark:focus:border-zinc-100 transition-colors" required />
+                                                    <input name="display_name" type="text" value={formData.display_name} onChange={handleInputChange} placeholder="Your Name" className="block w-full h-10 border-b border-zinc-200 bg-transparent px-0 text-base focus:border-zinc-900 focus:outline-none dark:border-zinc-800 dark:focus:border-zinc-100 transition-colors text-zinc-900 dark:text-zinc-100" required />
                                                 </div>
                                             </div>
                                         )}
@@ -495,12 +479,12 @@ export function OnboardingForm({ profile, randomMovie, email }: { profile: UserP
                                                 </div>
                                                 <div className="space-y-2">
                                                     <label className="text-xs font-bold uppercase tracking-wider text-zinc-500">Gender</label>
-                                                    <select name="gender" value={formData.gender} onChange={handleInputChange} className="block w-full h-10 border-b border-zinc-200 bg-transparent px-0 text-base focus:border-zinc-900 focus:outline-none dark:border-zinc-800 dark:focus:border-zinc-100 transition-colors cursor-pointer" required>
-                                                        <option value="" disabled className="bg-white dark:bg-zinc-950">Select gender</option>
-                                                        <option value="male" className="bg-white dark:bg-zinc-950">Male</option>
-                                                        <option value="female" className="bg-white dark:bg-zinc-950">Female</option>
-                                                        <option value="non-binary" className="bg-white dark:bg-zinc-950">Non-binary</option>
-                                                        <option value="prefer_not_to_say" className="bg-white dark:bg-zinc-950">Prefer not to say</option>
+                                                    <select name="gender" value={formData.gender} onChange={handleInputChange} className="block w-full h-10 border-b border-zinc-200 bg-transparent px-0 text-base focus:border-zinc-900 focus:outline-none dark:border-zinc-800 dark:focus:border-zinc-100 transition-colors cursor-pointer text-zinc-900 dark:text-zinc-100" required>
+                                                        <option value="" disabled className="bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">Select gender</option>
+                                                        <option value="male" className="bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">Male</option>
+                                                        <option value="female" className="bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">Female</option>
+                                                        <option value="non-binary" className="bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">Non-binary</option>
+                                                        <option value="prefer_not_to_say" className="bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">Prefer not to say</option>
                                                     </select>
                                                 </div>
                                             </div>
@@ -510,10 +494,10 @@ export function OnboardingForm({ profile, randomMovie, email }: { profile: UserP
                                             <div className="space-y-6">
                                                 <div className="space-y-2">
                                                     <label className="text-xs font-bold uppercase tracking-wider text-zinc-500">Country</label>
-                                                    <select name="country" value={formData.country} onChange={handleInputChange} className="block w-full h-10 border-b border-zinc-200 bg-transparent px-0 text-base focus:border-zinc-900 focus:outline-none dark:border-zinc-800 dark:focus:border-zinc-100 transition-colors cursor-pointer" required>
-                                                        <option value="" disabled className="bg-white dark:bg-zinc-950">Select Country</option>
+                                                    <select name="country" value={formData.country} onChange={handleInputChange} className="block w-full h-10 border-b border-zinc-200 bg-transparent px-0 text-base focus:border-zinc-900 focus:outline-none dark:border-zinc-800 dark:focus:border-zinc-100 transition-colors cursor-pointer text-zinc-900 dark:text-zinc-100" required>
+                                                        <option value="" disabled className="bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">Select Country</option>
                                                         {countries.sort((a, b) => a.name.localeCompare(b.name)).map((c) => (
-                                                            <option key={c['alpha-2']} value={c['alpha-2']} className="bg-white dark:bg-zinc-950">{getFlagEmoji(c['alpha-2'])} {c.name}</option>
+                                                            <option key={c['alpha-2']} value={c['alpha-2']} className="bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">{getFlagEmoji(c['alpha-2'])} {c.name}</option>
                                                         ))}
                                                     </select>
                                                 </div>
@@ -566,7 +550,6 @@ export function OnboardingForm({ profile, randomMovie, email }: { profile: UserP
                             </div>
                         </form>
 
-                        {/* Error Message Display Area */}
                         <div className="min-h-[24px] mt-4">
                             {(state.message || Object.keys(state.errors || {}).length > 0) && (
                                 <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="text-xs font-medium text-red-600 dark:text-red-400">
@@ -581,26 +564,59 @@ export function OnboardingForm({ profile, randomMovie, email }: { profile: UserP
     );
 }
 
-// ✨ Updated Intro Screen with nicer font and message
+// ✨ FULLY THEME-RESPONSIVE INTRO SCREEN
 function IntroScreen({ displayName }: { displayName: string }) {
     return (
-        <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-white relative overflow-hidden font-sans">
-            <div className="absolute inset-0 opacity-10" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} />
-            <div className="relative z-10 text-center p-8 max-w-lg">
-                <div className="mb-8 relative mx-auto w-16 h-16">
-                    <LoadingSpinner className="w-16 h-16 text-white" />
-                </div>
+        <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-black text-zinc-900 dark:text-white relative overflow-hidden font-sans transition-colors duration-500">
+            {/* Background Effects - Themed */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-zinc-200/40 via-zinc-50 to-zinc-50 dark:from-zinc-900/40 dark:via-black dark:to-black" />
+            <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.02] mix-blend-multiply dark:mix-blend-normal" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} />
 
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
-                    <h1 className="text-3xl md:text-5xl font-bold tracking-tight mb-4 flex flex-col items-center gap-2">
-                        <span>Setting the Stage</span>
+            <div className="relative z-10 max-w-3xl w-full p-8 flex flex-col items-center justify-center text-center">
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+                >
+                    {/* Animated Icon - Adaptive Colors */}
+                    <motion.div
+                        className="mx-auto mb-8 w-12 h-12 rounded-full border border-zinc-200 dark:border-zinc-800 flex items-center justify-center bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md shadow-sm dark:shadow-none"
+                        animate={{
+                            boxShadow: [
+                                "0 0 0px rgba(0,0,0,0)",
+                                "0 0 20px rgba(120,120,120,0.1)",
+                                "0 0 0px rgba(0,0,0,0)"
+                            ]
+                        }}
+                        transition={{ duration: 3, repeat: Infinity }}
+                    >
+                        <SparklesIcon className="w-5 h-5 text-zinc-900 dark:text-white" />
+                    </motion.div>
+
+                    {/* Gradient Text - Dual Theme */}
+                    <h1 className="text-4xl md:text-7xl font-bold tracking-tight mb-6 text-transparent bg-clip-text bg-gradient-to-b from-zinc-900 via-zinc-800 to-zinc-500 dark:from-white dark:via-white dark:to-zinc-600">
+                        {displayName}
                     </h1>
-                    <p className="text-zinc-400 text-lg">
-                        Welcome to DeeperWeave, <span className="text-white font-semibold">{displayName}</span>.
-                    </p>
-                    <p className="text-zinc-500 text-sm mt-4">
-                        Curating your initial experience...
-                    </p>
+
+                    {/* Progress Bar */}
+                    <div className="h-px w-24 bg-zinc-300 dark:bg-zinc-800 mx-auto overflow-hidden relative">
+                        <motion.div
+                            className="absolute inset-0 bg-zinc-900 dark:bg-white"
+                            initial={{ x: "-100%" }}
+                            animate={{ x: "100%" }}
+                            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                        />
+                    </div>
+
+                    {/* Subtitle */}
+                    <motion.p
+                        className="mt-6 text-zinc-500 text-xs uppercase tracking-[0.3em]"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.5, duration: 1 }}
+                    >
+                        Initializing DeeperWeave
+                    </motion.p>
                 </motion.div>
             </div>
         </div>
