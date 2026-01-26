@@ -242,7 +242,7 @@ export default function LandingPageClient({
 
                             <p className="text-lg md:text-xl text-zinc-600 dark:text-zinc-400 max-w-xl leading-relaxed font-light">
                                 A minimal, noise-free space to log what you watch.
-                                Rate films, curate lists, and preserve your history.
+                                Rate films, curate lists, and write Blogs.
                             </p>
 
                             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 pt-6">
@@ -251,7 +251,7 @@ export default function LandingPageClient({
                                     <ArrowRightIcon className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                                 </Link>
                                 <Link href="/discover" className="flex h-12 items-center px-6 border border-zinc-200 dark:border-zinc-800 text-sm font-bold uppercase tracking-wide text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:border-zinc-900 dark:hover:border-white transition-all rounded-sm">
-                                    Browse Catalog
+                                    Explore
                                 </Link>
                             </div>
                         </motion.div>

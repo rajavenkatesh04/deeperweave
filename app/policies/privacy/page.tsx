@@ -148,8 +148,8 @@ export default function PrivacyPolicyPage() {
                                 We rely on trusted third-party providers to power DeeperWeave. Your data passes through their secure systems:
                             </p>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <ServiceCard name="Google Firebase" role="Auth & Database" />
-                                <ServiceCard name="The Movie Database" role="Metadata Provider" />
+                                <ServiceCard name="SupaBase" role="Auth & Database" />
+                                <ServiceCard name="The Movie Database" role="(TMDB API) Data Provider" />
                                 <ServiceCard name="Vercel" role="Hosting & Analytics" />
                                 <ServiceCard name="Microsoft Clarity" role="User Behavior Analytics" />
                             </div>
