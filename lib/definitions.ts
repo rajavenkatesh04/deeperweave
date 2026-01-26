@@ -155,6 +155,11 @@ export interface Post {
     banner_url?: string | null;
     created_at: string;
     view_count: number;
+    deleted_at?: string | null; // ✨ ADDED
+
+    // Counters (New DB Columns)
+    likes_count: number;    // ✨ ADDED
+    comments_count: number; // ✨ ADDED
 
     // Review specific
     rating?: number;
@@ -166,9 +171,8 @@ export interface Post {
     is_premium: boolean;
     is_nsfw: boolean;
 
-    // Denormalized Author Data
-    author_username: string;
-    author_profile_pic_url?: string;
+    // ✨ REMOVED: author_username
+    // ✨ REMOVED: author_profile_pic_url
 }
 
 export interface Comment {
@@ -177,12 +181,12 @@ export interface Comment {
     author_id: string;
     content: string;
     created_at: string;
+    deleted_at?: string | null; // ✨ ADDED
 }
 
 export type CommentWithAuthor = Comment & {
     author: Pick<UserProfile, 'username' | 'display_name' | 'profile_pic_url'>;
 };
-
 /**
  * =====================================================================
  * ❤️ SOCIAL (Likes, Follows, Notifications)

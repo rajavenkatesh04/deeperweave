@@ -5,11 +5,9 @@ import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { getUserProfile } from '@/lib/data/user-data';
-// import { ofetch } from 'ofetch'; // ✨ 1. REMOVED ofetch
 import { v4 as uuidv4 } from 'uuid';
-// ✨ 2. ADDED IMPORTS from your new "library"
 import { getMovieDetails, getSeriesDetails } from './cinematic-actions';
-import {createNotification, deleteNotification} from "@/lib/actions/notification-actions";
+import { createNotification, deleteNotification } from "@/lib/actions/notification-actions";
 
 // =====================================================================
 // == NEW ACTION: For Tiptap content image upload
@@ -22,7 +20,6 @@ const ContentImageSchema = z.object({
         .refine((file) => file.size < 5 * 1024 * 1024, 'Image must be less than 5MB.'),
 });
 
-// (This function is unchanged)
 export async function uploadContentImage(formData: FormData) {
     const supabase = await createClient();
     const userData = await getUserProfile();
@@ -63,7 +60,6 @@ const BannerSchema = z.object({
         .refine((file) => file.size < 4 * 1024 * 1024, 'Image must be less than 4MB.'),
 });
 
-// (This function is unchanged)
 export async function uploadBanner(formData: FormData) {
     const supabase = await createClient();
     const userData = await getUserProfile();
@@ -99,7 +95,6 @@ export async function uploadBanner(formData: FormData) {
 // =====================================================================
 export type CreatePostState = { message?: string | null; errors?: { title?: string[]; content_html?: string[]; banner_url?: string[]; cinematic?: string[]; }; };
 
-// (This schema is unchanged)
 const PostSchema = z.object({
     title: z.string().min(3, { message: 'Title must be at least 3 characters.' }),
     content_html: z.string().min(50, { message: 'Content must be at least 50 characters.' }),
@@ -112,13 +107,11 @@ const PostSchema = z.object({
     has_spoilers: z.string().optional().transform(value => value === 'on'),
 });
 
-// (This function is unchanged)
 function createSlug(title: string) {
     const randomSuffix = (Math.random() + 1).toString(36).substring(7);
     return title.toLowerCase().replace(/\s+/g, '-').replace(/[^\w\-]+/g, '').replace(/\-\-+/g, '-').replace(/^-+/, '').replace(/-+$/, '') + `-${randomSuffix}`;
 }
 
-// (This function is unchanged, but now relies on the imported caching functions)
 export async function createPost(prevState: CreatePostState, formData: FormData): Promise<CreatePostState> {
     const supabase = await createClient();
     const userData = await getUserProfile();
@@ -135,14 +128,14 @@ export async function createPost(prevState: CreatePostState, formData: FormData)
     let movieId: number | undefined = undefined;
     let seriesId: number | undefined = undefined;
 
-    // This logic now calls the caching functions from 'cinematic-actions.ts'
+    // Call caching functions from 'cinematic-actions.ts'
     if (cinematicApiId && media_type) {
         try {
             if (media_type === 'movie') {
-                await getMovieDetails(cinematicApiId); // Calls the caching function
+                await getMovieDetails(cinematicApiId);
                 movieId = cinematicApiId;
             } else if (media_type === 'tv') {
-                await getSeriesDetails(cinematicApiId); // Calls the caching function
+                await getSeriesDetails(cinematicApiId);
                 seriesId = cinematicApiId;
             }
         } catch (error) {
@@ -160,13 +153,13 @@ export async function createPost(prevState: CreatePostState, formData: FormData)
         banner_url: banner_url || null,
         type: cinematicApiId ? 'review' as const : 'general' as const,
         movie_id: movieId,
-        series_id: seriesId, // Make sure you've added this column to your 'posts' table
+        series_id: seriesId,
         rating: rating,
         is_premium: is_premium,
         is_nsfw: is_nsfw,
         has_spoilers: has_spoilers,
-        author_username: userData.profile.username,
-        author_profile_pic_url: userData.profile.profile_pic_url,
+        // ✨ REMOVED: author_username & author_profile_pic_url
+        // (These columns are deleted; we now join on author_id to get profile data)
     };
 
     const { error } = await supabase.from('posts').insert(postToInsert);
@@ -225,7 +218,7 @@ export async function likePost(postId: string) {
     return { success: true };
 }
 
-// 2. UNLIKE POST (This was missing!)
+// 2. UNLIKE POST
 export async function unlikePost(postId: string) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -243,9 +236,7 @@ export async function unlikePost(postId: string) {
         return { error: 'There was an error unliking the post.' };
     }
 
-    // 2. ✨ REMOVE THE NOTIFICATION
-    // We don't need to check who the author is, because if a notification
-    // exists for this user+post+like combo, we want it gone.
+    // 2. Remove the notification
     await deleteNotification({
         actorId: user.id,
         type: 'like',
@@ -255,6 +246,7 @@ export async function unlikePost(postId: string) {
     revalidatePath(`/blog/[slug]`, 'page');
     return { success: true };
 }
+
 // 3. POST COMMENT (With Notifications)
 export async function postComment(postId: string, formData: FormData) {
     const supabase = await createClient();
@@ -273,8 +265,7 @@ export async function postComment(postId: string, formData: FormData) {
         post_id: postId,
         author_id: userData.user.id,
         content: content.trim(),
-        author_username: userData.profile.username,
-        author_profile_pic_url: userData.profile.profile_pic_url,
+        // ✨ REMOVED: author_username & author_profile_pic_url
     });
 
     if (error) {

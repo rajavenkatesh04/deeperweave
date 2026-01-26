@@ -8,8 +8,7 @@ export type PostForFeed = Post & {
     author: UserProfile;
     movie: Pick<Movie, 'title' | 'poster_url'> | null;
     series: Pick<Series, 'title' | 'poster_url'> | null;
-    likes: [{ count: number }];
-    comments: [{ count: number }];
+    // ✨ REMOVED: likes & comments arrays (now using integer columns in Post)
 };
 
 export type PostForPage = Post & {
@@ -17,7 +16,7 @@ export type PostForPage = Post & {
     movie: Movie | null;
     series: Series | null;
     comments: CommentWithAuthor[];
-    likes: [{ count: number }];
+    // ✨ REMOVED: likes array
 };
 
 /**
@@ -33,10 +32,9 @@ export async function getPosts(): Promise<PostForFeed[]> {
             *,
             author:profiles!posts_author_id_fkey(*), 
             movie:movies(title, poster_url),
-            series:series(title, poster_url),
-            likes(count),
-            comments(count)
+            series:series(title, poster_url)
         `)
+        .is('deleted_at', null) // ✨ ADDED: Filter out soft deleted posts
         .order('created_at', { ascending: false })
         .limit(20);
 
@@ -63,10 +61,10 @@ export async function getPostBySlug(slug: string) {
             author:profiles!posts_author_id_fkey(*),
             movie:movies(*),
             series:series(*),
-            comments(*, author:profiles!comments_author_id_fkey(username, display_name, profile_pic_url)),
-            likes(count)
+            comments(*, author:profiles!comments_author_id_fkey(username, display_name, profile_pic_url))
         `)
         .eq('slug', slug)
+        .is('deleted_at', null) // ✨ ADDED: Filter out soft deleted posts
         .maybeSingle<PostForPage>();
 
     if (error) {
@@ -76,6 +74,11 @@ export async function getPostBySlug(slug: string) {
 
     if (!post) {
         return null; // Post not found, handled gracefully
+    }
+
+    // Sort comments manually since we are fetching them via join
+    if (post.comments) {
+        post.comments.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     }
 
     let userHasLiked = false;
@@ -89,7 +92,8 @@ export async function getPostBySlug(slug: string) {
         userHasLiked = !!like;
     }
 
-    const likeCount = post.likes?.[0]?.count || 0;
+    // ✨ UPDATED: Read directly from the new column
+    const likeCount = post.likes_count || 0;
 
     return { ...post, likeCount, userHasLiked };
 }
@@ -107,11 +111,10 @@ export async function getPostsByUserId(userId: string): Promise<PostForFeed[]> {
             *,
             author:profiles!posts_author_id_fkey(*),
             movie:movies(title, poster_url),
-            series:series(title, poster_url),
-            likes(count),
-            comments(count)
+            series:series(title, poster_url)
         `)
         .eq('author_id', userId)
+        .is('deleted_at', null) // ✨ ADDED
         .order('created_at', { ascending: false });
 
     if (error) {
