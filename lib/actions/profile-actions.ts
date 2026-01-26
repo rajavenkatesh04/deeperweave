@@ -354,15 +354,20 @@ export async function updateProfileSettings(prevState: SettingsState, formData: 
 }
 
 export async function searchProfiles(query: string): Promise<ProfileSearchResult[]> {
-    if (query.length < 2) {
-        return [];
-    }
+    if (query.length < 2) return [];
+
     const supabase = await createClient();
+
+    // ✨ OPTIMIZED: Use the new 'fts' column with textSearch
     const { data, error } = await supabase
         .from('profiles')
         .select('id, username, display_name, profile_pic_url, bio')
-        .or(`username.ilike.%${query}%,display_name.ilike.%${query}%`)
+        .textSearch('fts', query, {
+            type: 'websearch', // Allows "quoted searches" and -exclusions
+            config: 'english'
+        })
         .limit(10);
+
     if (error) {
         console.error('Search error:', error);
         return [];

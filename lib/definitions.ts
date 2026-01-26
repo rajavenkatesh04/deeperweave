@@ -267,6 +267,7 @@ export interface ChatParticipant {
     user_id: string;
     role: 'admin' | 'member';
     joined_at: string;
+    last_read_at: string; // ✨ ADDED: New pointer column
 }
 
 export interface Message {
