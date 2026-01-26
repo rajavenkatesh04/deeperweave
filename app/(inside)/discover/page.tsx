@@ -38,7 +38,7 @@ export default async function DiscoverPage() {
     ]);
 
     return (
-        <main className="min-h-screen bg-white dark:bg-black text-black dark:text-white">
+        <main className="min-h-screen bg-white dark:bg-black text-black dark:text-white ">
             <Suspense fallback={
                 <div className="flex h-screen w-full items-center justify-center">
                     <LoadingSpinner />

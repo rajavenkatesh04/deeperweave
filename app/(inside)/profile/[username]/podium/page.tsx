@@ -70,7 +70,7 @@ export default async function ProfileHomePage({ params }: { params: Promise<{ us
 
             {/* Header Section */}
             {/* Added relative/z-10 to sit above the background texture */}
-            <div className="relative z-10 w-full text-center content-center border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-black/80 backdrop-blur-sm py-10 px-6">
+            <div className="relative z-10 w-full text-center content-center border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-black/80 backdrop-blur-sm py-6">
                 <div className="max-w-4xl mx-auto flex flex-col md:flex-row md:items-end justify-between gap-6">
                     {/* Title Section */}
                     <div>

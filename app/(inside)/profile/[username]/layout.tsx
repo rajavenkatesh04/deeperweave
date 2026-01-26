@@ -26,7 +26,7 @@ export default async function ProfileLayout({
     const canViewContent = !isPrivate || isFollowing || isOwnProfile;
 
     return (
-        <main className="sm:p-3">
+        <main className="w-full">
 
             <ProfileHeader
                 profile={profile}
