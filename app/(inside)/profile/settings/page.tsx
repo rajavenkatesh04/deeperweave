@@ -7,12 +7,13 @@ import SettingsForm from "./settings-form";
 export default async function SettingsPage() {
     const userData = await getUserProfile();
 
-    if (!userData || !userData.profile) {
+    if (!userData || !userData.profile || !userData.user) {
         redirect("/auth/login");
     }
 
     return (
         <main className="w-full bg-zinc-50 dark:bg-zinc-950 min-h-screen pb-24">
+            {/* Breadcrumbs */}
             <div className="max-w-7xl mx-auto px-6 py-6">
                 <Breadcrumbs
                     breadcrumbs={[
@@ -22,19 +23,21 @@ export default async function SettingsPage() {
                 />
             </div>
 
-            <div className="max-w-3xl mx-auto px-6 mt-12">
-                {/* Header */}
-                <div className="mb-12 border-l-2 border-zinc-900 dark:border-zinc-100 pl-6 py-2">
-                    <h1 className={`${PlayWriteNewZealandFont.className} text-5xl md:text-6xl text-zinc-900 dark:text-zinc-100 mb-4 leading-tight`}>
-                        Directives
+            <div className="max-w-3xl mx-auto px-6 mt-8 md:mt-12">
+                <div className="mb-10 pl-6 border-l-2 border-zinc-900 dark:border-zinc-100">
+                    <h1 className={`${PlayWriteNewZealandFont.className} text-3xl text-zinc-900 dark:text-zinc-100 mb-2`}>
+                        Settings
                     </h1>
-                    <p className="text-zinc-500 dark:text-zinc-400 max-w-lg font-light">
-                        Configure how your cinematic log is broadcast to the world and define the boundaries of content you wish to consume.
+                    <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-md leading-relaxed">
+                        Manage your profile visibility, account identity, and content preferences.
                     </p>
                 </div>
 
-                {/* Form */}
-                <SettingsForm profile={userData.profile} />
+                {/* Settings Form */}
+                <SettingsForm
+                    profile={userData.profile}
+                    userEmail={userData.user.email || ''}
+                />
             </div>
         </main>
     );

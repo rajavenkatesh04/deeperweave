@@ -1,20 +1,25 @@
-// app/(inside)/profile/settings/settings-form.tsx
-
 'use client';
 
 import { useActionState, useState } from 'react';
 import { useFormStatus } from 'react-dom';
+import Link from 'next/link';
 import { UserProfile } from '@/lib/definitions';
 import { updateProfileSettings, type SettingsState } from '@/lib/actions/profile-actions';
 import {
     GlobeAmericasIcon,
     LockClosedIcon,
+    EyeSlashIcon,
     ExclamationTriangleIcon,
-    ShieldCheckIcon
-} from '@heroicons/react/24/solid';
-// 👇 Import the spinner
+    TrashIcon,
+    UserIcon,
+    IdentificationIcon
+} from '@heroicons/react/24/solid'; // Using solid icons for clearer visibility
 import LoadingSpinner from '@/app/ui/loading-spinner';
+import PersonalInformation from "@/app/ui/user/PersonalInformation"; // Ensure this path is correct
 
+/**
+ * Loading Button Component
+ */
 function SubmitButton() {
     const { pending } = useFormStatus();
 
@@ -22,141 +27,132 @@ function SubmitButton() {
         <button
             type="submit"
             disabled={pending}
-            className="group relative px-8 py-3 bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-900 font-medium text-sm tracking-widest uppercase transition-all hover:bg-zinc-800 dark:hover:bg-zinc-200 disabled:opacity-70 disabled:cursor-not-allowed overflow-hidden min-w-[200px]"
+            className="group relative px-6 py-3 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-black font-bold text-xs uppercase tracking-widest hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3 shadow-sm"
         >
-            {/* Content Container (Z-Index ensures it stays above the hover effect) */}
-            <span className="relative z-10 flex items-center justify-center gap-3">
-                {pending ? (
-                    <>
-                        {/* 👇 Spinner added here with specific sizing */}
-                        <LoadingSpinner className="w-4 h-4 text-zinc-50 dark:text-zinc-900" />
-                        <span>Saving...</span>
-                    </>
-                ) : (
-                    <span>Save Configuration</span>
-                )}
-            </span>
-
-            {/* Hover Slide Effect */}
-            {!pending && (
-                <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
-            )}
+            {pending && <LoadingSpinner className="w-3 h-3" />}
+            <span>{pending ? 'Saving...' : 'Save Changes'}</span>
         </button>
     );
 }
 
-export default function SettingsForm({ profile }: { profile: UserProfile }) {
+/**
+ * Main Settings Form
+ */
+export default function SettingsForm({
+                                         profile,
+                                         userEmail
+                                     }: {
+    profile: UserProfile,
+    userEmail: string
+}) {
     const initialState: SettingsState = { message: null, errors: {} };
     const [state, formAction] = useActionState(updateProfileSettings, initialState);
 
-    // Determine if user is 18+
-    const isOver18 = new Date().getFullYear() - new Date(profile.date_of_birth).getFullYear() >= 18;
+    // Calculate age for NSFW logic
+    const isOver18 = profile.date_of_birth
+        ? (new Date().getFullYear() - new Date(profile.date_of_birth).getFullYear() >= 18)
+        : false;
 
-    // Initialize state based on current profile preference
+    // Local state for instant visual feedback on toggles
     const [isNsfw, setIsNsfw] = useState(profile.content_preference === 'all');
 
+    // Format Birthday for Display
+    const formattedBirthday = profile.date_of_birth
+        ? new Date(profile.date_of_birth).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        })
+        : null;
+
     return (
-        <form action={formAction} className="space-y-16">
+        <div className="space-y-12">
+            {/* --- FORM START --- */}
+            <form action={formAction} className="space-y-12">
 
-            {/* 1. VISIBILITY SECTION */}
-            <section className="space-y-6">
-                <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-2">
-                    <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-400">
-                        Signal Transmission
-                    </h3>
-                    <span className="text-[10px] uppercase text-zinc-400 font-mono">
-                        Step 01
-                    </span>
-                </div>
+                {/* --- SECTION 2: PRIVACY --- */}
+                <section className="space-y-6">
+                    <div className="flex items-center gap-2 text-zinc-400">
+                        <LockClosedIcon className="w-4 h-4" />
+                        <h3 className="text-xs font-bold uppercase tracking-wider">Privacy & Visibility</h3>
+                    </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Public Option */}
-                    <label className="cursor-pointer group">
-                        <input
-                            type="radio"
-                            name="visibility"
-                            value="public"
-                            defaultChecked={profile.visibility === 'public'}
-                            className="peer sr-only"
-                        />
-                        <div className="h-full border border-zinc-200 dark:border-zinc-800 p-6 bg-white dark:bg-zinc-900/40 hover:border-zinc-400 dark:hover:border-zinc-600 peer-checked:border-zinc-900 dark:peer-checked:border-zinc-100 peer-checked:bg-zinc-50 dark:peer-checked:bg-zinc-900 transition-all duration-300 relative">
-                            <div className="absolute top-0 left-0 w-full h-1 bg-zinc-900 dark:bg-zinc-100 scale-x-0 peer-checked:scale-x-100 transition-transform duration-300 origin-left" />
-                            <GlobeAmericasIcon className="w-6 h-6 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 peer-checked:text-zinc-900 dark:peer-checked:text-zinc-100 mb-4 transition-colors" />
-                            <span className="block text-lg font-light text-zinc-900 dark:text-zinc-100 mb-2">Public</span>
-                            <p className="text-sm text-zinc-500 leading-relaxed font-light">
-                                Your profile, logs, and lists are visible to all users.
-                            </p>
-                            <div className="mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800 text-[10px] uppercase tracking-wider text-zinc-400 font-medium">
-                                Impact: Searchable
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Public */}
+                        <label className="cursor-pointer group relative">
+                            <input
+                                type="radio"
+                                name="visibility"
+                                value="public"
+                                defaultChecked={profile.visibility === 'public'}
+                                className="peer sr-only"
+                            />
+                            <div className="h-full p-6 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 hover:border-zinc-400 dark:hover:border-zinc-600 peer-checked:border-zinc-900 dark:peer-checked:border-zinc-100 peer-checked:bg-zinc-50 dark:peer-checked:bg-zinc-900 transition-all">
+                                <GlobeAmericasIcon className="w-6 h-6 text-zinc-400 mb-3 peer-checked:text-zinc-900 dark:peer-checked:text-white transition-colors" />
+                                <span className="block font-bold text-zinc-900 dark:text-zinc-100 mb-1">Public Profile</span>
+                                <p className="text-xs text-zinc-500 leading-relaxed">
+                                    Visible to everyone. Content can be searched and discovered.
+                                </p>
                             </div>
-                        </div>
-                    </label>
-
-                    {/* Private Option */}
-                    <label className="cursor-pointer group">
-                        <input
-                            type="radio"
-                            name="visibility"
-                            value="private"
-                            defaultChecked={profile.visibility === 'private'}
-                            className="peer sr-only"
-                        />
-                        <div className="h-full border border-zinc-200 dark:border-zinc-800 p-6 bg-white dark:bg-zinc-900/40 hover:border-zinc-400 dark:hover:border-zinc-600 peer-checked:border-zinc-900 dark:peer-checked:border-zinc-100 peer-checked:bg-zinc-50 dark:peer-checked:bg-zinc-900 transition-all duration-300 relative">
-                            <div className="absolute top-0 left-0 w-full h-1 bg-zinc-900 dark:bg-zinc-100 scale-x-0 peer-checked:scale-x-100 transition-transform duration-300 origin-left" />
-                            <LockClosedIcon className="w-6 h-6 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 peer-checked:text-zinc-900 dark:peer-checked:text-zinc-100 mb-4 transition-colors" />
-                            <span className="block text-lg font-light text-zinc-900 dark:text-zinc-100 mb-2">Private</span>
-                            <p className="text-sm text-zinc-500 leading-relaxed font-light">
-                                Only approved followers can view your activity.
-                            </p>
-                            <div className="mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800 text-[10px] uppercase tracking-wider text-zinc-400 font-medium">
-                                Impact: Hidden from Search
+                            {/* Selection Indicator */}
+                            <div className="absolute top-0 right-0 p-2 opacity-0 peer-checked:opacity-100 transition-opacity">
+                                <div className="w-2 h-2 bg-zinc-900 dark:bg-zinc-100 rounded-full" />
                             </div>
-                        </div>
-                    </label>
-                </div>
-            </section>
+                        </label>
 
-            {/* 2. NSFW / SENSITIVE CONTENT */}
-            <section className="space-y-6">
-                <div className={`flex items-center justify-between border-b pb-2 transition-colors duration-500 ${isNsfw ? 'border-rose-200 dark:border-rose-900/30' : 'border-zinc-200 dark:border-zinc-800'}`}>
-                    <h3 className={`text-xs font-bold uppercase tracking-[0.2em] transition-colors duration-500 ${isNsfw ? 'text-rose-600' : 'text-zinc-400'}`}>
-                        Content Classification
-                    </h3>
-                    <span className={`text-[10px] uppercase font-mono transition-colors duration-500 ${isNsfw ? 'text-rose-400' : 'text-zinc-400'}`}>
-                        Step 02
-                    </span>
-                </div>
+                        {/* Private */}
+                        <label className="cursor-pointer group relative">
+                            <input
+                                type="radio"
+                                name="visibility"
+                                value="private"
+                                defaultChecked={profile.visibility === 'private'}
+                                className="peer sr-only"
+                            />
+                            <div className="h-full p-6 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 hover:border-zinc-400 dark:hover:border-zinc-600 peer-checked:border-zinc-900 dark:peer-checked:border-zinc-100 peer-checked:bg-zinc-50 dark:peer-checked:bg-zinc-900 transition-all">
+                                <LockClosedIcon className="w-6 h-6 text-zinc-400 mb-3 peer-checked:text-zinc-900 dark:peer-checked:text-white transition-colors" />
+                                <span className="block font-bold text-zinc-900 dark:text-zinc-100 mb-1">Private Profile</span>
+                                <p className="text-xs text-zinc-500 leading-relaxed">
+                                    Only followers you approve can see your activity.
+                                </p>
+                            </div>
+                            <div className="absolute top-0 right-0 p-2 opacity-0 peer-checked:opacity-100 transition-opacity">
+                                <div className="w-2 h-2 bg-zinc-900 dark:bg-zinc-100 rounded-full" />
+                            </div>
+                        </label>
+                    </div>
+                </section>
 
-                <div className={`
-                    relative border p-8 transition-all duration-500 group
-                    ${isNsfw
-                    ? 'bg-rose-50/50 dark:bg-rose-950/10 border-rose-500 dark:border-rose-700'
-                    : 'bg-white dark:bg-zinc-900/40 border-zinc-200 dark:border-zinc-800'
-                }
-                    ${!isOver18 ? 'opacity-50 grayscale cursor-not-allowed' : ''}
-                `}>
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                        <div className="space-y-3 max-w-lg">
-                            <div className="flex items-center gap-3">
-                                {isNsfw ? (
-                                    <ExclamationTriangleIcon className="w-5 h-5 text-rose-600 animate-pulse" />
-                                ) : (
-                                    <ShieldCheckIcon className="w-5 h-5 text-zinc-400" />
-                                )}
-                                <span className={`text-lg font-medium transition-colors duration-300 ${isNsfw ? 'text-rose-700 dark:text-rose-500' : 'text-zinc-900 dark:text-zinc-100'}`}>
-                                    NSFW Content
+                {/* --- SECTION 3: CONTENT --- */}
+                <section className="space-y-6">
+                    <div className="flex items-center gap-2 text-zinc-400">
+                        <EyeSlashIcon className="w-4 h-4" />
+                        <h3 className="text-xs font-bold uppercase tracking-wider">Content Preferences</h3>
+                    </div>
+
+                    <div className={`
+                        flex items-center justify-between p-6 border transition-colors duration-300
+                        ${isNsfw
+                        ? 'bg-rose-50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900'
+                        : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800'
+                    }
+                    `}>
+                        <div className="max-w-[80%]">
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className={`font-bold text-sm ${isNsfw ? 'text-rose-700 dark:text-rose-400' : 'text-zinc-900 dark:text-zinc-100'}`}>
+                                    Show Sensitive Content (NSFW)
                                 </span>
+                                {isNsfw && <ExclamationTriangleIcon className="w-4 h-4 text-rose-500" />}
                             </div>
-                            <p className={`text-sm font-light transition-colors duration-300 ${isNsfw ? 'text-rose-600/80 dark:text-rose-400/80' : 'text-zinc-500'}`}>
-                                Unrestricted access to content classified as graphic, mature, or explicit.
-                                {isNsfw && <span className="font-medium ml-1">Viewer discretion advised.</span>}
+                            <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                                Enable to view content marked as explicit or mature. Requires 18+ verification.
                             </p>
                         </div>
 
-                        {/* Custom Toggle Switch */}
-                        <div className="relative flex items-center">
+                        {/* Toggle Switch */}
+                        <div className="relative">
                             <input type="hidden" name="content_preference" value="sfw" />
-                            <label className="relative inline-flex items-center cursor-pointer">
+                            <label className="inline-flex items-center cursor-pointer">
                                 <input
                                     type="checkbox"
                                     name="content_preference"
@@ -167,39 +163,89 @@ export default function SettingsForm({ profile }: { profile: UserProfile }) {
                                     className="sr-only peer"
                                 />
                                 <div className={`
-                                    w-14 h-7 border-2 peer-focus:outline-none transition-colors duration-300
-                                    ${isNsfw
-                                    ? 'bg-rose-600 border-rose-600'
-                                    : 'bg-zinc-200 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-600'
-                                }
-                                `}></div>
-                                <div className={`
-                                    absolute top-[4px] left-[4px] bg-white border border-zinc-300 dark:border-zinc-500 h-5 w-5 transition-all duration-300
-                                    ${isNsfw ? 'translate-x-7 border-white' : 'translate-x-0'}
+                                    w-11 h-6 peer-focus:outline-none rounded-full peer 
+                                    bg-zinc-200 dark:bg-zinc-700 peer-checked:bg-zinc-900 dark:peer-checked:bg-white
+                                    after:content-[''] after:absolute after:top-[2px] after:left-[2px] 
+                                    after:bg-white dark:after:bg-black after:border-gray-300 after:border after:rounded-full 
+                                    after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full peer-checked:after:border-white
+                                    ${!isOver18 ? 'opacity-50 cursor-not-allowed' : ''}
                                 `}></div>
                             </label>
                         </div>
                     </div>
 
                     {!isOver18 && (
-                        <div className="mt-6 pt-4 border-t border-dashed border-zinc-300 dark:border-zinc-700">
-                            <p className="text-xs text-zinc-500 font-mono uppercase tracking-tight">
-                                [RESTRICTED] User age verified as under 18. Setting locked.
-                            </p>
-                        </div>
+                        <p className="text-[10px] text-zinc-400 italic">
+                            * This setting is locked because the date of birth indicates you are under 18.
+                        </p>
                     )}
+                </section>
+
+                {/* --- FEEDBACK & SUBMIT --- */}
+                <div className="flex items-center justify-between pt-4">
+                    <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 min-h-[20px]">
+                        {state.message && (
+                            <span className="flex items-center gap-2 animate-pulse">
+                                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                                {state.message}
+                            </span>
+                        )}
+                    </div>
+                    <SubmitButton />
+                </div>
+            </form>
+
+            <div className="h-px w-full bg-zinc-200 dark:bg-zinc-800" />
+
+            {/* --- SECTION 1: PERSONAL INFORMATION --- */}
+            <section className="space-y-4">
+                <div className="flex items-center gap-2 text-zinc-400 mb-2">
+                    <IdentificationIcon className="w-4 h-4" />
+                    <h3 className="text-xs font-bold uppercase tracking-wider">Personal Identity</h3>
+                </div>
+
+                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-1 shadow-sm">
+                    {/* Reusing your existing component, wrapped for consistency */}
+                    <PersonalInformation
+                        email={userEmail}
+                        gender={profile.gender}
+                        birthday={formattedBirthday}
+                        plan={profile.subscription_status}
+                    />
+                </div>
+                <p className="text-[10px] text-zinc-400 px-1">
+                    To change these details, please contact support or edit your profile page.
+                </p>
+            </section>
+
+            <div className="h-px w-full bg-zinc-200 dark:bg-zinc-800" />
+
+            {/* --- SECTION 4: DANGER ZONE --- */}
+            <section className="space-y-6 pt-2">
+                <div className="flex items-center gap-2 text-red-600 dark:text-red-500">
+                    <ExclamationTriangleIcon className="w-4 h-4" />
+                    <h3 className="text-xs font-bold uppercase tracking-wider">Danger Zone</h3>
+                </div>
+
+                <div className="border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/10 p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div>
+                        <h4 className="font-bold text-red-700 dark:text-red-400 text-sm mb-1">Delete Account</h4>
+                        <p className="text-xs text-red-600/80 dark:text-red-400/70 max-w-sm leading-relaxed">
+                            Permanently remove your profile, timeline entries, and all saved data. This action cannot be undone.
+                        </p>
+                    </div>
+                    <Link
+                        href="/profile/delete-account"
+                        className="whitespace-nowrap px-5 py-2.5 bg-white dark:bg-red-950 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 text-xs font-bold uppercase tracking-wider hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors shadow-sm"
+                    >
+                        <span className="flex items-center gap-2">
+                            <TrashIcon className="w-3 h-3" />
+                            Delete Account
+                        </span>
+                    </Link>
                 </div>
             </section>
 
-            {/* Footer / Actions */}
-            <div className="pt-8 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-end gap-6">
-                {state.message && (
-                    <div className="text-xs font-mono text-emerald-600 dark:text-emerald-400 uppercase tracking-widest animate-pulse">
-                        &gt; {state.message}
-                    </div>
-                )}
-                <SubmitButton />
-            </div>
-        </form>
+        </div>
     );
 }

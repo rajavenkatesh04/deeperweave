@@ -4,7 +4,7 @@ import {Metadata} from "next";
 
 export const metadata: Metadata = {
     title: '{`username`}',
-    description: 'Read community transmissions, deep dives, and curated cinematic reviews from the weave.',
+    description: 'View their profile',
 };
 
 export default async function ProfilePage({
