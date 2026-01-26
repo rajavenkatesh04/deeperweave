@@ -39,7 +39,7 @@ export default async function ProfileLayout({
             />
 
             {canViewContent ? (
-                <div>
+                <div className={`z-40`}>
                     <TabNavigation username={profile.username} isOwnProfile={isOwnProfile} />
                     <div className="">{children}</div>
                 </div>
