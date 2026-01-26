@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
     ArrowPathIcon,
-    ExclamationTriangleIcon,
     HomeIcon,
     ArrowLeftIcon,
     ClockIcon,
@@ -113,17 +112,18 @@ function ErrorContent() {
                         )}
                     </div>
 
-                    <div className="mb-6 rounded-md border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
-                        <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-200">
+                    {/* SUGGESTED ACTIONS: Clean Text Layout */}
+                    <div className="mb-8 pl-1">
+                        <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                             Suggested Actions:
                         </h3>
                         <ul className="space-y-2">
-                            <li className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
-                                <ArrowPathIcon className="h-4 w-4 shrink-0 text-zinc-500" />
+                            <li className="flex items-center gap-2 text-xs text-zinc-700 dark:text-zinc-300">
+                                <ArrowPathIcon className="h-4 w-4 shrink-0 text-zinc-400" />
                                 <span>{isAuthError ? "Check your credentials and try again." : "Refresh the page to restart the session."}</span>
                             </li>
-                            <li className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
-                                <ClockIcon className="h-4 w-4 shrink-0 text-zinc-500" />
+                            <li className="flex items-center gap-2 text-xs text-zinc-700 dark:text-zinc-300">
+                                <ClockIcon className="h-4 w-4 shrink-0 text-zinc-400" />
                                 <span>If the issue persists, contact support.</span>
                             </li>
                         </ul>

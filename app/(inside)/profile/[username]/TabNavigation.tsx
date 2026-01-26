@@ -21,7 +21,6 @@ const ICONS: Record<string, React.ElementType> = {
     More: EllipsisHorizontalIcon,
 };
 
-// Kept your colors but applied them more subtly
 const TAB_ACCENTS: Record<string, string> = {
     Podium: 'bg-orange-500',
     Timeline: 'bg-blue-500',
@@ -57,12 +56,19 @@ export default function TabNavigation({
                 <LayoutGroup>
                     <nav
                         className="
-                            relative flex items-center h-14 gap-8
+                            relative flex items-center h-14
+                            w-full justify-between
                             overflow-x-auto scrollbar-hide
                             md:justify-center md:gap-12
                         "
                         aria-label="Tabs"
                     >
+                        {/* Change Log:
+                           1. Added 'w-full' and 'justify-between' for mobile evenly spaced layout.
+                           2. Removed 'gap-8' (mobile gap) to allow justify-between to work.
+                           3. Kept 'md:justify-center md:gap-12' to preserve desktop styling.
+                        */}
+
                         {tabs.map((tab) => {
                             const isActive = pathname === tab.href;
                             const Icon = ICONS[tab.name] || RectangleStackIcon;
@@ -72,6 +78,7 @@ export default function TabNavigation({
                                 <Link
                                     key={tab.name}
                                     href={tab.href}
+                                    aria-label={tab.name}
                                     className={clsx(
                                         'group relative flex items-center gap-2 h-full px-1',
                                         'text-xs font-bold uppercase tracking-widest whitespace-nowrap select-none transition-colors duration-200',
@@ -86,7 +93,8 @@ export default function TabNavigation({
                                             isActive ? 'scale-110 stroke-[2.5px]' : 'group-hover:scale-105'
                                         )}
                                     />
-                                    <span>{tab.name}</span>
+
+                                    <span className="hidden md:block">{tab.name}</span>
 
                                     {/* ACTIVE INDICATOR */}
                                     {isActive && (
@@ -104,7 +112,7 @@ export default function TabNavigation({
                                         />
                                     )}
 
-                                    {/* HOVER GLOW (Subtle user feedback) */}
+                                    {/* HOVER GLOW */}
                                     {!isActive && (
                                         <div className="absolute inset-x-0 bottom-0 h-[2px] bg-zinc-200 dark:bg-zinc-800 opacity-0 group-hover:opacity-100 transition-opacity rounded-full" />
                                     )}

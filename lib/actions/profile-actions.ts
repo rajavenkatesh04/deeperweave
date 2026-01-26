@@ -3,7 +3,7 @@
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
-import { revalidatePath } from 'next/cache';
+import {revalidatePath, revalidateTag} from 'next/cache';
 import { ProfileSearchResult, UserProfile } from '@/lib/definitions';
 import { getMovieDetails, getSeriesDetails, getPersonDetails } from './cinematic-actions'; // Ensure getPersonDetails is exported from here
 import { unstable_noStore as noStore } from 'next/cache';
