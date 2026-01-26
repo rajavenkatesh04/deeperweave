@@ -3,22 +3,24 @@
 import { useActionState, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { Reorder, useDragControls } from 'framer-motion';
 import { UserProfile, ProfileSection } from '@/lib/definitions';
 import { updateProfile, EditProfileState, checkUsernameAvailability } from '@/lib/actions/profile-actions';
 import { searchCinematic, type CinematicSearchResult } from '@/lib/actions/cinematic-actions';
 import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
 import {
     PhotoIcon, CheckCircleIcon, XCircleIcon, FilmIcon,
-    XMarkIcon, ArrowLeftIcon, PlusIcon,
-    ArrowPathIcon, TrashIcon, Bars3Icon, UserIcon, TvIcon,
-    ChevronUpIcon, ChevronDownIcon, MagnifyingGlassIcon
+    ArrowLeftIcon, PlusIcon, TrashIcon, Bars3Icon,
+    UserIcon, TvIcon, MagnifyingGlassIcon, XMarkIcon
 } from '@heroicons/react/24/outline';
 import LoadingSpinner from '@/app/ui/loading-spinner';
 
 // --- Types ---
 type EditableItem = {
-    id: number | string;
+    id: number | string; // Unique String for Client Dragging (e.g. "550-12398")
+    tmdb_id: number;     // Actual ID for Server (e.g. 550)
     title: string;
     image_path: string | null;
     type: 'movie' | 'tv' | 'person';
@@ -29,7 +31,7 @@ type EditableSection = {
     id: string;
     title: string;
     type: 'mixed' | 'movie' | 'tv' | 'person';
-    items: (EditableItem | null)[];
+    items: EditableItem[];
 };
 
 // --- SUB-COMPONENTS ---
@@ -52,7 +54,7 @@ function SearchModal({
 
     useEffect(() => {
         if (isOpen) {
-            const timer = setTimeout(() => inputRef.current?.focus(), 100);
+            const timer = setTimeout(() => inputRef.current?.focus(), 50);
             setQuery('');
             setResults([]);
             return () => clearTimeout(timer);
@@ -73,42 +75,43 @@ function SearchModal({
                 });
                 setResults(filtered);
             } catch (e) {
-                toast.error("Failed to search. Please try again.");
+                toast.error("Search failed");
             } finally {
                 setLoading(false);
             }
-        }, 500);
+        }, 400);
         return () => clearTimeout(handler);
     }, [query, sectionType]);
 
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[100] bg-zinc-950/80 backdrop-blur-sm flex items-start md:items-center justify-center animate-in fade-in duration-200">
-            {/* Full screen on mobile, modal on desktop */}
-            <div className="w-full h-full md:h-auto md:max-h-[85vh] md:max-w-xl bg-white dark:bg-zinc-900 md:border border-zinc-200 dark:border-zinc-800 md:rounded-lg shadow-2xl overflow-hidden flex flex-col">
-
-                <div className="p-3 border-b border-zinc-100 dark:border-zinc-800 flex items-center gap-2 bg-white dark:bg-zinc-900 sticky top-0 z-10">
-                    <button onClick={onClose} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md">
-                        <ArrowLeftIcon className="w-5 h-5" />
-                    </button>
-                    <div className="flex-1 relative">
-                        <input
-                            ref={inputRef}
-                            type="text"
-                            placeholder="Search..."
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            className="w-full h-10 bg-transparent outline-none text-base placeholder:text-zinc-500"
-                        />
-                    </div>
-                    {loading && <LoadingSpinner className="w-4 h-4 text-zinc-500" />}
+        <div className="fixed inset-0 z-[100] flex flex-col bg-zinc-50 dark:bg-zinc-950 animate-in fade-in duration-200">
+            {/* Mobile-First Full Screen Search Header */}
+            <div className="flex items-center gap-3 p-3 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+                <div className="relative flex-1">
+                    <MagnifyingGlassIcon className="absolute left-3 top-2.5 w-5 h-5 text-zinc-400" />
+                    <input
+                        ref={inputRef}
+                        type="text"
+                        placeholder={`Search ${sectionType}...`}
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        className="w-full h-10 pl-10 pr-4 bg-zinc-100 dark:bg-zinc-900 border-none rounded-md outline-none text-base placeholder:text-zinc-500"
+                    />
                 </div>
+                <button
+                    onClick={onClose}
+                    className="p-2 text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-md transition-colors"
+                >
+                    Cancel
+                </button>
+            </div>
 
-                <div className="flex-1 overflow-y-auto p-2 bg-zinc-50 dark:bg-zinc-950">
-                    {results.length === 0 && !loading && query.length > 1 && (
-                        <div className="text-center py-10 text-zinc-500 text-sm">No results found</div>
-                    )}
+            <div className="flex-1 overflow-y-auto p-2">
+                {loading ? (
+                    <div className="py-12 flex justify-center"><LoadingSpinner /></div>
+                ) : (
                     <div className="space-y-1">
                         {results.map((item) => {
                             const imagePath = item.poster_path || item.profile_path;
@@ -119,64 +122,124 @@ function SearchModal({
                                 <button
                                     key={item.id}
                                     onClick={() => { onSelect(item); onClose(); }}
-                                    className="w-full flex items-center gap-3 p-2 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-md transition-colors text-left group"
+                                    className="w-full flex items-center gap-4 p-2 hover:bg-white dark:hover:bg-zinc-900 active:bg-zinc-200 dark:active:bg-zinc-800 rounded-md transition-colors text-left"
                                 >
-                                    <div className="w-10 h-14 bg-zinc-200 dark:bg-zinc-800 rounded-sm flex-shrink-0 relative overflow-hidden">
+                                    <div className="w-12 h-16 bg-zinc-200 dark:bg-zinc-800 rounded-sm flex-shrink-0 relative overflow-hidden shadow-sm border border-zinc-100 dark:border-zinc-800">
                                         {imagePath ? (
                                             <Image src={`https://image.tmdb.org/t/p/w92${imagePath}`} alt="" fill className="object-cover" />
-                                        ) : <FilmIcon className="w-4 h-4 m-auto text-zinc-400"/>}
+                                        ) : <FilmIcon className="w-5 h-5 m-auto text-zinc-400"/>}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <h4 className="font-semibold text-sm truncate text-zinc-900 dark:text-zinc-100">{displayTitle}</h4>
-                                        <p className="text-xs text-zinc-500">{item.media_type} {year && `• ${year}`}</p>
+                                        <h4 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100 truncate">{displayTitle}</h4>
+                                        <p className="text-xs text-zinc-500 font-medium">{item.media_type.toUpperCase()} {year && `• ${year}`}</p>
                                     </div>
-                                    <PlusIcon className="w-4 h-4 text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-white" />
+                                    <PlusIcon className="w-5 h-5 text-zinc-400" />
                                 </button>
                             );
                         })}
                     </div>
-                </div>
+                )}
             </div>
         </div>
     );
 }
 
+// Drag Handle Component
+function DragHandleIcon({ className }: { className?: string }) {
+    return (
+        <svg viewBox="0 0 20 20" fill="none" className={className} stroke="currentColor">
+            <path d="M7 2a1 1 0 100 2 1 1 0 000-2zM7 9a1 1 0 100 2 1 1 0 000-2zM7 16a1 1 0 100 2 1 1 0 000-2zM13 2a1 1 0 100 2 1 1 0 000-2zM13 9a1 1 0 100 2 1 1 0 000-2zM13 16a1 1 0 100 2 1 1 0 000-2z" fill="currentColor"/>
+        </svg>
+    );
+}
+
+// Draggable Item Component
+function DraggableItem({ item, onRemove }: { item: EditableItem, onRemove: () => void }) {
+    const dragControls = useDragControls();
+
+    return (
+        <Reorder.Item
+            value={item}
+            dragListener={false}
+            dragControls={dragControls}
+            className="flex items-center gap-3 p-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md shadow-sm relative group select-none touch-none"
+        >
+            {/* Drag Handle - Large touch target */}
+            <div
+                onPointerDown={(e) => dragControls.start(e)}
+                className="p-2 -ml-2 text-zinc-400 cursor-grab active:cursor-grabbing hover:text-zinc-600 dark:hover:text-zinc-200"
+            >
+                <DragHandleIcon className="w-5 h-5" />
+            </div>
+
+            {/* Content */}
+            <div className="w-10 h-14 bg-zinc-200 dark:bg-zinc-800 rounded-sm relative overflow-hidden flex-shrink-0 border border-zinc-100 dark:border-zinc-800">
+                {item.image_path ? (
+                    <Image src={`https://image.tmdb.org/t/p/w92${item.image_path}`} alt="" fill className="object-cover" />
+                ) : <FilmIcon className="w-4 h-4 m-auto text-zinc-400"/>}
+            </div>
+
+            <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">{item.title}</p>
+                <p className="text-[10px] uppercase font-bold tracking-wider text-zinc-500">{item.type} {item.year && `• ${item.year}`}</p>
+            </div>
+
+            {/* Remove Button */}
+            <button
+                type="button"
+                onClick={onRemove}
+                className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-md transition-colors"
+            >
+                <XMarkIcon className="w-5 h-5" />
+            </button>
+        </Reorder.Item>
+    );
+}
+
 function SectionEditor({
                            section,
-                           index,
                            onUpdate,
-                           onRemove,
-                           onMove,
-                           totalSections
+                           onRemove
                        }: {
     section: EditableSection,
-    index: number,
     onUpdate: (s: EditableSection) => void,
-    onRemove: () => void,
-    onMove: (dir: -1 | 1) => void,
-    totalSections: number
+    onRemove: () => void
 }) {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
-    const [activeSlot, setActiveSlot] = useState<number>(0);
 
     const handleAddItem = (result: CinematicSearchResult) => {
-        const newItems = [...section.items];
+        if (section.items.length >= 10) {
+            toast.error("Max 10 items per section");
+            return;
+        }
+
         const title = result.title || result.name || 'Unknown';
         const imagePath = result.poster_path || result.profile_path || null;
 
-        newItems[activeSlot] = {
-            id: result.id,
+        // ✨ Create a new item with a UNIQUE KEY for React Reorder but store the REAL TMDB ID separately
+        const newItem: EditableItem = {
+            id: `${result.id}-${Date.now()}`, // Unique composite ID for UI key
+            tmdb_id: result.id,               // Actual TMDB ID for Server
             title: title,
             image_path: imagePath ? imagePath.replace('https://image.tmdb.org/t/p/w500', '') : null,
             type: result.media_type as 'movie' | 'tv' | 'person',
             year: result.release_date?.split('-')[0]
         };
-        onUpdate({ ...section, items: newItems });
-        toast.success(`Added ${title}`);
+
+        onUpdate({ ...section, items: [...section.items, newItem] });
+        toast.success("Item added");
+    };
+
+    const handleReorder = (newOrder: EditableItem[]) => {
+        onUpdate({ ...section, items: newOrder });
+    };
+
+    const handleRemoveItem = (itemId: string | number) => {
+        onUpdate({ ...section, items: section.items.filter(i => i.id !== itemId) });
     };
 
     return (
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md overflow-hidden group hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors">
+        <div className="bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-md overflow-hidden">
             <SearchModal
                 isOpen={isSearchOpen}
                 sectionType={section.type}
@@ -184,9 +247,9 @@ function SectionEditor({
                 onSelect={handleAddItem}
             />
 
-            {/* Header */}
-            <div className="flex items-center gap-3 p-3 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
-                <div className="p-1.5 bg-white dark:bg-zinc-800 rounded-sm border border-zinc-200 dark:border-zinc-700 text-zinc-500">
+            {/* Section Header */}
+            <div className="flex items-center gap-3 p-3 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+                <div className="p-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-sm border border-zinc-200 dark:border-zinc-700 text-zinc-500">
                     {section.type === 'movie' && <FilmIcon className="w-4 h-4"/>}
                     {section.type === 'tv' && <TvIcon className="w-4 h-4"/>}
                     {section.type === 'person' && <UserIcon className="w-4 h-4"/>}
@@ -197,78 +260,43 @@ function SectionEditor({
                     type="text"
                     value={section.title}
                     onChange={(e) => onUpdate({...section, title: e.target.value})}
-                    className="flex-1 bg-transparent font-semibold text-sm outline-none placeholder:text-zinc-400"
-                    placeholder="Section Title"
+                    className="flex-1 bg-transparent font-bold text-sm outline-none placeholder:text-zinc-400 text-zinc-900 dark:text-zinc-100"
+                    placeholder="Collection Name"
                 />
 
-                <div className="flex items-center gap-1">
-                    <button type="button" onClick={() => onMove(-1)} disabled={index === 0} title="Move Section Up" className="p-1.5 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-sm disabled:opacity-20 transition-colors">
-                        <ChevronUpIcon className="w-4 h-4"/>
-                    </button>
-                    <button type="button" onClick={() => onMove(1)} disabled={index === totalSections - 1} title="Move Section Down" className="p-1.5 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-sm disabled:opacity-20 transition-colors">
-                        <ChevronDownIcon className="w-4 h-4"/>
-                    </button>
-                    <div className="w-px h-4 bg-zinc-200 dark:bg-zinc-700 mx-1"/>
-                    <button type="button" onClick={onRemove} title="Delete Section" className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-sm transition-colors">
-                        <TrashIcon className="w-4 h-4"/>
-                    </button>
-                </div>
+                <button
+                    type="button"
+                    onClick={onRemove}
+                    className="text-zinc-400 hover:text-red-500 transition-colors p-1"
+                >
+                    <TrashIcon className="w-4 h-4"/>
+                </button>
             </div>
 
-            {/* Items */}
-            <div className="grid grid-cols-3 gap-2 p-3">
-                {[0, 1, 2].map(i => {
-                    const item = section.items[i];
-                    return (
-                        <div key={i} className="aspect-[2/3] relative bg-zinc-100 dark:bg-zinc-800 rounded-sm overflow-hidden border border-zinc-200 dark:border-zinc-700 group/item">
-                            {item ? (
-                                <>
-                                    {item.image_path ? (
-                                        <Image src={`https://image.tmdb.org/t/p/w342${item.image_path}`} alt={item.title} fill className="object-cover" />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center"><FilmIcon className="w-6 h-6 text-zinc-300"/></div>
-                                    )}
+            {/* Reorderable List */}
+            <div className="p-3 space-y-2">
+                {section.items.length > 0 ? (
+                    <Reorder.Group axis="y" values={section.items} onReorder={handleReorder} className="space-y-2">
+                        {section.items.map((item) => (
+                            <DraggableItem key={item.id} item={item} onRemove={() => handleRemoveItem(item.id)} />
+                        ))}
+                    </Reorder.Group>
+                ) : (
+                    <div className="text-center py-6 text-zinc-400 text-xs italic">
+                        Empty collection
+                    </div>
+                )}
 
-                                    {/* Overlay */}
-                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/item:opacity-100 transition-opacity flex flex-col items-center justify-center p-2 gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => { setActiveSlot(i); setIsSearchOpen(true); }}
-                                            className="p-2 bg-white text-black rounded-full hover:scale-105 transition shadow-sm"
-                                            title="Replace Item"
-                                        >
-                                            <ArrowPathIcon className="w-4 h-4"/>
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                const newItems = [...section.items];
-                                                newItems[i] = null;
-                                                onUpdate({ ...section, items: newItems });
-                                            }}
-                                            className="p-2 bg-red-600 text-white rounded-full hover:scale-105 transition shadow-sm"
-                                            title="Remove Item"
-                                        >
-                                            <TrashIcon className="w-4 h-4"/>
-                                        </button>
-                                    </div>
-                                    <div className="absolute bottom-0 inset-x-0 p-1 bg-gradient-to-t from-black/80 to-transparent md:hidden">
-                                        <p className="text-[10px] text-white truncate text-center">{item.title}</p>
-                                    </div>
-                                </>
-                            ) : (
-                                <button
-                                    type="button"
-                                    onClick={() => { setActiveSlot(i); setIsSearchOpen(true); }}
-                                    className="w-full h-full flex flex-col items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
-                                    title="Add Item"
-                                >
-                                    <PlusIcon className="w-6 h-6 opacity-50"/>
-                                </button>
-                            )}
-                        </div>
-                    );
-                })}
+                {/* Add Button */}
+                {section.items.length < 10 && (
+                    <button
+                        type="button"
+                        onClick={() => setIsSearchOpen(true)}
+                        className="w-full py-3 flex items-center justify-center gap-2 border border-dashed border-zinc-300 dark:border-zinc-700 rounded-md text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-zinc-100 transition-all text-xs font-bold uppercase tracking-wider"
+                    >
+                        <PlusIcon className="w-4 h-4" /> Add Item
+                    </button>
+                )}
             </div>
         </div>
     );
@@ -277,6 +305,7 @@ function SectionEditor({
 // --- MAIN FORM ---
 
 export default function ProfileEditForm({ profile, sections }: { profile: UserProfile; sections: ProfileSection[] }) {
+    const router = useRouter();
     const initialState: EditProfileState = { message: null, errors: {} };
     const [state, formAction] = useActionState(updateProfile, initialState);
 
@@ -295,9 +324,7 @@ export default function ProfileEditForm({ profile, sections }: { profile: UserPr
                 id: s.id,
                 title: s.title,
                 type: s.type,
-                items: [0, 1, 2].map(i => {
-                    const item = s.items.find(it => it.rank === i + 1);
-                    if (!item) return null;
+                items: s.items.sort((a, b) => a.rank - b.rank).map((item, idx) => {
                     const obj = item.movie || item.series || item.person;
                     if (!obj) return null;
                     const title = 'title' in obj ? obj.title : obj.name;
@@ -306,26 +333,36 @@ export default function ProfileEditForm({ profile, sections }: { profile: UserPr
                         : obj.profile_path?.replace('https://image.tmdb.org/t/p/w500', '');
 
                     return {
-                        id: obj.tmdb_id, title, image_path: imagePath, type: item.item_type,
+                        id: `${obj.tmdb_id}-${idx}-${Date.now()}`, // Unique Composite ID for Reorder
+                        tmdb_id: obj.tmdb_id,                       // Real ID
+                        title,
+                        image_path: imagePath,
+                        type: item.item_type,
                         year: 'release_date' in obj ? obj.release_date?.split('-')[0] : undefined
                     } as EditableItem;
-                })
+                }).filter((i): i is EditableItem => i !== null)
             })));
         } else {
-            setEditableSections([{ id: 'default-1', title: 'Favorites', type: 'mixed', items: [null, null, null] }]);
+            setEditableSections([{ id: 'default-1', title: 'Favorites', type: 'mixed', items: [] }]);
         }
     }, [sections]);
 
-    // Toast Feedback
+    // Handle Server Action Response & Client-Side Redirect
     useEffect(() => {
         if (state.message === 'Success') {
-            toast.success("Profile saved successfully");
-            setIsSaving(false);
+            toast.success("Profile updated successfully");
+
+            // Client-side redirect pattern to ensure toast is seen
+            setTimeout(() => {
+                router.refresh(); // Refresh data
+                router.push('/profile'); // Navigate
+            }, 800);
+
         } else if (state.message) {
             toast.error(state.message);
             setIsSaving(false);
         }
-    }, [state.message]);
+    }, [state.message, router]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -334,32 +371,11 @@ export default function ProfileEditForm({ profile, sections }: { profile: UserPr
 
     const addSection = (type: EditableSection['type']) => {
         const id = `new-${Date.now()}`;
-        setEditableSections([...editableSections, { id, title: "New Section", type, items: [null, null, null] }]);
-        // Minimal timeout to allow render before scroll
-        setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 50);
+        setEditableSections([...editableSections, { id, title: "New Collection", type, items: [] }]);
+        setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 100);
     };
 
-    const updateSection = (index: number, newData: EditableSection) => {
-        const updated = [...editableSections];
-        updated[index] = newData;
-        setEditableSections(updated);
-    };
-
-    const removeSection = (index: number) => {
-        if (confirm("Delete this section?")) {
-            setEditableSections(editableSections.filter((_, i) => i !== index));
-        }
-    };
-
-    const moveSection = (index: number, dir: -1 | 1) => {
-        const newIndex = index + dir;
-        if (newIndex < 0 || newIndex >= editableSections.length) return;
-        const updated = [...editableSections];
-        [updated[index], updated[newIndex]] = [updated[newIndex], updated[index]];
-        setEditableSections(updated);
-    };
-
-    // Username Check logic remains same
+    // Username Availability
     useEffect(() => {
         if (username === profile.username || username.length < 3) { setAvailability('idle'); return; }
         const handler = setTimeout(() => {
@@ -369,89 +385,102 @@ export default function ProfileEditForm({ profile, sections }: { profile: UserPr
         return () => clearTimeout(handler);
     }, [username, profile.username]);
 
+    const handleFormSubmit = (formData: FormData) => {
+        setIsSaving(true);
+        // Clean data before submit
+        const sectionsToSave = editableSections.map(s => ({
+            ...s,
+            // ✨ CRITICAL FIX: Map `id` back to `tmdb_id` so the server can fetch details successfully
+            items: s.items.map((item, index) => ({
+                ...item,
+                id: item.tmdb_id,
+                rank: index + 1
+            }))
+        }));
+        formData.set('sections_json', JSON.stringify(sectionsToSave));
+        formAction(formData);
+    };
+
     return (
-        <form action={formAction} onSubmit={() => setIsSaving(true)} className="space-y-8">
+        <form action={handleFormSubmit} className="space-y-8 pb-20">
 
-            {/* Top Controls - Squarish, integrated */}
-            <div className="flex items-center justify-between bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md p-3 sticky top-2 z-30 shadow-sm">
-                <h1 className="text-sm font-bold uppercase tracking-wider text-zinc-500">Edit Profile</h1>
-                <div className="flex items-center gap-3">
-                    <Link href="/profile" className="text-sm font-medium text-zinc-600 hover:text-black dark:text-zinc-400 dark:hover:text-white transition-colors">
-                        Cancel
-                    </Link>
-                    <button
-                        type="submit"
-                        disabled={isSaving || availability === 'taken'}
-                        className="flex items-center gap-2 px-4 py-1.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-sm font-bold rounded-sm disabled:opacity-50 hover:bg-zinc-800 dark:hover:bg-white/90 transition-colors"
-                    >
-                        {isSaving && <LoadingSpinner className="w-3 h-3" />}
-                        {isSaving ? 'Saving' : 'Save'}
-                    </button>
-                </div>
+            {/* Action Bar - Fixed on Mobile? No, Integrated. */}
+            <div className="flex items-center justify-between sticky top-2 z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-800 rounded-md shadow-sm p-3">
+                <Link href="/profile" className="flex items-center gap-2 text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
+                    <ArrowLeftIcon className="w-4 h-4" /> Cancel
+                </Link>
+                <button
+                    type="submit"
+                    disabled={isSaving || availability === 'taken'}
+                    className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 px-6 py-1.5 rounded-sm text-sm font-bold flex items-center gap-2 disabled:opacity-50 hover:opacity-90 transition-opacity"
+                >
+                    {isSaving && <LoadingSpinner className="w-3 h-3 text-current" />}
+                    {isSaving ? 'Saving...' : 'Save Changes'}
+                </button>
             </div>
 
-            {/* Main Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-6 md:gap-8">
-
-                {/* Avatar Column */}
-                <div className="flex flex-col items-center md:items-start gap-4">
-                    <div
-                        className="group relative w-32 h-32 md:w-48 md:h-48 cursor-pointer rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900"
-                        onClick={() => fileInputRef.current?.click()}
-                    >
-                        <Image src={previewUrl || '/placeholder-user.jpg'} alt="Profile" fill className="object-cover" />
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                            <PhotoIcon className="w-8 h-8 text-white" />
-                        </div>
-                        <input type="file" name="profile_pic" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
-                    </div>
-                    <p className="text-xs text-zinc-500 text-center md:text-left">Click image to update</p>
-                </div>
-
-                {/* Inputs Column */}
-                <div className="space-y-5">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                        <div className="space-y-1.5">
-                            <label className="text-xs font-bold uppercase tracking-wider text-zinc-500">Display Name</label>
-                            <input type="text" name="display_name" defaultValue={profile.display_name} required className="w-full bg-transparent border border-zinc-200 dark:border-zinc-800 rounded-md px-3 py-2 text-sm focus:border-zinc-900 dark:focus:border-zinc-100 outline-none transition-colors" />
-                        </div>
-                        <div className="space-y-1.5">
-                            <div className="flex justify-between">
-                                <label className="text-xs font-bold uppercase tracking-wider text-zinc-500">Username</label>
-                                {availability === 'taken' && <span className="text-xs text-red-500 flex items-center gap-1"><XCircleIcon className="w-3 h-3"/> Taken</span>}
-                                {availability === 'available' && <span className="text-xs text-green-500 flex items-center gap-1"><CheckCircleIcon className="w-3 h-3"/> Ok</span>}
+            {/* Profile Info Card */}
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md p-4 sm:p-6 shadow-sm">
+                <div className="flex flex-col sm:flex-row gap-6">
+                    {/* Avatar */}
+                    <div className="flex flex-col items-center gap-3">
+                        <div
+                            className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-full overflow-hidden bg-zinc-100 dark:bg-zinc-800 border-2 border-zinc-100 dark:border-zinc-800 cursor-pointer group"
+                            onClick={() => fileInputRef.current?.click()}
+                        >
+                            <Image src={previewUrl || '/placeholder-user.jpg'} alt="Profile" fill className="object-cover" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
+                                <PhotoIcon className="w-8 h-8 text-white" />
                             </div>
-                            <input
-                                type="text"
-                                name="username"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                                required
-                                className={`w-full bg-transparent border rounded-md px-3 py-2 text-sm outline-none transition-colors ${availability === 'taken' ? 'border-red-500' : 'border-zinc-200 dark:border-zinc-800 focus:border-zinc-900 dark:focus:border-zinc-100'}`}
-                            />
+                            <input type="file" name="profile_pic" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
                         </div>
+                        <button type="button" onClick={() => fileInputRef.current?.click()} className="text-xs font-bold text-indigo-500 hover:text-indigo-400">
+                            Change Photo
+                        </button>
                     </div>
 
-                    <div className="space-y-1.5">
-                        <label className="text-xs font-bold uppercase tracking-wider text-zinc-500">Bio</label>
-                        <textarea name="bio" rows={4} defaultValue={profile.bio || ''} className="w-full bg-transparent border border-zinc-200 dark:border-zinc-800 rounded-md px-3 py-2 text-sm focus:border-zinc-900 dark:focus:border-zinc-100 outline-none resize-none transition-colors" placeholder="Write something..." />
+                    {/* Inputs */}
+                    <div className="flex-1 space-y-4 w-full">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                                <label className="text-[10px] uppercase font-bold tracking-wider text-zinc-500">Display Name</label>
+                                <input type="text" name="display_name" defaultValue={profile.display_name} required className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-sm px-3 py-2 text-sm outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-colors" />
+                            </div>
+                            <div className="space-y-1">
+                                <div className="flex justify-between">
+                                    <label className="text-[10px] uppercase font-bold tracking-wider text-zinc-500">Username</label>
+                                    {availability === 'taken' && <span className="text-[10px] text-red-500 font-bold">Taken</span>}
+                                    {availability === 'available' && <span className="text-[10px] text-green-500 font-bold">Available</span>}
+                                </div>
+                                <input
+                                    type="text"
+                                    name="username"
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                                    required
+                                    className={`w-full bg-zinc-50 dark:bg-zinc-950 border rounded-sm px-3 py-2 text-sm outline-none transition-colors ${availability === 'taken' ? 'border-red-500 text-red-500' : 'border-zinc-200 dark:border-zinc-800 focus:border-zinc-400 dark:focus:border-zinc-600'}`}
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-[10px] uppercase font-bold tracking-wider text-zinc-500">Bio</label>
+                            <textarea name="bio" rows={3} defaultValue={profile.bio || ''} className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-sm px-3 py-2 text-sm outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-colors resize-none" />
+                        </div>
                     </div>
                 </div>
             </div>
-
-            <div className="h-px bg-zinc-200 dark:bg-zinc-800 my-2" />
 
             {/* Sections Area */}
-            <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                    <h2 className={`${PlayWriteNewZealandFont.className} text-xl md:text-2xl font-bold`}>Sections</h2>
-                    <div className="flex items-center gap-2">
-                        <span className="text-[10px] uppercase font-bold text-zinc-400 mr-2 hidden sm:inline">Add Section:</span>
-                        {/* Compact + Icons */}
-                        <button type="button" onClick={() => addSection('mixed')} title="Add Mixed Section" className="p-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-sm border border-zinc-200 dark:border-zinc-700 transition-colors"><Bars3Icon className="w-4 h-4"/></button>
-                        <button type="button" onClick={() => addSection('movie')} title="Add Movie Section" className="p-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-sm border border-zinc-200 dark:border-zinc-700 transition-colors"><FilmIcon className="w-4 h-4"/></button>
-                        <button type="button" onClick={() => addSection('tv')} title="Add TV Section" className="p-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-sm border border-zinc-200 dark:border-zinc-700 transition-colors"><TvIcon className="w-4 h-4"/></button>
-                        <button type="button" onClick={() => addSection('person')} title="Add Person Section" className="p-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-sm border border-zinc-200 dark:border-zinc-700 transition-colors"><UserIcon className="w-4 h-4"/></button>
+            <div className="space-y-4">
+                <div className="flex items-center justify-between px-1">
+                    <h2 className={`${PlayWriteNewZealandFont.className} text-xl font-bold`}>Custom Sections</h2>
+
+                    {/* Add Buttons */}
+                    <div className="flex gap-2">
+                        <button type="button" onClick={() => addSection('mixed')} className="p-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors" title="Add Mixed Collection"><Bars3Icon className="w-5 h-5 text-zinc-600 dark:text-zinc-400"/></button>
+                        <button type="button" onClick={() => addSection('movie')} className="p-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors" title="Add Movie Collection"><FilmIcon className="w-5 h-5 text-zinc-600 dark:text-zinc-400"/></button>
+                        <button type="button" onClick={() => addSection('tv')} className="p-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors" title="Add TV Collection"><TvIcon className="w-5 h-5 text-zinc-600 dark:text-zinc-400"/></button>
+                        <button type="button" onClick={() => addSection('person')} className="p-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors" title="Add People Collection"><UserIcon className="w-5 h-5 text-zinc-600 dark:text-zinc-400"/></button>
                     </div>
                 </div>
 
@@ -459,23 +488,28 @@ export default function ProfileEditForm({ profile, sections }: { profile: UserPr
                     {editableSections.map((section, index) => (
                         <SectionEditor
                             key={section.id}
-                            index={index}
                             section={section}
-                            onUpdate={(s) => updateSection(index, s)}
-                            onRemove={() => removeSection(index)}
-                            onMove={(dir) => moveSection(index, dir)}
-                            totalSections={editableSections.length}
+                            onUpdate={(s) => {
+                                const newSections = [...editableSections];
+                                newSections[index] = s;
+                                setEditableSections(newSections);
+                            }}
+                            onRemove={() => {
+                                if(confirm('Delete this section?')) {
+                                    setEditableSections(editableSections.filter((_, i) => i !== index));
+                                }
+                            }}
                         />
                     ))}
+
                     {editableSections.length === 0 && (
-                        <div className="text-center py-12 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-md">
-                            <p className="text-zinc-500 text-sm">No sections yet. Click an icon above to add one.</p>
+                        <div className="p-8 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-md text-center">
+                            <p className="text-zinc-500 font-medium">No sections added yet.</p>
+                            <p className="text-zinc-400 text-sm mt-1">Use the icons above to create your first collection.</p>
                         </div>
                     )}
                 </div>
             </div>
-
-            <input type="hidden" name="sections_json" value={JSON.stringify(editableSections)} />
         </form>
     );
 }
