@@ -7,47 +7,54 @@ export default function ProfileSectionDisplay({ sections }: { sections: any[] })
     if (!sections || sections.length === 0) return null;
 
     return (
-        <div className="flex flex-col gap-20 md:gap-40 pb-20">
+        <div className="flex flex-col gap-24 md:gap-32">
             {sections.map((section, idx) => (
-                <section key={section.id} className="max-w-[1400px] mx-auto px-3 md:px-12 w-full">
+                <section key={section.id} className="max-w-5xl mx-auto md:px-8 w-full">
 
-                    {/* --- HEADER SECTION (Restored Layout, New "Expensive" Style) --- */}
-                    <div className="mb-8 md:mb-16">
+                    {/* --- HEADER SECTION --- */}
+                    <div className="mb-10 md:mb-12">
                         <div className="flex items-baseline gap-4 md:gap-8">
                             <div className="flex flex-col w-full">
                                 <div className="flex items-center gap-6 w-full">
                                     <h2
                                         className="
-                                            /* Responsive Font Size */
-                                            text-[clamp(1.875rem,5vw,4rem)]
-                                            font-sans font-bold tracking-tighter whitespace-nowrap pb-2
+                                            /* 2. REFINED TYPOGRAPHY */
+                                            text-3xl md:text-5xl lg:text-6xl
+                                            font-sans font-bold tracking-tighter whitespace-nowrap pb-1
 
-                                            /* EXPENSIVE LOOK GRADIENT (No Glow) */
-                                            /* Light: Deep Zinc to Black | Dark: White to Silver */
-                                            bg-gradient-to-r from-zinc-900 via-zinc-600 to-zinc-800
+                                            /* 3. PUNCHIER METALLIC GRADIENT */
+                                            /* Light: Deep Black -> Medium Grey -> Deep Black */
+                                            /* Dark: Pure White -> Silver -> Steel Grey */
+                                            bg-gradient-to-br
+                                            from-black via-zinc-600 to-black
                                             dark:from-white dark:via-zinc-300 dark:to-zinc-500
-                                            bg-clip-text text-transparent
 
+                                            bg-clip-text text-transparent
                                             leading-tight
                                         "
                                     >
                                         {section.title}
                                     </h2>
 
-                                    {/* Dotted Line (Restored) */}
-                                    <div className="flex-grow border-t-2 border-dotted border-zinc-300 dark:border-zinc-800 self-center mt-2" />
+                                    {/* Dotted Line */}
+                                    <div className="flex-grow border-t-2 border-dotted border-zinc-300 dark:border-zinc-700 self-center mt-3 opacity-60" />
                                 </div>
                             </div>
 
-                            {/* Big Number (Restored) */}
-                            <span className="text-[clamp(2.5rem,8vw,8rem)] font-black tracking-tighter text-zinc-200 dark:text-zinc-800 italic leading-none">
+                            {/* Numbering: Adjusted color for better contrast/elegance */}
+                            <span className="
+                                text-5xl md:text-7xl font-black tracking-tighter
+                                text-zinc-200 dark:text-zinc-800
+                                italic leading-none select-none
+                            ">
                                 {String(idx + 1).padStart(2, '0')}
                             </span>
                         </div>
                     </div>
 
                     {/* --- GRID (Strict 3 Columns) --- */}
-                    <div className="grid grid-cols-3 gap-4 md:gap-8 lg:gap-12 justify-items-center">
+                    {/* Centered justify-items ensures cards don't stretch weirdly if content is low */}
+                    <div className="grid grid-cols-3 gap-4 md:gap-8 lg:gap-10 justify-items-center">
                         {section.items.map((itemRow: any) => {
                             const uiItem = normalizeItem(itemRow);
                             if (!uiItem) return null;
@@ -75,7 +82,7 @@ function normalizeItem(itemRow: any): UnifiedProfileItem | null {
     return {
         id: data.tmdb_id,
         title: data.title || data.name,
-        // Switched to w500 for better performance on small grids
+        // Kept w500 for optimal loading
         image_url: (data.poster_url || data.profile_path)
             ? `https://image.tmdb.org/t/p/w500${data.poster_url || data.profile_path}`
             : null,
