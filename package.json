@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@capacitor/android": "^8.0.1",
+    "@capacitor/app": "^8.0.0",
     "@capacitor/cli": "^8.0.1",
     "@capacitor/core": "^8.0.1",
     "@floating-ui/react": "^0.27.16",
@@ -89,6 +90,10 @@
       "@parcel/watcher",
       "supabase",
       "protobufjs"
-    ]
+    ],
+    "patchedDependencies": {
+      "@capacitor/app": "patches/@capacitor__app.patch",
+      "@capacitor/android": "patches/@capacitor__android.patch"
+    }
   }
 }

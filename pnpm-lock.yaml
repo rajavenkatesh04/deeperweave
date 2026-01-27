@@ -4,13 +4,24 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  '@capacitor/android':
+    hash: 991cbc1ef833166cb2e6fb1f356efc9ac3bdf538fec90d57ccd36d46aea52f97
+    path: patches/@capacitor__android.patch
+  '@capacitor/app':
+    hash: a50a55f822398e2090107769eb680db9e69a8645e53c2f2c2b5fb92644c22515
+    path: patches/@capacitor__app.patch
+
 importers:
 
   .:
     dependencies:
       '@capacitor/android':
         specifier: ^8.0.1
-        version: 8.0.1(@capacitor/core@8.0.1)
+        version: 8.0.1(patch_hash=991cbc1ef833166cb2e6fb1f356efc9ac3bdf538fec90d57ccd36d46aea52f97)(@capacitor/core@8.0.1)
+      '@capacitor/app':
+        specifier: ^8.0.0
+        version: 8.0.0(patch_hash=a50a55f822398e2090107769eb680db9e69a8645e53c2f2c2b5fb92644c22515)(@capacitor/core@8.0.1)
       '@capacitor/cli':
         specifier: ^8.0.1
         version: 8.0.1
@@ -253,6 +264,11 @@ packages:
     resolution: {integrity: sha512-Mrk2MFKSg9YA4BPLKm03wwFnGKcvzNBERUTcxjW1NkLrF6YhJwygAT69f/YGopFvOhhqdnDPsuZuASUfmpkSpw==}
     peerDependencies:
       '@capacitor/core': ^8.0.0
+
+  '@capacitor/app@8.0.0':
+    resolution: {integrity: sha512-OwzIkUs4w433Bu9WWAEbEYngXEfJXZ9Wmdb8eoaqzYBgB0W9/3Ed/mh6sAYPNBAZlpyarmewgP7Nb+d3Vrh+xA==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
 
   '@capacitor/assets@3.0.5':
     resolution: {integrity: sha512-ohz/OUq61Y1Fc6aVSt0uDrUdeOA7oTH4pkWDbv/8I3UrPjH7oPkzYhShuDRUjekNp9RBi198VSFdt0CetpEOzw==}
@@ -5705,7 +5721,11 @@ snapshots:
 
   '@babel/helper-validator-identifier@7.28.5': {}
 
-  '@capacitor/android@8.0.1(@capacitor/core@8.0.1)':
+  '@capacitor/android@8.0.1(patch_hash=991cbc1ef833166cb2e6fb1f356efc9ac3bdf538fec90d57ccd36d46aea52f97)(@capacitor/core@8.0.1)':
+    dependencies:
+      '@capacitor/core': 8.0.1
+
+  '@capacitor/app@8.0.0(patch_hash=a50a55f822398e2090107769eb680db9e69a8645e53c2f2c2b5fb92644c22515)(@capacitor/core@8.0.1)':
     dependencies:
       '@capacitor/core': 8.0.1
 
