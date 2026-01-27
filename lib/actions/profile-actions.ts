@@ -354,26 +354,64 @@ export async function updateProfileSettings(prevState: SettingsState, formData: 
 }
 
 // Find the searchProfiles function and update the .select() part
+// ... imports
+
 export async function searchProfiles(query: string): Promise<ProfileSearchResult[]> {
     if (query.length < 2) return [];
 
     const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-    // ✨ UPDATE: Added 'role' to the select string
-    const { data, error } = await supabase
+    // 1. Perform the Search
+    const { data: profiles, error } = await supabase
         .from('profiles')
-        .select('id, username, display_name, profile_pic_url, bio, role')
-        .textSearch('fts', query, {
-            type: 'websearch',
-            config: 'english'
-        })
+        .select(`
+            id, 
+            username, 
+            display_name, 
+            profile_pic_url, 
+            bio, 
+            role,
+            visibility
+        `)
+        .textSearch('fts', query, { type: 'websearch', config: 'english' })
         .limit(10);
 
-    if (error) {
+    if (error || !profiles) {
         console.error('Search error:', error);
         return [];
     }
-    return data as ProfileSearchResult[];
+
+    // 2. Enrich with Follow Status (if logged in)
+    // We do this efficiently by fetching relationships for the found IDs in one go.
+    let followMap = new Map<string, string>(); // TargetID -> Status
+
+    if (user && profiles.length > 0) {
+        const profileIds = profiles.map(p => p.id);
+
+        const { data: relationships } = await supabase
+            .from('followers')
+            .select('following_id, status')
+            .eq('follower_id', user.id)
+            .in('following_id', profileIds);
+
+        if (relationships) {
+            relationships.forEach(rel => {
+                followMap.set(rel.following_id, rel.status);
+            });
+        }
+    }
+
+    // 3. Merge Data
+    const results: ProfileSearchResult[] = profiles.map(profile => ({
+        ...profile,
+        // Map DB visibility to specific string if needed, mostly it matches
+        visibility: profile.visibility as 'public' | 'private',
+        // Default to 'not_following' if not found in map
+        follow_status: (followMap.get(profile.id) || 'not_following') as 'not_following' | 'pending' | 'accepted'
+    }));
+
+    return results;
 }
 
 type ProfileData = {

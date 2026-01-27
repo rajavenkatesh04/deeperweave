@@ -32,6 +32,8 @@ export interface ProfileSearchResult {
     bio?: string | null;
     profile_pic_url?: string | null;
     role: UserRole;
+    visibility: 'public' | 'private';
+    follow_status: 'not_following' | 'pending' | 'accepted';
 }
 
 /**

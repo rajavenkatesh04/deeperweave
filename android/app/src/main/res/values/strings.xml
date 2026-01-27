@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">DeeperWeave</string>
+    <string name="title_activity_main">DeeperWeave</string>
+    <string name="package_name">com.deeperweave.app</string>
+    <string name="custom_url_scheme">com.deeperweave.app</string>
+</resources>
