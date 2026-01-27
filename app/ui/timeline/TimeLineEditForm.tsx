@@ -21,7 +21,7 @@ import {
     TvIcon,
     FilmIcon,
     CalendarIcon,
-    LockClosedIcon // Added for the locked item state
+    LockClosedIcon
 } from '@heroicons/react/24/solid';
 import LoadingSpinner from '@/app/ui/loading-spinner';
 
@@ -140,12 +140,19 @@ export default function TimeLineEditForm({
     const [tagSearchQuery, setTagSearchQuery] = useState('');
     const [isTagSearching, setIsTagSearching] = useState(false);
     const [tagResults, setTagResults] = useState<ProfileSearchResult[]>([]);
+
+    // ✨ FIX: Updated taggedUsers initialization to match new ProfileSearchResult type
     const [taggedUsers, setTaggedUsers] = useState<ProfileSearchResult[]>(
         entryToEdit.timeline_collaborators.map(c => ({
             id: c.profiles.id,
             username: c.profiles.username,
-            display_name: '',
-            profile_pic_url: c.profiles.profile_pic_url ?? null
+            display_name: c.profiles.username || '', // Use actual name if available
+            profile_pic_url: c.profiles.profile_pic_url ?? null,
+            // Default values for fields not present in timeline_collaborators join
+            role: 'user',
+            visibility: 'public',
+            follow_status: 'not_following',
+            bio: null
         }))
     );
 
