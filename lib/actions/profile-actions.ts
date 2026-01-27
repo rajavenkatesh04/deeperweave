@@ -353,17 +353,18 @@ export async function updateProfileSettings(prevState: SettingsState, formData: 
     return { message: 'Your settings have been saved successfully!' };
 }
 
+// Find the searchProfiles function and update the .select() part
 export async function searchProfiles(query: string): Promise<ProfileSearchResult[]> {
     if (query.length < 2) return [];
 
     const supabase = await createClient();
 
-    // ✨ OPTIMIZED: Use the new 'fts' column with textSearch
+    // ✨ UPDATE: Added 'role' to the select string
     const { data, error } = await supabase
         .from('profiles')
-        .select('id, username, display_name, profile_pic_url, bio')
+        .select('id, username, display_name, profile_pic_url, bio, role')
         .textSearch('fts', query, {
-            type: 'websearch', // Allows "quoted searches" and -exclusions
+            type: 'websearch',
             config: 'english'
         })
         .limit(10);
@@ -372,7 +373,7 @@ export async function searchProfiles(query: string): Promise<ProfileSearchResult
         console.error('Search error:', error);
         return [];
     }
-    return data;
+    return data as ProfileSearchResult[];
 }
 
 type ProfileData = {

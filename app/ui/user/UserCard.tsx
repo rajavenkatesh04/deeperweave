@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { UserProfile } from '@/lib/definitions';
 import { ArrowRightIcon } from '@heroicons/react/24/outline';
+import UserBadge from '@/app/ui/user/UserBadge'; // ✨ Import the badge
 
 export default function UserCard({ profile }: { profile: UserProfile }) {
     return (
@@ -31,16 +32,22 @@ export default function UserCard({ profile }: { profile: UserProfile }) {
 
                 {/* Text Info */}
                 <div className="overflow-hidden">
-                    <p className="truncate font-semibold text-zinc-200 group-hover:text-white transition-colors text-sm md:text-base">
-                        {profile.display_name}
-                    </p>
+                    <div className="flex items-center gap-1.5">
+                        <p className="truncate font-semibold text-zinc-200 group-hover:text-white transition-colors text-sm md:text-base">
+                            {profile.display_name}
+                        </p>
+
+                        {/* ✨ BADGE HERE: Visible in search/lists now */}
+                        <UserBadge role={profile.role} />
+                    </div>
+
                     <p className="truncate text-[10px] md:text-xs font-bold uppercase tracking-widest text-zinc-500 group-hover:text-zinc-400 transition-colors">
                         @{profile.username}
                     </p>
                 </div>
             </div>
 
-            {/* Hover Arrow (Visible on hover for Desktop, subtle cue for Mobile) */}
+            {/* Hover Arrow */}
             <ArrowRightIcon className="h-4 w-4 text-zinc-600 -translate-x-2 opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100" />
         </Link>
     );

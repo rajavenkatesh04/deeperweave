@@ -5,6 +5,8 @@
  * =====================================================================
  */
 
+export type UserRole = 'user' | 'critic' | 'verified' | 'staff' | 'support';
+
 export interface UserProfile {
     id: string; // UUID from Supabase Auth
     created_at: string;
@@ -20,6 +22,7 @@ export interface UserProfile {
     subscription_status: 'free' | 'premium';
     content_preference: 'sfw' | 'all';
     visibility: 'public' | 'private';
+    role: UserRole;
 }
 
 export interface ProfileSearchResult {
@@ -28,6 +31,7 @@ export interface ProfileSearchResult {
     display_name: string;
     bio?: string | null;
     profile_pic_url?: string | null;
+    role: UserRole;
 }
 
 /**

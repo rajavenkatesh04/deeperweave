@@ -12,6 +12,7 @@ import {
     DocumentDuplicateIcon
 } from '@heroicons/react/24/outline';
 import { geistSans } from "@/app/ui/fonts";
+import UserBadge from "@/app/ui/user/UserBadge";
 
 // --- SUB-COMPONENTS ---
 
@@ -169,6 +170,8 @@ export default function ProfileHeader({
                                     NSFW
                                 </span>
                             )}
+
+                            <UserBadge role={profile.role} />
                         </div>
 
                         {/* Stats (Desktop Only) */}
