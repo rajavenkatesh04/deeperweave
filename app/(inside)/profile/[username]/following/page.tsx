@@ -3,8 +3,7 @@ import { getFollowing, getProfileByUsername } from '@/lib/data/user-data';
 import UserCard from '@/app/ui/user/UserCard';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeftIcon, UserGroupIcon } from '@heroicons/react/24/outline';
-import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
+import { MdArrowBack, MdOutlinePersonAdd } from 'react-icons/md';
 
 export default async function FollowingPage({ params }: { params: Promise<{ username: string }> }) {
     const { username } = await params;
@@ -18,52 +17,50 @@ export default async function FollowingPage({ params }: { params: Promise<{ user
     const followingList = await getFollowing(profile.id);
 
     return (
-        <div className="min-h-screen bg-black text-zinc-100 relative font-sans">
+        <div className="min-h-screen bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 font-sans">
 
-            {/* Nav Back */}
-            <div className=" top-6 left-6 z-50 mix-blend-difference">
+            {/* --- Sticky Header (Instagram Style) --- */}
+            <div className="sticky top-0 z-50 flex items-center justify-between px-4 h-14 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-zinc-100 dark:border-zinc-800">
                 <Link
                     href={`/profile/${username}`}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-black/50 backdrop-blur-md border border-zinc-800 text-xs font-bold uppercase tracking-widest text-zinc-400 hover:text-white hover:border-zinc-500 transition-all"
+                    className="p-2 -ml-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
                 >
-                    <ArrowLeftIcon className="w-3 h-3" />
-                    <span>Back</span>
+                    <MdArrowBack className="w-6 h-6" />
                 </Link>
-            </div>
 
-            <div className="max-w-5xl mx-auto pt-20 pb-12 px-0 md:px-12">
-                {/* Header Section */}
-                <div className="mb-8 px-6 md:px-0 border-b border-zinc-900 pb-8">
-                    <h1 className={`${PlayWriteNewZealandFont.className} text-3xl md:text-5xl font-bold mb-3`}>
-                        The Network
-                    </h1>
-                    <div className="flex items-center gap-2 text-zinc-500 text-xs font-bold uppercase tracking-widest">
-                        <span>@{username}</span>
-                        <span className="w-1 h-1 bg-zinc-700 rounded-full" />
-                        <span>Following {followingList.length}</span>
-                    </div>
+                <div className="flex flex-col items-center">
+                    <span className="text-sm font-bold leading-none">Following</span>
+                    <span className="text-[10px] text-zinc-500 font-medium">@{username}</span>
                 </div>
 
+                {/* Empty div to balance the flex centering */}
+                <div className="w-8" />
+            </div>
+
+            {/* --- Content List --- */}
+            <main className="max-w-md mx-auto">
                 {followingList.length > 0 ? (
-                    /* LAYOUT LOGIC:
-                       1. Mobile: Flex column with dividers (divide-y), bordered top/bottom for container.
-                       2. Desktop (md:): Grid layout, 2/3 columns, gaps, no dividers (borders handled by card itself).
-                    */
-                    <div className="flex flex-col divide-y divide-zinc-900 border-t border-b border-zinc-900 md:border-none md:divide-y-0 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-4">
+                    <div className="flex flex-col divide-y divide-zinc-100 dark:divide-zinc-900">
                         {followingList.map((followedUser) => (
-                            <UserCard key={followedUser.id} profile={followedUser} />
+                            <div key={followedUser.id} className="w-full">
+                                {/* Ensure UserCard takes full width and looks flat */}
+                                <UserCard profile={followedUser} />
+                            </div>
                         ))}
                     </div>
                 ) : (
-                    <div className="flex flex-col items-center justify-center py-24 mx-6 md:mx-0 bg-zinc-950 border border-zinc-900">
-                        <UserGroupIcon className="w-8 h-8 text-zinc-700 mb-4" />
-                        <p className="text-zinc-500 text-sm font-medium">No Connections</p>
-                        <p className="text-zinc-700 text-xs uppercase tracking-widest mt-1">
-                            @{username} isn&apos;t following anyone yet.
+                    // --- Empty State ---
+                    <div className="flex flex-col items-center justify-center pt-32 px-6 text-center">
+                        <div className="p-4 bg-zinc-100 dark:bg-zinc-900 rounded-full mb-4">
+                            <MdOutlinePersonAdd className="w-8 h-8 text-zinc-400" />
+                        </div>
+                        <h3 className="text-lg font-bold mb-1">Not Following Anyone</h3>
+                        <p className="text-sm text-zinc-500 max-w-[200px]">
+                            {username} hasn&apos;t followed anyone yet.
                         </p>
                     </div>
                 )}
-            </div>
+            </main>
         </div>
     );
 }

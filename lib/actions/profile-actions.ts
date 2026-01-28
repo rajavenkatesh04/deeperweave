@@ -156,14 +156,12 @@ export async function updateProfile(prevState: EditProfileState, formData: FormD
     const profilePicFile = formData.get('profile_pic') as File;
     if (profilePicFile && profilePicFile.size > 0) {
         try {
-            // A. Cleanup old files
             const { data: oldFiles } = await supabase.storage.from('profile_pics').list(user.id);
             if (oldFiles && oldFiles.length > 0) {
                 const filesToRemove = oldFiles.map(file => `${user.id}/${file.name}`);
                 await supabase.storage.from('profile_pics').remove(filesToRemove);
             }
 
-            // B. Upload new file with timestamp for cache busting
             const fileExtension = profilePicFile.name.split('.').pop();
             const timestamp = Date.now();
             const filePath = `${user.id}/profile-${timestamp}.${fileExtension}`;
@@ -174,7 +172,6 @@ export async function updateProfile(prevState: EditProfileState, formData: FormD
 
             if (uploadError) throw uploadError;
 
-            // C. Get URL
             const { data: { publicUrl } } = supabase.storage.from('profile_pics').getPublicUrl(filePath);
             dataToUpdate.profile_pic_url = publicUrl;
 
@@ -200,8 +197,7 @@ export async function updateProfile(prevState: EditProfileState, formData: FormD
         try {
             const sections = JSON.parse(sections_json);
 
-            // A. CACHE DATA (Ensure Foreign Keys Exist)
-            // We collect all IDs first to do efficient batch caching
+            // Cache Data
             const moviesToCache = new Set<number>();
             const seriesToCache = new Set<number>();
             const peopleToCache = new Set<number>();
@@ -218,23 +214,17 @@ export async function updateProfile(prevState: EditProfileState, formData: FormD
                 }
             });
 
-            // Run API calls in parallel
             await Promise.all([
                 ...Array.from(moviesToCache).map(id => getMovieDetails(id)),
                 ...Array.from(seriesToCache).map(id => getSeriesDetails(id)),
                 ...Array.from(peopleToCache).map(id => getPersonDetails(id))
             ]);
 
-            // B. DATABASE UPDATE (Transaction-like)
-
-            // Delete old sections (Cascade will delete items)
+            // Database Update
             await supabase.from('profile_sections').delete().eq('user_id', user.id);
 
-            // Insert new sections and items
             for (let i = 0; i < sections.length; i++) {
                 const sec = sections[i];
-
-                // Create Section
                 const { data: secRow, error: secError } = await supabase
                     .from('profile_sections')
                     .insert({
@@ -246,12 +236,8 @@ export async function updateProfile(prevState: EditProfileState, formData: FormD
                     .select('id')
                     .single();
 
-                if (secError || !secRow) {
-                    console.error("Error creating section:", secError);
-                    continue;
-                }
+                if (secError || !secRow) continue;
 
-                // Create Items
                 const itemsToInsert = (sec.items || [])
                     .map((item: any, idx: number) => {
                         if (!item) return null;
@@ -264,14 +250,10 @@ export async function updateProfile(prevState: EditProfileState, formData: FormD
                             rank: idx + 1
                         };
                     })
-                    .filter(Boolean); // Remove nulls
+                    .filter(Boolean);
 
                 if (itemsToInsert.length > 0) {
-                    const { error: itemError } = await supabase
-                        .from('section_items')
-                        .insert(itemsToInsert);
-
-                    if (itemError) console.error("Error inserting items:", itemError);
+                    await supabase.from('section_items').insert(itemsToInsert);
                 }
             }
 
@@ -282,7 +264,9 @@ export async function updateProfile(prevState: EditProfileState, formData: FormD
     }
 
     revalidatePath('/profile', 'layout');
-    redirect('/profile');
+
+    // CHANGE: Return success message instead of redirecting immediately
+    return { message: 'Success' };
 }
 
 // =====================================================================

@@ -29,7 +29,7 @@ import {
     MdOutlineAddAPhoto,
     MdCheckCircle,
     MdCancel,
-    MdEdit // Added for Change Photo
+    MdEdit
 } from 'react-icons/md';
 
 // --- Constants ---
@@ -96,7 +96,9 @@ function SearchModal({
                 });
                 setResults(filtered);
             } catch (e) {
-                toast.error("Search failed");
+                toast.error("Search failed", {
+                    style: { background: '#18181b', color: '#fff', borderColor: '#27272a' }
+                });
             } finally {
                 setLoading(false);
             }
@@ -179,7 +181,7 @@ function DraggableItem({ item, onRemove }: { item: EditableItem, onRemove: () =>
             dragControls={dragControls}
             className="flex items-center gap-3 p-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm relative group select-none"
         >
-            {/* Drag Handle - Added touch-none to prevent scrolling while dragging */}
+            {/* Drag Handle - touch-none prevents scrolling on mobile when touching this area */}
             <div
                 onPointerDown={(e) => dragControls.start(e)}
                 className="p-2 -ml-2 text-zinc-400 cursor-grab active:cursor-grabbing hover:text-zinc-600 dark:hover:text-zinc-200 touch-none"
@@ -234,7 +236,9 @@ function SectionEditor({
 
     const handleAddItem = (result: CinematicSearchResult) => {
         if (section.items.length >= MAX_ITEMS_PER_SECTION) {
-            toast.error(`Maximum ${MAX_ITEMS_PER_SECTION} items allowed.`);
+            toast.error(`Maximum ${MAX_ITEMS_PER_SECTION} items allowed.`, {
+                style: { background: '#18181b', color: '#fff', borderColor: '#7f1d1d' }
+            });
             return;
         }
 
@@ -251,7 +255,9 @@ function SectionEditor({
         };
 
         onUpdate({ ...section, items: [...section.items, newItem] });
-        toast.success(`Added ${title}`);
+        toast.success(`Added ${title}`, {
+            style: { background: '#18181b', color: '#fff', borderColor: '#27272a' }
+        });
     };
 
     const handleReorder = (newOrder: EditableItem[]) => {
@@ -402,16 +408,18 @@ export default function ProfileEditForm({ profile, sections }: { profile: UserPr
     // Handle Server Action Response
     useEffect(() => {
         if (state.message === 'Success') {
-            toast.success("Profile saved. Changes will reflect shortly.", {
+            // Success Toast - Visible for 5 seconds
+            toast.success("Profile updated. Changes will reflect on next login.", {
+                duration: 5000,
                 style: { background: '#18181b', color: '#fff', borderColor: '#27272a' }
             });
 
-            setTimeout(() => {
-                router.refresh();
-                router.push('/profile');
-            }, 800);
+            // Redirect immediately - toast will persist if using sonner correctly
+            router.refresh();
+            router.push('/profile');
 
         } else if (state.message) {
+            // Error Toast
             toast.error(state.message, {
                 style: { background: '#18181b', color: '#fff', borderColor: '#7f1d1d' }
             });
@@ -483,12 +491,12 @@ export default function ProfileEditForm({ profile, sections }: { profile: UserPr
                 <button
                     type="submit"
                     disabled={isSaving || availability === 'taken'}
-                    className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 px-6 py-2 rounded-lg text-sm font-bold flex items-center gap-2 disabled:opacity-50 hover:opacity-90 transition-opacity"
+                    className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 px-6 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50 hover:opacity-90 transition-opacity min-w-[140px]"
                 >
                     {isSaving ? (
                         <>
-                            <LoadingSpinner className="w-4 h-4 text-zinc-500" />
-                            <span className="text-zinc-500">Saving...</span>
+                            <LoadingSpinner className="w-4 h-4 text-white dark:text-zinc-900" />
+                            <span>Saving...</span>
                         </>
                     ) : (
                         'Save Changes'
@@ -511,7 +519,6 @@ export default function ProfileEditForm({ profile, sections }: { profile: UserPr
                             <input type="file" name="profile_pic" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
                         </div>
 
-                        {/* Improved Change Photo Button */}
                         <button
                             type="button"
                             onClick={() => fileInputRef.current?.click()}
