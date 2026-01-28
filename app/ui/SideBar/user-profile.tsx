@@ -20,12 +20,12 @@ export default function UserProfile({ user }: { user: UserProps }) {
     // Guest State
     if (!user.profile) {
         return (
-            <Link href="/auth/login" className="flex items-center h-14 px-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors group">
+            <Link href="/auth/login" className="flex items-center h-14 px-2 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors group">
                 <div className="shrink-0 w-10 h-10 flex items-center justify-center bg-zinc-200 dark:bg-zinc-800 rounded-full mr-3">
                     <PowerIcon className="h-5 w-5 text-zinc-500" />
                 </div>
                 <span className="opacity-0 -translate-x-4 group-hover/sidebar:opacity-100 group-hover/sidebar:translate-x-0 transition-all duration-300 delay-200 whitespace-nowrap text-sm font-bold">
-                    SIGN IN
+                    Sign IN
                 </span>
             </Link>
         );
@@ -105,7 +105,7 @@ export default function UserProfile({ user }: { user: UserProps }) {
             >
                 <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" aria-hidden="true" />
                 <div className="fixed inset-0 flex items-center justify-center p-4">
-                    <Dialog.Panel className="w-full max-w-sm bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 shadow-2xl p-6 rounded-2xl">
+                    <Dialog.Panel className="w-full max-w-sm bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 shadow-2xl p-6 rounded-md">
                         <Dialog.Title className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
                             Log out?
                         </Dialog.Title>
@@ -122,7 +122,7 @@ export default function UserProfile({ user }: { user: UserProps }) {
                             <form action={logout} className="flex-1">
                                 <button
                                     type="submit"
-                                    className="w-full py-2.5 px-4 bg-zinc-900 dark:bg-white text-white dark:text-black rounded-lg hover:opacity-90 transition-opacity text-sm font-bold"
+                                    className="w-full py-2.5 px-4 bg-zinc-900 dark:bg-white text-white dark:text-black rounded-md hover:opacity-90 transition-opacity text-sm font-bold"
                                 >
                                     Log Out
                                 </button>

@@ -1,11 +1,11 @@
 import ProfileSectionDisplay from '@/app/ui/podium/ProfileSectionDisplay';
 import { getPodiumData } from '@/lib/data/user-data';
-import { createClient } from '@/utils/supabase/server'; // Import auth client
+import { createClient } from '@/utils/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
 import { Metadata } from "next";
-import { MdOutlineLeaderboard, MdAdd, MdOutlineSentimentDissatisfied } from 'react-icons/md';
+import { MdOutlineLeaderboard, MdOutlineSentimentDissatisfied } from 'react-icons/md';
+import { PencilSquareIcon } from '@heroicons/react/24/outline'; // Using Heroicons for the button consistency
 
 type Props = {
     params: Promise<{ username: string }>
@@ -35,69 +35,64 @@ export default async function ProfileHomePage({ params }: { params: Promise<{ us
     const isEmpty = !sections || sections.length === 0;
 
     return (
-        <div className="relative min-h-screen w-full bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 selection:bg-zinc-900 selection:text-white dark:selection:bg-white dark:selection:text-black">
+        // 1. STANDARD WRAPPER (Matches ProfileListsPage & TimelineDisplay)
+        <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20 relative z-10 max-w-7xl mx-auto pt-8 px-4 md:px-6">
 
-            {/* Background Texture */}
-            <div className="absolute inset-0 opacity-[0.03] pointer-events-none fixed"
-                 style={{
-                     backgroundImage: 'radial-gradient(circle, currentColor 1px, transparent 1px)',
-                     backgroundSize: '24px 24px'
-                 }}
-            />
-
-            {/* Header Section */}
-            <div className="relative z-10 w-full text-center content-center border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-black/80 backdrop-blur-sm py-6">
-                <div className="max-w-4xl mx-auto flex flex-col md:flex-row md:items-end justify-between gap-6">
-                    <div>
-                        <h1 className={`${PlayWriteNewZealandFont.className} text-4xl md:text-5xl font-bold text-zinc-900 dark:text-zinc-100 mb-3`}>
-                            Podium
-                        </h1>
-                        <p className="text-sm font-mono uppercase tracking-widest text-zinc-500">
-                            Award your Ranks
-                        </p>
-                    </div>
+            {/* --- COMPACT HEADER SECTION --- */}
+            <div className="flex items-center justify-between mb-6">
+                <div className="flex items-baseline gap-3">
+                    <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
+                        Podium ({sections ? sections.length : 0})
+                    </h2>
                 </div>
+
+                {isOwnProfile && (
+                    <Link
+                        href="/profile/edit"
+                        className="flex items-center gap-2 px-3 py-1.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-full text-xs font-bold transition-transform active:scale-95 hover:opacity-90"
+                    >
+                        <PencilSquareIcon className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Customize</span>
+                    </Link>
+                )}
             </div>
 
-            {/* Main Content */}
-            <main className="relative z-10 max-w-7xl mx-auto pt-8 pb-32 px-4 md:px-6">
-                {!isEmpty ? (
-                    <ProfileSectionDisplay sections={sections} />
-                ) : (
-                    // --- EMPTY STATE ---
-                    <div className="flex flex-col items-center justify-center py-20 text-center animate-in fade-in zoom-in-95 duration-500">
-                        <div className="p-4 bg-zinc-100 dark:bg-zinc-900 rounded-full mb-6">
-                            {isOwnProfile ? (
-                                <MdOutlineLeaderboard className="w-8 h-8 text-zinc-400" />
-                            ) : (
-                                <MdOutlineSentimentDissatisfied className="w-8 h-8 text-zinc-400" />
-                            )}
-                        </div>
-
-                        <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mb-2">
-                            {isOwnProfile ? "The Podium is Empty" : "No Ranks Yet"}
-                        </h3>
-
-                        <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-sm mb-8 leading-relaxed">
-                            {isOwnProfile
-                                ? "Start building your personal hall of fame. Add movies, shows, or people to showcase your taste."
-                                : `${username} hasn't added any sections to their podium yet.`
-                            }
-                        </p>
-
-                        {/* Button ONLY shows if it is your own profile */}
-                        {isOwnProfile && (
-                            <Link
-                                href="/profile/edit"
-                                className="group flex items-center gap-2 px-6 py-2.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-md text-sm font-bold transition-transform active:scale-95 hover:opacity-90"
-                            >
-                                <MdAdd className="w-5 h-5" />
-                                <span>Customize Podium</span>
-                            </Link>
+            {/* --- MAIN CONTENT --- */}
+            {!isEmpty ? (
+                <ProfileSectionDisplay sections={sections} />
+            ) : (
+                /* --- EMPTY STATE (Matches ProfileListsPage Style) --- */
+                <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl bg-zinc-50/50 dark:bg-zinc-900/20">
+                    <div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-4 text-zinc-400">
+                        {/* Using Md icon here as requested, but styled like the others */}
+                        {isOwnProfile ? (
+                            <MdOutlineLeaderboard className="w-8 h-8" />
+                        ) : (
+                            <MdOutlineSentimentDissatisfied className="w-8 h-8" />
                         )}
                     </div>
-                )}
-            </main>
+
+                    <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                        {isOwnProfile ? "The Podium is Empty" : "No Ranks Yet"}
+                    </h3>
+
+                    <p className="text-xs text-zinc-500 mt-1 max-w-xs text-center">
+                        {isOwnProfile
+                            ? "Start building your personal hall of fame. Add movies, shows, or people."
+                            : `${username} hasn't added any sections to their podium yet.`
+                        }
+                    </p>
+
+                    {isOwnProfile && (
+                        <Link
+                            href="/profile/edit"
+                            className="mt-6 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline"
+                        >
+                            Customize Podium &rarr;
+                        </Link>
+                    )}
+                </div>
+            )}
         </div>
     );
 }

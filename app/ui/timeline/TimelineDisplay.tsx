@@ -6,12 +6,10 @@ import {
     PlusIcon,
     ChevronDownIcon,
     ArchiveBoxXMarkIcon,
-    ShieldExclamationIcon
 } from '@heroicons/react/24/outline';
 import { motion, AnimatePresence } from 'framer-motion';
 import TimelineEntryCard from './TimelineEntryCard';
 import { TimelineEntry } from "@/lib/definitions";
-import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -44,57 +42,33 @@ export default function TimelineDisplay({
     };
 
     return (
-        <div className="flex flex-col w-full">
+        // 1. APPLIED REFERENCE WRAPPER CLASSES HERE FOR EXACT ALIGNMENT
+        <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20 relative z-10 max-w-7xl mx-auto pt-8 px-4 md:px-6">
 
-            {/* --- HEADER SECTION --- */}
-            <div className="w-full border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-black py-10 px-6">
-                <div className="max-w-4xl mx-auto flex flex-col md:flex-row md:items-end justify-between gap-6">
-                    {/* Title Section */}
-                    <div>
-                        <h1 className={`${PlayWriteNewZealandFont.className} text-4xl md:text-5xl font-bold text-zinc-900 dark:text-zinc-100 mb-3`}>
-                            Watch History
-                        </h1>
-                        <p className="text-sm text-zinc-500">
-                            A temporal log of your cinematic journey.
-                        </p>
-                    </div>
-
-                    {/* Actions Section (Counter & Button) */}
-                    <div className="flex items-center gap-6">
-                        {/* Entry Counter (Only show if there are entries) */}
-                        {timelineEntries.length > 0 && (
-                            <div className="hidden md:block text-right border-r border-zinc-200 dark:border-zinc-800 pr-6">
-                                <p className="text-[9px] font-mono uppercase tracking-widest text-zinc-400">
-                                    Total Entries
-                                </p>
-                                <p className="text-xl font-bold text-zinc-900 dark:text-zinc-100 leading-none font-mono">
-                                    {timelineEntries.length.toString().padStart(3, '0')}
-                                </p>
-                            </div>
-                        )}
-
-                        {/* Create Button */}
-                        {isOwnProfile && (
-                            <Link href={`/profile/${username}/timeline/create`} passHref>
-                                <motion.button
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    className="flex items-center gap-2 px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black rounded-sm shadow-sm transition-all"
-                                >
-                                    <PlusIcon className="h-4 w-4" />
-                                    <span className="text-xs font-bold uppercase tracking-widest">Log Entry</span>
-                                </motion.button>
-                            </Link>
-                        )}
-                    </div>
+            {/* --- COMPACT HEADER SECTION --- */}
+            <div className="flex items-center justify-between mb-6">
+                <div className="flex items-baseline gap-3">
+                    <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
+                        Watch History ({timelineEntries.length})
+                    </h2>
                 </div>
+
+                {isOwnProfile && (
+                    <Link
+                        href={`/profile/${username}/timeline/create`}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-full text-xs font-bold transition-transform active:scale-95 hover:opacity-90"
+                    >
+                        <PlusIcon className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Log Entry</span>
+                    </Link>
+                )}
             </div>
 
             {/* --- CONTENT SECTION --- */}
-            <section className="relative min-h-[50vh] pb-12 pt-8">
-                {timelineEntries.length > 0 ? (
-                    <div className="max-w-4xl mx-auto px-6">
-                        {/* --- ENTRIES LIST --- */}
+            {timelineEntries.length > 0 ? (
+                <div className="flex flex-col items-center">
+                    {/* Inner wrapper for cards to keep them readable (not too wide), but centered in the 7xl container */}
+                    <div className="w-full max-w-4xl">
                         <motion.div variants={containerVariants} initial="hidden" animate="visible">
                             <AnimatePresence>
                                 {visibleEntries.map((entry, index) => (
@@ -127,41 +101,29 @@ export default function TimelineDisplay({
                             </div>
                         )}
                     </div>
-                ) : (
-                    /* --- EMPTY STATE (Styled like PrivateProfileScreen) --- */
-                    <div className="w-full py-32 flex flex-col items-center justify-center text-center bg-zinc-50 dark:bg-zinc-950 border-y border-zinc-200 dark:border-zinc-800 px-4 mt-4">
-
-                        {/* Icon - Inherits the neutral gray styling and size */}
-                        <ArchiveBoxXMarkIcon className="w-10 h-10 mb-4 text-zinc-400" />
-
-                        {/* Title - Inherits the bold, standard size typography */}
-                        <h2 className="text-lg font-bold text-zinc-900 dark:text-white mb-2">
-                            Log Empty
-                        </h2>
-
-                        {/* Description - Inherits the muted small text and max-width */}
-                        <p className="text-sm text-zinc-600 dark:text-zinc-400 max-w-md leading-relaxed mb-8">
-                            No cinematic data recorded in this sector. <br className="hidden sm:block" />
-                            The timeline awaits its first entry.
-                        </p>
-
-                        {/* Initialize Button (If Own Profile) */}
-                        {isOwnProfile && (
-                            <Link href={`/profile/${username}/timeline/create`} passHref>
-                                <motion.button
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    className="flex items-center gap-2 px-6 py-2.5 bg-zinc-900 dark:bg-white text-white dark:text-black text-xs font-bold uppercase tracking-widest rounded-sm shadow-sm hover:shadow-md transition-all"
-                                >
-                                    <PlusIcon className="h-4 w-4" />
-                                    <span>Initialize Log</span>
-                                </motion.button>
-                            </Link>
-                        )}
-
+                </div>
+            ) : (
+                /* --- EMPTY STATE (Matched to ProfileListsPage Style) --- */
+                <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl bg-zinc-50/50 dark:bg-zinc-900/20">
+                    <div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-4 text-zinc-400">
+                        <ArchiveBoxXMarkIcon className="w-8 h-8" strokeWidth={1.5} />
                     </div>
-                )}
-            </section>
+                    <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Log Empty</h3>
+                    <p className="text-xs text-zinc-500 mt-1 max-w-xs text-center">
+                        {isOwnProfile
+                            ? "No cinematic data recorded. The timeline awaits its first entry."
+                            : `${username} hasn't logged any watch history yet.`}
+                    </p>
+                    {isOwnProfile && (
+                        <Link
+                            href={`/profile/${username}/timeline/create`}
+                            className="mt-6 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline"
+                        >
+                            Initialize Log &rarr;
+                        </Link>
+                    )}
+                </div>
+            )}
         </div>
     );
 }

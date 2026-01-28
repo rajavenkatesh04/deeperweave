@@ -1,9 +1,10 @@
-import {TimelineDisplaySkeleton} from "@/app/ui/skeletons";
+import LoadingSpinner from "@/app/ui/loading-spinner";
 
 export default function Loading() {
     return (
-        <div className="space-y-8">
-            <TimelineDisplaySkeleton />
+        <div className="min-h-screen flex mt-10 justify-center">
+            Loading Timeline...
+            <LoadingSpinner />
         </div>
-    )
+    );
 }

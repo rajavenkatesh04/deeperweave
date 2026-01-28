@@ -3,7 +3,7 @@ import "./globals.css";
 import { Analytics } from "@vercel/analytics/next"
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
-import { googleSansCode } from "@/app/ui/fonts";
+import {googleSansCode, interFont} from "@/app/ui/fonts";
 import NativeNavigation from "@/app/ui/android-app/NativeNavigation";
 
 export const metadata: Metadata = {
@@ -32,7 +32,7 @@ export default function RootLayout({
     return (
         <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
         <meta name="apple-mobile-web-app-title" content="DeeperWeave" />
-        <body className={`${googleSansCode.className} antialiased bg-white text-gray-900 dark:bg-zinc-950 dark:text-zinc-100`}>
+        <body className={`${interFont.className} antialiased bg-white text-gray-900 dark:bg-zinc-950 dark:text-zinc-100`}>
         <ThemeProvider
             attribute="class"
             defaultTheme="system"
