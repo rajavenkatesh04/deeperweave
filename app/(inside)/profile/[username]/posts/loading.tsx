@@ -1,21 +1,26 @@
 import { PostCardSkeleton } from "@/app/ui/skeletons";
 
 export default function Loading() {
-
-    const shimmer =
-        'before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent';
-
-
     return (
-        <main className={`${shimmer} relative overflow-hidden p-6`}>
+        // Matches the container in ProfilePostsPage: max-w-7xl, pt-8, px-4 md:px-6
+        <div className="w-full max-w-7xl mx-auto pt-8 px-4 md:px-6 pb-20 relative z-10">
 
-            {/* Post Card Grid Placeholder */}
-            <div className="mt-8 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-                {/* Render multiple card skeletons to represent a list loading */}
-                <PostCardSkeleton />
-                <PostCardSkeleton />
-                <PostCardSkeleton />
+            {/* --- Header Skeleton --- */}
+            <div className="flex items-center justify-between mb-6">
+                {/* Title Skeleton: "Posts (X)" */}
+                <div className="h-7 w-32 bg-zinc-200 dark:bg-zinc-800 rounded-md animate-pulse" />
+
+                {/* Button Skeleton: "New Post" */}
+                <div className="h-8 w-24 bg-zinc-200 dark:bg-zinc-800 rounded-full animate-pulse" />
             </div>
-        </main>
+
+            {/* --- Grid Skeleton --- */}
+            {/* Matches: grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3 */}
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <PostCardSkeleton key={i} />
+                ))}
+            </div>
+        </div>
     );
 }

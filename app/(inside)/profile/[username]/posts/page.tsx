@@ -28,7 +28,7 @@ export default async function ProfilePostsPage({
 
     return (
         // 1. STANDARD WRAPPER (Matches ProfileListsPage, Timeline, Podium)
-        <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20 relative z-10 max-w-7xl mx-auto pt-8 px-4 md:px-6">
+        <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20 relative z-10 max-w-4xl mx-auto pt-8 px-4 md:px-6">
 
             {/* --- COMPACT HEADER SECTION --- */}
             <div className="flex items-center justify-between mb-6">

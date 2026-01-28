@@ -21,7 +21,7 @@ export default async function ProfileListsPage({
     const lists = await getPublicListsByUserId(profile.id);
 
     return (
-        <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20 relative z-10 max-w-7xl mx-auto pt-8 px-4 md:px-6">
+        <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20 relative z-10 max-w-4xl mx-auto pt-8 px-4 md:px-3">
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-baseline gap-3">
                     <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Lists ({lists.length} )</h2>
@@ -35,7 +35,7 @@ export default async function ProfileListsPage({
             </div>
 
             {lists && lists.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-2">
                     {lists.map((list) => (
                         <ProfileListCard key={list.id} list={list} isOwner={isOwner} />
                     ))}
