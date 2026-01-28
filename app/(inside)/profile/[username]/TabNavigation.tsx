@@ -44,7 +44,7 @@ export default function TabNavigation({
     const tabs = [
         { name: 'Podium', href: `${baseUrl}/podium` },
         { name: 'Timeline', href: `${baseUrl}/timeline` },
-        { name: 'Lists', href: `/lists` },
+        { name: 'Lists', href: `${baseUrl}/lists` },
         { name: 'Posts', href: `${baseUrl}/posts` },
     ];
 
