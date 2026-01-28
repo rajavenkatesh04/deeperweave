@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/utils/supabase/server';
+import { countries } from '@/lib/data/countries';
 
 // =====================================================================
 // == TYPE DEFINITIONS
@@ -102,6 +103,11 @@ interface TmdbMultiSearchResponse {
     results: TmdbMultiSearchItem[];
 }
 
+export type RegionSpecificSection = {
+    title: string;
+    items: CinematicSearchResult[];
+};
+
 // =====================================================================
 // == HELPER FUNCTIONS
 // =====================================================================
@@ -140,22 +146,38 @@ const normalizeTmdbItem = (item: TmdbMultiSearchItem, forcedMediaType: 'movie' |
     };
 };
 
-// ✨ NEW HELPER: Check user preference for Adult Content
-async function getAdultContentFlag(): Promise<string> {
+// ✨ HELPER: Check user preference for Adult Content & Region
+async function getUserRegionProfile() {
     try {
         const supabase = await createClient();
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return 'false';
+
+        if (!user) return { country: 'US', content_preference: 'sfw', countryName: 'United States' };
 
         const { data } = await supabase
             .from('profiles')
-            .select('content_preference')
+            .select('country, content_preference')
             .eq('id', user.id)
             .single();
 
-        return data?.content_preference === 'all' ? 'true' : 'false';
+        let regionCode = 'US';
+        let countryName = 'United States';
+
+        if (data?.country) {
+            const foundCountry = countries.find(c => c.name === data.country);
+            if (foundCountry) {
+                regionCode = foundCountry["alpha-2"];
+                countryName = foundCountry.name;
+            }
+        }
+
+        return {
+            country: regionCode,
+            countryName: countryName,
+            content_preference: data?.content_preference || 'sfw'
+        };
     } catch (error) {
-        return 'false';
+        return { country: 'US', content_preference: 'sfw', countryName: 'United States' };
     }
 }
 
@@ -170,19 +192,27 @@ async function fetchTmdbList(endpoint: string, params: Record<string, string> = 
     if (endpoint.startsWith('/movie')) forcedMediaType = 'movie';
     else if (endpoint.startsWith('/tv') || endpoint.startsWith('/discover/tv')) forcedMediaType = 'tv';
 
-    let includeAdultParam = params.include_adult;
-    if (!includeAdultParam) {
-        includeAdultParam = await getAdultContentFlag();
+    // 1. Get User Profile Data (Dynamic Region) if not passed explicitly in params
+    // Optimization: We only fetch if strictly necessary logic isn't passed
+    let region = params.region;
+    let includeAdult = params.include_adult;
+
+    if (!region || !includeAdult) {
+        const profile = await getUserRegionProfile();
+        if (!region) region = profile.country;
+        if (!includeAdult) includeAdult = profile.content_preference === 'all' ? 'true' : 'false';
     }
 
-    const query = new URLSearchParams({
+    const queryParams = new URLSearchParams({
         api_key: TMDB_API_KEY,
-        include_adult: includeAdultParam,
+        include_adult: includeAdult!,
+        region: region!,          // Affects release dates/trends
+        watch_region: region!,    // Affects provider data
         ...params
     });
 
     try {
-        const res = await fetch(`https://api.themoviedb.org/3${endpoint}?${query.toString()}`, {
+        const res = await fetch(`https://api.themoviedb.org/3${endpoint}?${queryParams.toString()}`, {
             next: { revalidate: 3600 }
         });
 
@@ -243,13 +273,65 @@ export async function discoverMedia(filters: DiscoverFilters) {
     return fetchTmdbList(`/discover/${filters.type}`, params);
 }
 
-// ... (Keep existing aggregate functions like getTrendingHero, getPopularMovies, etc.) ...
-// Just ensure they use fetchTmdbList which is now type-safe.
+// ✨ NEW: Regional Discovery Strategy
+export async function getRegionalDiscoverSections(): Promise<RegionSpecificSection[]> {
+    const { country, countryName } = await getUserRegionProfile();
+    const sections: RegionSpecificSection[] = [];
+
+    // === INDIA LOGIC (The "Different Woods") ===
+    if (country === 'IN') {
+        const [bollywood, tollywood, kollywood, topTrending] = await Promise.all([
+            // Bollywood (Hindi)
+            discoverMedia({ type: 'movie', sort_by: 'popularity.desc', with_original_language: 'hi', region: 'IN' }),
+            // Tollywood (Telugu)
+            discoverMedia({ type: 'movie', sort_by: 'popularity.desc', with_original_language: 'te', region: 'IN' }),
+            // Kollywood (Tamil)
+            discoverMedia({ type: 'movie', sort_by: 'popularity.desc', with_original_language: 'ta', region: 'IN' }),
+            // What's trending in Indian Theaters
+            fetchTmdbList('/trending/all/day', { region: 'IN' })
+        ]);
+
+        sections.push({ title: 'Trending in India', items: topTrending });
+        sections.push({ title: 'Bollywood Hits (Hindi)', items: bollywood });
+        sections.push({ title: 'Tollywood Blockbusters (Telugu)', items: tollywood });
+        sections.push({ title: 'Kollywood Cinema (Tamil)', items: kollywood });
+    }
+
+    // === SOUTH KOREA LOGIC ===
+    else if (country === 'KR') {
+        const [kMovies, kDramas] = await Promise.all([
+            discoverMedia({ type: 'movie', sort_by: 'popularity.desc', with_original_language: 'ko', region: 'KR' }),
+            discoverMedia({ type: 'tv', sort_by: 'popularity.desc', with_original_language: 'ko', region: 'KR' }),
+        ]);
+        sections.push({ title: 'Top Korean Movies', items: kMovies });
+        sections.push({ title: 'Trending K-Dramas', items: kDramas });
+    }
+
+    // === JAPAN LOGIC ===
+    else if (country === 'JP') {
+        const [anime, liveAction] = await Promise.all([
+            discoverMedia({ type: 'tv', with_genres: '16', region: 'JP' }), // Anime
+            discoverMedia({ type: 'movie', with_original_language: 'ja', region: 'JP' }),
+        ]);
+        sections.push({ title: 'Trending Anime', items: anime });
+        sections.push({ title: 'Japanese Cinema', items: liveAction });
+    }
+
+    // === DEFAULT GLOBAL FALLBACK ===
+    else {
+        const [trending] = await Promise.all([
+            fetchTmdbList('/trending/all/day', { region: country }),
+        ]);
+        sections.push({ title: `Trending in ${countryName}`, items: trending });
+    }
+
+    return sections;
+}
 
 export async function getTrendingHero() {
     const [movies, tvShows] = await Promise.all([
-        fetchTmdbList('/trending/movie/day', { region: 'IN' }),
-        fetchTmdbList('/trending/tv/day', { timezone: 'Asia/Kolkata' })
+        fetchTmdbList('/trending/movie/day'), // Will auto-detect region inside fetchTmdbList
+        fetchTmdbList('/trending/tv/day')
     ]);
     const mixed: CinematicSearchResult[] = [];
     const length = Math.min(movies.length, tvShows.length, 5);
@@ -265,11 +347,11 @@ export async function getTrendingAll() {
 }
 
 export async function getPopularMovies() {
-    return fetchTmdbList('/movie/now_playing', { language: 'en-US', page: '1', region: 'IN' });
+    return fetchTmdbList('/movie/now_playing', { language: 'en-US', page: '1' }); // region auto-detected
 }
 
 export async function getPopularTv() {
-    return fetchTmdbList('/tv/on_the_air', { language: 'en-US', page: '1', timezone: 'Asia/Kolkata' });
+    return fetchTmdbList('/tv/on_the_air', { language: 'en-US', page: '1' }); // region auto-detected
 }
 
 export async function getDiscoverAnime() {

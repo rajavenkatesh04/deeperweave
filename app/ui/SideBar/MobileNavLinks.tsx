@@ -3,14 +3,15 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import clsx from 'clsx';
-// Importing Material Design icons (Outline vs Filled versions)
+import { motion, LayoutGroup } from 'framer-motion';
 import {
-    MdOutlineHome, MdHome,                  // Discover
-    MdOutlineSearch, MdSearch,              // Search
-    MdOutlineAddCircle, MdAddCircle,        // Create
-    MdOutlineMenuBook, MdMenuBook           // Blogs (Open Book)
+    MdOutlineHome, MdHome,
+    MdOutlineSearch, MdSearch,
+    MdOutlineAddCircle, MdAddCircle,
+    MdOutlineMenuBook, MdMenuBook
 } from 'react-icons/md';
 
+// --- Configuration ---
 const links = [
     {
         name: 'Discover',
@@ -38,37 +39,67 @@ const links = [
     },
 ];
 
+// Optional: specific accent colors for each tab to match the "pop" of the previous component
+const ACCENT_COLORS: Record<string, string> = {
+    Discover: 'text-purple-600 dark:text-purple-400',
+    Search: 'text-blue-600 dark:text-blue-400',
+    Create: 'text-pink-600 dark:text-pink-400',
+    Blogs: 'text-orange-600 dark:text-orange-400',
+};
+
 export default function MobileNavLinks() {
     const pathname = usePathname();
 
     return (
-        <>
+        // LayoutGroup enables the shared layout animation across different components if needed,
+        // or just isolates the id for this specific nav to prevent conflicts.
+        <LayoutGroup id="mobile-nav-links">
             {links.map((link) => {
                 const isActive = pathname === link.href;
-                // Dynamically select the Solid or Outline icon based on state
+                // Dynamically select the Solid or Outline icon
                 const LinkIcon = isActive ? link.solidIcon : link.icon;
+                const activeColorClass = ACCENT_COLORS[link.name] || 'text-zinc-900 dark:text-zinc-100';
 
                 return (
                     <Link
                         key={link.name}
                         href={link.href}
-                        className={clsx(
-                            'relative flex h-full w-16 flex-col items-center justify-center gap-1 transition-colors',
-                            {
-                                'text-zinc-900 dark:text-zinc-100': isActive,
-                                'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300': !isActive,
-                            },
-                        )}
+                        className="relative flex h-full w-16 flex-col items-center justify-center"
                     >
-                        {/* Indicator Line at Top */}
-                        {isActive && (
-                            <div className="absolute top-0 w-8 h-0.5 bg-zinc-900 dark:bg-zinc-100 rounded-full" />
-                        )}
+                        <motion.div
+                            // Tactile feedback: scale down slightly on tap
+                            whileTap={{ scale: 0.9 }}
+                            className={clsx(
+                                "relative w-12 h-12 flex items-center justify-center rounded-2xl transition-colors duration-200",
+                                isActive
+                                    ? activeColorClass
+                                    : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+                            )}
+                        >
+                            {/* --- THE MAGIC: SLIDING BACKGROUND PILL --- */}
+                            {isActive && (
+                                <motion.div
+                                    layoutId="mobile-nav-pill"
+                                    transition={{
+                                        type: "spring",
+                                        stiffness: 300,
+                                        damping: 30
+                                    }}
+                                    className="absolute inset-0 bg-zinc-100 dark:bg-zinc-800/80 rounded-2xl shadow-sm"
+                                />
+                            )}
 
-                        <LinkIcon className="h-6 w-6" />
+                            {/* Icon (Relative z-10 to sit on top of the pill) */}
+                            <LinkIcon className="relative z-10 h-6 w-6" />
+
+                            {/* Hover Effect (Subtle glow when NOT active) */}
+                            {!isActive && (
+                                <div className="absolute inset-0 rounded-2xl bg-zinc-100/50 dark:bg-zinc-800/30 opacity-0 hover:opacity-100 transition-opacity duration-200" />
+                            )}
+                        </motion.div>
                     </Link>
                 );
             })}
-        </>
+        </LayoutGroup>
     );
 }

@@ -28,19 +28,10 @@ export default async function BlogPage() {
                         ]}
                     />
 
-                    <div className="border-b border-zinc-200 dark:border-zinc-800 pb-8 mt-8">
-                        <div className="flex items-center gap-2 text-sm font-medium text-blue-600 dark:text-blue-400 mb-3 uppercase tracking-wider">
-                            <Newspaper size={16} />
-                            <span>Publications</span>
-                        </div>
-
+                    <div className="border-b border-zinc-200 dark:border-zinc-800 pb-2 mt-2">
                         <h1 className="font-serif text-5xl md:text-7xl font-bold text-zinc-900 dark:text-white tracking-tight mb-4">
                             The Blog
                         </h1>
-
-                        <p className="text-lg text-zinc-600 dark:text-zinc-400 max-w-2xl font-normal leading-relaxed">
-                            Curated film reviews, industry news, and deep dives from our community of creators and critics.
-                        </p>
                     </div>
                 </div>
 
