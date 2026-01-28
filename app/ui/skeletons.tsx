@@ -148,7 +148,7 @@ export function PodiumSkeleton() {
 
 export function PostCardSkeleton() {
     return (
-        <div className={`flex flex-col h-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 overflow-hidden ${shimmer}`}>
+        <div className={`rounded-xl flex flex-col h-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 overflow-hidden ${shimmer}`}>
             {/* 16:9 Banner */}
             <div className="relative w-full aspect-[16/9] bg-gray-200 dark:bg-zinc-900" />
 

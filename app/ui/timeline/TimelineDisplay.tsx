@@ -43,10 +43,10 @@ export default function TimelineDisplay({
 
     return (
         // 1. APPLIED REFERENCE WRAPPER CLASSES HERE FOR EXACT ALIGNMENT
-        <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20 relative z-10 max-w-7xl mx-auto pt-8 px-4 md:px-6">
+        <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20 relative z-10 max-w-4xl mx-auto pt-8 px-4 md:px-6">
 
             {/* --- COMPACT HEADER SECTION --- */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="max-w-4xl flex items-center justify-between mb-6">
                 <div className="flex items-baseline gap-3">
                     <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
                         Watch History ({timelineEntries.length})

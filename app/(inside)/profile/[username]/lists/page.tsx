@@ -24,7 +24,7 @@ export default async function ProfileListsPage({
         <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20 relative z-10 max-w-7xl mx-auto pt-8 px-4 md:px-6">
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-baseline gap-3">
-                    <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Collections ({lists.length} )</h2>
+                    <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Lists ({lists.length} )</h2>
                 </div>
                 {isOwner && (
                     <Link href="/lists/create" className="flex items-center gap-2 px-3 py-1.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-full text-xs font-bold transition-transform active:scale-95 hover:opacity-90">

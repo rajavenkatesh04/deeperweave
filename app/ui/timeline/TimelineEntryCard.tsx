@@ -180,11 +180,9 @@ export default function TimelineEntryCard({
 
     // Formatter: "Sun, Oct 25"
     const dateObj = new Date(entry.watched_on);
-    const formattedDate = dateObj.toLocaleDateString('en-US', {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
-    });
+    const formattedDate = new Date(entry.watched_on)
+        .toLocaleDateString('en-GB')
+        .replace(/\//g, '-');
 
     const rating = Number(entry.rating);
     const displayRating = rating % 1 === 0 ? rating.toString() : rating.toFixed(1);
