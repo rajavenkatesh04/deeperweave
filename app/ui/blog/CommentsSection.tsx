@@ -7,7 +7,7 @@ import { postComment } from '@/lib/actions/blog-actions';
 import { CommentWithAuthor, UserProfile } from '@/lib/definitions';
 import Image from 'next/image';
 import Link from 'next/link';
-import { User, SendHorizontal, MessageSquare } from 'lucide-react';
+import { User, SendHorizontal } from 'lucide-react';
 
 function SubmitButton() {
     const { pending } = useFormStatus();
@@ -31,7 +31,7 @@ type CommentState = {
     error?: undefined;
 } | null;
 
-// Helper to format date like "2 days ago" or "Oct 24, 2024"
+// Helper to format date
 const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -57,20 +57,26 @@ export default function CommentsSection({
     const formRef = useRef<HTMLFormElement>(null);
     const isLoggedIn = !!currentUserProfile;
     const [isFocused, setIsFocused] = useState(false);
+    const [commentText, setCommentText] = useState('');
 
     const commentAction = async (prevState: CommentState, formData: FormData) => {
         if (!isLoggedIn) return { error: "You must be logged in." };
-        return await postComment(postId, formData);
+        const result = await postComment(postId, formData);
+        if (result?.success) {
+            setCommentText(''); // Clear text on success
+            setIsFocused(false); // Close the input actions
+        }
+        return result;
     };
 
     const [state, formAction] = useActionState(commentAction, null);
 
-    // Reset form on error or success
     if (state?.error && formRef.current) {
         formRef.current.reset();
     }
 
     const reversedComments = [...comments].reverse();
+    const showActions = isFocused || commentText.length > 0;
 
     return (
         <section className="w-full max-w-4xl">
@@ -78,7 +84,7 @@ export default function CommentsSection({
             {/* --- ADD COMMENT INPUT --- */}
             <div className="flex gap-4 mb-8">
                 {/* Current User Avatar */}
-                <div className="shrink-0">
+                <div className="shrink-0 pt-1">
                     {isLoggedIn ? (
                         <div className="relative w-10 h-10 rounded-full overflow-hidden bg-zinc-100 dark:bg-zinc-800">
                             <Image
@@ -96,43 +102,55 @@ export default function CommentsSection({
                 </div>
 
                 <div className="flex-1">
-                    <form
-                        ref={formRef}
-                        action={formAction}
-                        className="relative"
-                    >
+                    <form ref={formRef} action={formAction} className="relative">
                         <label htmlFor="comment" className="sr-only">Add a comment</label>
-                        <textarea
-                            id="comment"
-                            name="comment"
-                            rows={isFocused ? 3 : 1}
-                            onFocus={() => setIsFocused(true)}
-                            onBlur={(e) => {
-                                if (!e.target.value) setIsFocused(false);
-                            }}
-                            disabled={!isLoggedIn}
-                            placeholder={isLoggedIn ? "Add a comment..." : "Sign in to comment..."}
-                            className="w-full bg-transparent border-0 border-b border-zinc-200 dark:border-zinc-700 py-2 px-0 text-sm md:text-base text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-500 focus:ring-0 focus:border-zinc-900 dark:focus:border-white transition-all resize-none leading-relaxed"
-                            required
-                        />
 
-                        {/* Underline Animation (Optional active state visual) */}
-                        <div className={`h-[2px] bg-zinc-900 dark:bg-white transition-all duration-300 ${isFocused ? 'w-full' : 'w-0'}`} />
+                        {/* YouTube Style Logic:
+                            1. border-b only (static gray line).
+                            2. Animated active line (white/blue) on top.
+                            3. No outlines or boxes on the textarea itself.
+                        */}
+                        <div className="relative">
+                            <textarea
+                                id="comment"
+                                name="comment"
+                                rows={isFocused ? 3 : 1}
+                                value={commentText}
+                                onChange={(e) => setCommentText(e.target.value)}
+                                onFocus={() => setIsFocused(true)}
+                                // We don't blur immediately so users can click buttons
+                                disabled={!isLoggedIn}
+                                placeholder={isLoggedIn ? "Add a comment..." : "Sign in to comment..."}
+                                className="peer w-full bg-transparent border-none outline-none ring-0 shadow-none text-sm md:text-base text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-500 resize-none overflow-hidden py-2 px-0 leading-relaxed"
+                                required
+                                style={{ boxShadow: 'none' }} // Force remove any shadow artifacts
+                            />
 
-                        {/* Actions (Cancel / Submit) */}
-                        {(isFocused || state?.error) && (
-                            <div className="flex items-center justify-between mt-3">
+                            {/* Static Bottom Border */}
+                            <div className="absolute bottom-0 left-0 w-full h-[1px] bg-zinc-300 dark:bg-zinc-700" />
+
+                            {/* Animated Focus Border (Expands from center or left) */}
+                            <div className={`absolute bottom-0 left-0 h-[2px] bg-zinc-900 dark:bg-white transition-all duration-300 ease-out ${isFocused ? 'w-full' : 'w-0'}`} />
+                        </div>
+
+                        {/* Actions (Cancel / Submit) - Only show when focused or typing */}
+                        {(showActions || state?.error) && (
+                            <div className="flex items-center justify-between mt-3 animate-in fade-in slide-in-from-top-1 duration-200">
                                 <div className="text-red-600 text-xs">
                                     {state?.error && state.error}
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-3 ml-auto">
                                     <button
                                         type="button"
-                                        onClick={() => setIsFocused(false)}
-                                        className="px-4 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
+                                        onClick={() => {
+                                            setIsFocused(false);
+                                            setCommentText('');
+                                        }}
+                                        className="px-4 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
                                     >
                                         Cancel
                                     </button>
+
                                     {isLoggedIn ? (
                                         <SubmitButton />
                                     ) : (
@@ -189,17 +207,6 @@ export default function CommentsSection({
                                 <p className="text-sm text-zinc-800 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap">
                                     {comment.content}
                                 </p>
-
-                                {/* Action Row (Reply / Like placeholders - for future use) */}
-                                {/* <div className="flex items-center gap-4 mt-2">
-                                    <button className="flex items-center gap-1 text-xs font-medium text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200">
-                                        <ThumbsUp size={14} /> 12
-                                    </button>
-                                    <button className="text-xs font-medium text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200">
-                                        Reply
-                                    </button>
-                                </div>
-                                */}
                             </div>
                         </div>
                     ))

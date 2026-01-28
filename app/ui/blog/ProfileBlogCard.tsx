@@ -12,7 +12,7 @@ import {
     PencilIcon,
     TrashIcon,
 } from '@heroicons/react/24/outline';
-import { PremiumBadge, NsfwBadge, SpoilerBadge } from '@/app/ui/blog/badges';
+import { PremiumBadge, NsfwBadge, SpoilerBadge } from '@/app/ui/blog/BlogPostBadges';
 import { deletePost } from '@/lib/actions/blog-actions';
 import { Inter, DM_Serif_Display } from 'next/font/google';
 
