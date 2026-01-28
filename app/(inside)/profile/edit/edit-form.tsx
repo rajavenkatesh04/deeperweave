@@ -10,23 +10,35 @@ import { UserProfile, ProfileSection } from '@/lib/definitions';
 import { updateProfile, EditProfileState, checkUsernameAvailability } from '@/lib/actions/profile-actions';
 import { searchCinematic, type CinematicSearchResult } from '@/lib/actions/cinematic-actions';
 import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
-import {
-    PhotoIcon, CheckCircleIcon, XCircleIcon, FilmIcon,
-    ArrowLeftIcon, PlusIcon, TrashIcon, Bars3Icon,
-    UserIcon, TvIcon, MagnifyingGlassIcon, XMarkIcon,
-    ChevronUpIcon, ChevronDownIcon
-} from '@heroicons/react/24/outline';
 import LoadingSpinner from '@/app/ui/loading-spinner';
+
+// --- Icons ---
+import {
+    MdSearch,
+    MdOutlineMovie,
+    MdOutlineTv,
+    MdOutlinePerson,
+    MdOutlineViewList,
+    MdAdd,
+    MdClose,
+    MdArrowBack,
+    MdOutlineDelete,
+    MdKeyboardArrowUp,
+    MdKeyboardArrowDown,
+    MdDragIndicator,
+    MdOutlineAddAPhoto,
+    MdCheckCircle,
+    MdCancel,
+    MdEdit // Added for Change Photo
+} from 'react-icons/md';
 
 // --- Constants ---
 const MAX_ITEMS_PER_SECTION = 6;
 
 // --- Types ---
 type EditableItem = {
-    // We use a composite String ID (e.g., "550-172...") for client-side drag keys
-    // to prevent React key duplication errors if the user adds the same movie twice.
     id: number | string;
-    tmdb_id: number;     // The actual ID we send back to the server.
+    tmdb_id: number;
     title: string;
     image_path: string | null;
     type: 'movie' | 'tv' | 'person';
@@ -44,7 +56,6 @@ type EditableSection = {
 
 /**
  * SearchModal: Handles searching TMDB and selecting items.
- * Mobile-First: Full screen on mobile, modal on desktop.
  */
 function SearchModal({
                          isOpen,
@@ -62,7 +73,6 @@ function SearchModal({
     const [loading, setLoading] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    // Auto-focus input when opened
     useEffect(() => {
         if (isOpen) {
             const timer = setTimeout(() => inputRef.current?.focus(), 50);
@@ -72,25 +82,21 @@ function SearchModal({
         }
     }, [isOpen]);
 
-    // Debounced Search
     useEffect(() => {
         const handler = setTimeout(async () => {
             if (query.trim().length < 2) return;
             setLoading(true);
             try {
                 const data = await searchCinematic(query);
-                // Filter results based on the current section type constraint
                 const filtered = data.filter(item => {
                     if (sectionType === 'movie') return item.media_type === 'movie';
                     if (sectionType === 'tv') return item.media_type === 'tv';
                     if (sectionType === 'person') return item.media_type === 'person';
-                    return item.media_type !== 'person'; // Mixed excludes people usually
+                    return item.media_type !== 'person';
                 });
                 setResults(filtered);
             } catch (e) {
-                toast.error("Search failed", {
-                    style: { background: '#18181b', color: '#fff', borderColor: '#27272a' }
-                });
+                toast.error("Search failed");
             } finally {
                 setLoading(false);
             }
@@ -105,19 +111,19 @@ function SearchModal({
             {/* Header */}
             <div className="flex items-center gap-3 p-3 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
                 <div className="relative flex-1">
-                    <MagnifyingGlassIcon className="absolute left-3 top-2.5 w-5 h-5 text-zinc-400" />
+                    <MdSearch className="absolute left-3 top-2.5 w-5 h-5 text-zinc-400" />
                     <input
                         ref={inputRef}
                         type="text"
                         placeholder={`Search ${sectionType}...`}
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
-                        className="w-full h-10 pl-10 pr-4 bg-zinc-100 dark:bg-zinc-900 border-none rounded-md outline-none text-base placeholder:text-zinc-500 text-zinc-900 dark:text-zinc-100"
+                        className="w-full h-10 pl-10 pr-4 bg-zinc-100 dark:bg-zinc-900 border-none rounded-lg outline-none text-base placeholder:text-zinc-500 text-zinc-900 dark:text-zinc-100"
                     />
                 </div>
                 <button
                     onClick={onClose}
-                    className="p-2 text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-md transition-colors font-medium text-sm"
+                    className="p-2 text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-lg transition-colors font-medium text-sm"
                 >
                     Cancel
                 </button>
@@ -128,7 +134,7 @@ function SearchModal({
                 {loading ? (
                     <div className="py-12 flex justify-center"><LoadingSpinner /></div>
                 ) : (
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                         {results.map((item) => {
                             const imagePath = item.poster_path || item.profile_path;
                             const displayTitle = item.title || item.name || 'Unknown';
@@ -138,18 +144,18 @@ function SearchModal({
                                 <button
                                     key={item.id}
                                     onClick={() => { onSelect(item); onClose(); }}
-                                    className="w-full flex items-center gap-4 p-2 hover:bg-white dark:hover:bg-zinc-900 active:bg-zinc-200 dark:active:bg-zinc-800 rounded-md transition-colors text-left group"
+                                    className="w-full flex items-center gap-4 p-2 hover:bg-white dark:hover:bg-zinc-900 active:bg-zinc-200 dark:active:bg-zinc-800 rounded-xl transition-colors text-left group border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800"
                                 >
-                                    <div className="w-10 h-14 bg-zinc-200 dark:bg-zinc-800 rounded-sm flex-shrink-0 relative overflow-hidden shadow-sm border border-zinc-200 dark:border-zinc-800">
+                                    <div className="w-10 h-14 bg-zinc-200 dark:bg-zinc-800 rounded-lg flex-shrink-0 relative overflow-hidden shadow-sm border border-zinc-200 dark:border-zinc-800">
                                         {imagePath ? (
                                             <Image src={`https://image.tmdb.org/t/p/w92${imagePath}`} alt="" fill className="object-cover" />
-                                        ) : <FilmIcon className="w-5 h-5 m-auto text-zinc-400"/>}
+                                        ) : <MdOutlineMovie className="w-5 h-5 m-auto text-zinc-400"/>}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <h4 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100 truncate">{displayTitle}</h4>
-                                        <p className="text-[10px] uppercase font-bold text-zinc-500">{item.media_type} {year && `• ${year}`}</p>
+                                        <p className="text-xs text-zinc-500">{item.media_type} {year && `• ${year}`}</p>
                                     </div>
-                                    <PlusIcon className="w-5 h-5 text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100" />
+                                    <MdAdd className="w-5 h-5 text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100" />
                                 </button>
                             );
                         })}
@@ -157,15 +163,6 @@ function SearchModal({
                 )}
             </div>
         </div>
-    );
-}
-
-// Helper for Drag Handle Icon
-function DragHandleIcon({ className }: { className?: string }) {
-    return (
-        <svg viewBox="0 0 20 20" fill="none" className={className} stroke="currentColor">
-            <path d="M7 2a1 1 0 100 2 1 1 0 000-2zM7 9a1 1 0 100 2 1 1 0 000-2zM7 16a1 1 0 100 2 1 1 0 000-2zM13 2a1 1 0 100 2 1 1 0 000-2zM13 9a1 1 0 100 2 1 1 0 000-2zM13 16a1 1 0 100 2 1 1 0 000-2z" fill="currentColor"/>
-        </svg>
     );
 }
 
@@ -178,38 +175,38 @@ function DraggableItem({ item, onRemove }: { item: EditableItem, onRemove: () =>
     return (
         <Reorder.Item
             value={item}
-            dragListener={false} // Disable default drag to use specific handle
+            dragListener={false} // Only allow dragging from the handle
             dragControls={dragControls}
-            className="flex items-center gap-3 p-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md shadow-sm relative group select-none touch-none"
+            className="flex items-center gap-3 p-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm relative group select-none"
         >
-            {/* Drag Handle */}
+            {/* Drag Handle - Added touch-none to prevent scrolling while dragging */}
             <div
                 onPointerDown={(e) => dragControls.start(e)}
-                className="p-2 -ml-2 text-zinc-400 cursor-grab active:cursor-grabbing hover:text-zinc-600 dark:hover:text-zinc-200"
+                className="p-2 -ml-2 text-zinc-400 cursor-grab active:cursor-grabbing hover:text-zinc-600 dark:hover:text-zinc-200 touch-none"
             >
-                <DragHandleIcon className="w-5 h-5" />
+                <MdDragIndicator className="w-6 h-6" />
             </div>
 
             {/* Thumbnail */}
-            <div className="w-10 h-14 bg-zinc-200 dark:bg-zinc-800 rounded-sm relative overflow-hidden flex-shrink-0 border border-zinc-100 dark:border-zinc-800">
+            <div className="w-10 h-14 bg-zinc-200 dark:bg-zinc-800 rounded-lg relative overflow-hidden flex-shrink-0 border border-zinc-100 dark:border-zinc-800">
                 {item.image_path ? (
                     <Image src={`https://image.tmdb.org/t/p/w92${item.image_path}`} alt="" fill className="object-cover" />
-                ) : <FilmIcon className="w-4 h-4 m-auto text-zinc-400"/>}
+                ) : <MdOutlineMovie className="w-4 h-4 m-auto text-zinc-400"/>}
             </div>
 
             {/* Meta */}
             <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">{item.title}</p>
-                <p className="text-[10px] uppercase font-bold tracking-wider text-zinc-500">{item.type} {item.year && `• ${item.year}`}</p>
+                <p className="text-xs text-zinc-500">{item.type} {item.year && `• ${item.year}`}</p>
             </div>
 
             {/* Remove Button */}
             <button
                 type="button"
                 onClick={onRemove}
-                className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-md transition-colors"
+                className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg transition-colors"
             >
-                <XMarkIcon className="w-5 h-5" />
+                <MdClose className="w-5 h-5" />
             </button>
         </Reorder.Item>
     );
@@ -236,11 +233,8 @@ function SectionEditor({
     const [isSearchOpen, setIsSearchOpen] = useState(false);
 
     const handleAddItem = (result: CinematicSearchResult) => {
-        // Enforce Cap
         if (section.items.length >= MAX_ITEMS_PER_SECTION) {
-            toast.error(`Maximum ${MAX_ITEMS_PER_SECTION} items allowed per section.`, {
-                style: { background: '#18181b', color: '#fff', borderColor: '#7f1d1d' }
-            });
+            toast.error(`Maximum ${MAX_ITEMS_PER_SECTION} items allowed.`);
             return;
         }
 
@@ -248,8 +242,8 @@ function SectionEditor({
         const imagePath = result.poster_path || result.profile_path || null;
 
         const newItem: EditableItem = {
-            id: `${result.id}-${Date.now()}`, // Unique key for Reorder list
-            tmdb_id: result.id,               // Actual ID for DB
+            id: `${result.id}-${Date.now()}`,
+            tmdb_id: result.id,
             title: title,
             image_path: imagePath ? imagePath.replace('https://image.tmdb.org/t/p/w500', '') : null,
             type: result.media_type as 'movie' | 'tv' | 'person',
@@ -257,9 +251,7 @@ function SectionEditor({
         };
 
         onUpdate({ ...section, items: [...section.items, newItem] });
-        toast.success(`Added ${title}`, {
-            style: { background: '#18181b', color: '#fff', borderColor: '#27272a' }
-        });
+        toast.success(`Added ${title}`);
     };
 
     const handleReorder = (newOrder: EditableItem[]) => {
@@ -273,7 +265,7 @@ function SectionEditor({
     const isFull = section.items.length >= MAX_ITEMS_PER_SECTION;
 
     return (
-        <div className="bg-zinc-50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 rounded-md overflow-hidden transition-all hover:border-zinc-300 dark:hover:border-zinc-700">
+        <div className="bg-zinc-50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden transition-all hover:border-zinc-300 dark:hover:border-zinc-700">
             <SearchModal
                 isOpen={isSearchOpen}
                 sectionType={section.type}
@@ -284,11 +276,11 @@ function SectionEditor({
             {/* --- Section Header --- */}
             <div className="flex items-center gap-3 p-3 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
                 {/* Icon Badge */}
-                <div className="p-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-sm border border-zinc-200 dark:border-zinc-700 text-zinc-500">
-                    {section.type === 'movie' && <FilmIcon className="w-4 h-4"/>}
-                    {section.type === 'tv' && <TvIcon className="w-4 h-4"/>}
-                    {section.type === 'person' && <UserIcon className="w-4 h-4"/>}
-                    {section.type === 'mixed' && <Bars3Icon className="w-4 h-4"/>}
+                <div className="p-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-500">
+                    {section.type === 'movie' && <MdOutlineMovie className="w-5 h-5"/>}
+                    {section.type === 'tv' && <MdOutlineTv className="w-5 h-5"/>}
+                    {section.type === 'person' && <MdOutlinePerson className="w-5 h-5"/>}
+                    {section.type === 'mixed' && <MdOutlineViewList className="w-5 h-5"/>}
                 </div>
 
                 {/* Title Input */}
@@ -296,38 +288,35 @@ function SectionEditor({
                     type="text"
                     value={section.title}
                     onChange={(e) => onUpdate({...section, title: e.target.value})}
-                    className="flex-1 bg-transparent font-bold text-sm outline-none placeholder:text-zinc-400 text-zinc-900 dark:text-zinc-100"
+                    className="flex-1 bg-transparent font-bold text-base outline-none placeholder:text-zinc-400 text-zinc-900 dark:text-zinc-100"
                     placeholder="Collection Name"
                 />
 
-                {/* Section Controls (Move Up, Move Down, Delete) */}
+                {/* Section Controls */}
                 <div className="flex items-center gap-1">
                     <button
                         type="button"
                         onClick={() => onMove(-1)}
                         disabled={index === 0}
-                        className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-sm disabled:opacity-20 transition-colors text-zinc-500"
-                        title="Move Section Up"
+                        className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg disabled:opacity-20 transition-colors text-zinc-500"
                     >
-                        <ChevronUpIcon className="w-4 h-4"/>
+                        <MdKeyboardArrowUp className="w-5 h-5"/>
                     </button>
                     <button
                         type="button"
                         onClick={() => onMove(1)}
                         disabled={index === totalSections - 1}
-                        className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-sm disabled:opacity-20 transition-colors text-zinc-500"
-                        title="Move Section Down"
+                        className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg disabled:opacity-20 transition-colors text-zinc-500"
                     >
-                        <ChevronDownIcon className="w-4 h-4"/>
+                        <MdKeyboardArrowDown className="w-5 h-5"/>
                     </button>
                     <div className="w-px h-4 bg-zinc-200 dark:bg-zinc-800 mx-1"/>
                     <button
                         type="button"
                         onClick={onRemove}
-                        className="p-1.5 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-sm transition-colors"
-                        title="Delete Section"
+                        className="p-1.5 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg transition-colors"
                     >
-                        <TrashIcon className="w-4 h-4"/>
+                        <MdOutlineDelete className="w-5 h-5"/>
                     </button>
                 </div>
             </div>
@@ -341,22 +330,22 @@ function SectionEditor({
                         ))}
                     </Reorder.Group>
                 ) : (
-                    <div className="text-center py-8 text-zinc-400 text-xs italic border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-sm">
+                    <div className="text-center py-8 text-zinc-400 text-sm italic border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-lg">
                         Empty collection
                     </div>
                 )}
 
-                {/* Add Button (Conditional) */}
+                {/* Add Button */}
                 {!isFull ? (
                     <button
                         type="button"
                         onClick={() => setIsSearchOpen(true)}
-                        className="w-full py-3 flex items-center justify-center gap-2 border border-dashed border-zinc-300 dark:border-zinc-700 rounded-md text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-zinc-100 transition-all text-xs font-bold uppercase tracking-wider"
+                        className="w-full py-3 flex items-center justify-center gap-2 border border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-zinc-100 transition-all text-sm font-semibold"
                     >
-                        <PlusIcon className="w-4 h-4" /> Add Item
+                        <MdAdd className="w-5 h-5" /> Add Item
                     </button>
                 ) : (
-                    <div className="w-full py-2 text-center text-[10px] font-bold uppercase tracking-widest text-zinc-400 bg-zinc-100 dark:bg-zinc-900/50 rounded-md">
+                    <div className="w-full py-3 text-center text-xs font-bold uppercase tracking-widest text-zinc-400 bg-zinc-100 dark:bg-zinc-900/50 rounded-xl">
                         Max {MAX_ITEMS_PER_SECTION} Items Reached
                     </div>
                 )}
@@ -387,7 +376,6 @@ export default function ProfileEditForm({ profile, sections }: { profile: UserPr
                 id: s.id,
                 title: s.title,
                 type: s.type,
-                // Sort by rank and map to editable format
                 items: s.items.sort((a, b) => a.rank - b.rank).map((item, idx) => {
                     const obj = item.movie || item.series || item.person;
                     if (!obj) return null;
@@ -397,8 +385,8 @@ export default function ProfileEditForm({ profile, sections }: { profile: UserPr
                         : obj.profile_path?.replace('https://image.tmdb.org/t/p/w500', '');
 
                     return {
-                        id: `${obj.tmdb_id}-${idx}-${Date.now()}`, // Unique Composite ID
-                        tmdb_id: obj.tmdb_id,                       // Server ID
+                        id: `${obj.tmdb_id}-${idx}-${Date.now()}`,
+                        tmdb_id: obj.tmdb_id,
                         title,
                         image_path: imagePath,
                         type: item.item_type,
@@ -414,11 +402,10 @@ export default function ProfileEditForm({ profile, sections }: { profile: UserPr
     // Handle Server Action Response
     useEffect(() => {
         if (state.message === 'Success') {
-            toast.success("Profile saved successfully", {
+            toast.success("Profile saved. Changes will reflect shortly.", {
                 style: { background: '#18181b', color: '#fff', borderColor: '#27272a' }
             });
 
-            // Client-side redirect pattern
             setTimeout(() => {
                 router.refresh();
                 router.push('/profile');
@@ -437,7 +424,6 @@ export default function ProfileEditForm({ profile, sections }: { profile: UserPr
         if (file) setPreviewUrl(URL.createObjectURL(file));
     };
 
-    // SECTION MANAGEMENT
     const addSection = (type: EditableSection['type']) => {
         const id = `new-${Date.now()}`;
         let title = "New Collection";
@@ -452,9 +438,7 @@ export default function ProfileEditForm({ profile, sections }: { profile: UserPr
     const moveSection = (index: number, dir: -1 | 1) => {
         const newIndex = index + dir;
         if (newIndex < 0 || newIndex >= editableSections.length) return;
-
         const updated = [...editableSections];
-        // Swap
         [updated[index], updated[newIndex]] = [updated[newIndex], updated[index]];
         setEditableSections(updated);
     };
@@ -465,7 +449,6 @@ export default function ProfileEditForm({ profile, sections }: { profile: UserPr
         }
     };
 
-    // Username Availability Check
     useEffect(() => {
         if (username === profile.username || username.length < 3) { setAvailability('idle'); return; }
         const handler = setTimeout(() => {
@@ -477,18 +460,14 @@ export default function ProfileEditForm({ profile, sections }: { profile: UserPr
 
     const handleFormSubmit = (formData: FormData) => {
         setIsSaving(true);
-
-        // Clean data before submit
         const sectionsToSave = editableSections.map(s => ({
             ...s,
-            // Map items: crucial step to swap 'id' back to 'tmdb_id' for backend
             items: s.items.map((item, index) => ({
                 ...item,
                 id: item.tmdb_id,
                 rank: index + 1
             }))
         }));
-
         formData.set('sections_json', JSON.stringify(sectionsToSave));
         formAction(formData);
     };
@@ -497,22 +476,28 @@ export default function ProfileEditForm({ profile, sections }: { profile: UserPr
         <form action={handleFormSubmit} className="space-y-8 pb-32">
 
             {/* Top Bar */}
-            <div className="flex items-center justify-between sticky top-2 z-40 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md border border-zinc-200 dark:border-zinc-800 rounded-md shadow-sm p-3">
+            <div className="flex items-center justify-between sticky top-2 z-40 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm p-3">
                 <Link href="/profile" className="flex items-center gap-2 text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
-                    <ArrowLeftIcon className="w-4 h-4" /> Cancel
+                    <MdArrowBack className="w-4 h-4" /> Cancel
                 </Link>
                 <button
                     type="submit"
                     disabled={isSaving || availability === 'taken'}
-                    className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 px-6 py-1.5 rounded-sm text-sm font-bold flex items-center gap-2 disabled:opacity-50 hover:opacity-90 transition-opacity"
+                    className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 px-6 py-2 rounded-lg text-sm font-bold flex items-center gap-2 disabled:opacity-50 hover:opacity-90 transition-opacity"
                 >
-                    {isSaving && <LoadingSpinner className="w-4 h-4 text-current" />}
-                    {isSaving ? 'Saving...' : 'Save Changes'}
+                    {isSaving ? (
+                        <>
+                            <LoadingSpinner className="w-4 h-4 text-zinc-500" />
+                            <span className="text-zinc-500">Saving...</span>
+                        </>
+                    ) : (
+                        'Save Changes'
+                    )}
                 </button>
             </div>
 
             {/* Profile Info */}
-            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md p-4 sm:p-6 shadow-sm">
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 sm:p-6 shadow-sm">
                 <div className="flex flex-col sm:flex-row gap-6">
                     <div className="flex flex-col items-center gap-3">
                         <div
@@ -521,26 +506,32 @@ export default function ProfileEditForm({ profile, sections }: { profile: UserPr
                         >
                             <Image src={previewUrl || '/placeholder-user.jpg'} alt="Profile" fill className="object-cover" />
                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
-                                <PhotoIcon className="w-8 h-8 text-white" />
+                                <MdOutlineAddAPhoto className="w-8 h-8 text-white" />
                             </div>
                             <input type="file" name="profile_pic" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
                         </div>
-                        <button type="button" onClick={() => fileInputRef.current?.click()} className="text-xs font-bold text-indigo-500 hover:text-indigo-400">
-                            Change Photo
+
+                        {/* Improved Change Photo Button */}
+                        <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="flex items-center gap-1.5 text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors bg-zinc-100 dark:bg-zinc-800/50 px-3 py-1.5 rounded-full"
+                        >
+                            <MdEdit className="w-3.5 h-3.5" /> Change Photo
                         </button>
                     </div>
 
                     <div className="flex-1 space-y-4 w-full">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-1">
-                                <label className="text-[10px] uppercase font-bold tracking-wider text-zinc-500">Display Name</label>
-                                <input type="text" name="display_name" defaultValue={profile.display_name} required className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-sm px-3 py-2 text-sm outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-colors" />
+                                <label className="text-xs font-bold text-zinc-500">Display Name</label>
+                                <input type="text" name="display_name" defaultValue={profile.display_name} required className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-colors" />
                             </div>
                             <div className="space-y-1">
                                 <div className="flex justify-between">
-                                    <label className="text-[10px] uppercase font-bold tracking-wider text-zinc-500">Username</label>
-                                    {availability === 'taken' && <span className="text-[10px] text-red-500 font-bold">Taken</span>}
-                                    {availability === 'available' && <span className="text-[10px] text-green-500 font-bold">Available</span>}
+                                    <label className="text-xs font-bold text-zinc-500">Username</label>
+                                    {availability === 'taken' && <span className="text-xs text-red-500 font-bold flex items-center gap-1"><MdCancel className="w-3 h-3"/> Taken</span>}
+                                    {availability === 'available' && <span className="text-xs text-green-500 font-bold flex items-center gap-1"><MdCheckCircle className="w-3 h-3"/> Available</span>}
                                 </div>
                                 <input
                                     type="text"
@@ -548,13 +539,13 @@ export default function ProfileEditForm({ profile, sections }: { profile: UserPr
                                     value={username}
                                     onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
                                     required
-                                    className={`w-full bg-zinc-50 dark:bg-zinc-950 border rounded-sm px-3 py-2 text-sm outline-none transition-colors ${availability === 'taken' ? 'border-red-500 text-red-500' : 'border-zinc-200 dark:border-zinc-800 focus:border-zinc-400 dark:focus:border-zinc-600'}`}
+                                    className={`w-full bg-zinc-50 dark:bg-zinc-950 border rounded-lg px-3 py-2 text-sm outline-none transition-colors ${availability === 'taken' ? 'border-red-500 text-red-500' : 'border-zinc-200 dark:border-zinc-800 focus:border-zinc-400 dark:focus:border-zinc-600'}`}
                                 />
                             </div>
                         </div>
                         <div className="space-y-1">
-                            <label className="text-[10px] uppercase font-bold tracking-wider text-zinc-500">Bio</label>
-                            <textarea name="bio" rows={3} defaultValue={profile.bio || ''} className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-sm px-3 py-2 text-sm outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-colors resize-none" />
+                            <label className="text-xs font-bold text-zinc-500">Bio</label>
+                            <textarea name="bio" rows={3} defaultValue={profile.bio || ''} className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-colors resize-none" />
                         </div>
                     </div>
                 </div>
@@ -567,11 +558,11 @@ export default function ProfileEditForm({ profile, sections }: { profile: UserPr
 
                     {/* Add Buttons */}
                     <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-hide">
-                        <span className="text-[10px] uppercase font-bold text-zinc-400 mr-2 whitespace-nowrap">Add:</span>
-                        <button type="button" onClick={() => addSection('mixed')} className="p-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors" title="Add Mixed Collection"><Bars3Icon className="w-5 h-5 text-zinc-600 dark:text-zinc-400"/></button>
-                        <button type="button" onClick={() => addSection('movie')} className="p-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors" title="Add Movie Collection"><FilmIcon className="w-5 h-5 text-zinc-600 dark:text-zinc-400"/></button>
-                        <button type="button" onClick={() => addSection('tv')} className="p-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors" title="Add TV Collection"><TvIcon className="w-5 h-5 text-zinc-600 dark:text-zinc-400"/></button>
-                        <button type="button" onClick={() => addSection('person')} className="p-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors" title="Add People Collection"><UserIcon className="w-5 h-5 text-zinc-600 dark:text-zinc-400"/></button>
+                        <span className="text-xs font-bold text-zinc-400 mr-2 whitespace-nowrap">Add:</span>
+                        <button type="button" onClick={() => addSection('mixed')} className="p-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors" title="Add Mixed Collection"><MdOutlineViewList className="w-5 h-5 text-zinc-600 dark:text-zinc-400"/></button>
+                        <button type="button" onClick={() => addSection('movie')} className="p-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors" title="Add Movie Collection"><MdOutlineMovie className="w-5 h-5 text-zinc-600 dark:text-zinc-400"/></button>
+                        <button type="button" onClick={() => addSection('tv')} className="p-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors" title="Add TV Collection"><MdOutlineTv className="w-5 h-5 text-zinc-600 dark:text-zinc-400"/></button>
+                        <button type="button" onClick={() => addSection('person')} className="p-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors" title="Add People Collection"><MdOutlinePerson className="w-5 h-5 text-zinc-600 dark:text-zinc-400"/></button>
                     </div>
                 </div>
 
@@ -593,7 +584,7 @@ export default function ProfileEditForm({ profile, sections }: { profile: UserPr
                     ))}
 
                     {editableSections.length === 0 && (
-                        <div className="p-8 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-md text-center">
+                        <div className="p-8 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl text-center">
                             <p className="text-zinc-500 font-medium">No sections added yet.</p>
                             <p className="text-zinc-400 text-sm mt-1">Use the icons above to create your first collection.</p>
                         </div>

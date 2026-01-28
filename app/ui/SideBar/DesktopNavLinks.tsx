@@ -3,22 +3,23 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import clsx from 'clsx';
+// Importing Material Design Outline icons
 import {
-    BookOpenIcon,
-    PlusCircleIcon,
-    HomeIcon,
-    MagnifyingGlassIcon,
-    BellIcon,
-    BookmarkIcon
-} from '@heroicons/react/24/outline';
+    MdOutlineMenuBook,      // Blogs
+    MdOutlineAddCircle,     // Create
+    MdOutlineHome,          // Discover
+    MdOutlineSearch,        // Search
+    MdOutlineNotifications, // Notifications
+    MdOutlineBookmark       // Saved
+} from 'react-icons/md';
 
 const links = [
-    { name: 'Discover', href: '/discover', icon: HomeIcon },
-    { name: 'Search', href: '/search', icon: MagnifyingGlassIcon},
-    { name: 'Create', href: '/create', icon: PlusCircleIcon },
-    { name: 'Blogs', href: '/blog', icon: BookOpenIcon },
-    { name: 'Saved', href: '/profile/saved', icon: BookmarkIcon },
-    { name: 'Notifications', href: '/profile/notifications', icon: BellIcon },
+    { name: 'Discover', href: '/discover', icon: MdOutlineHome },
+    { name: 'Search', href: '/search', icon: MdOutlineSearch },
+    { name: 'Create', href: '/create', icon: MdOutlineAddCircle },
+    { name: 'Blogs', href: '/blog', icon: MdOutlineMenuBook },
+    { name: 'Saved', href: '/profile/saved', icon: MdOutlineBookmark },
+    { name: 'Notifications', href: '/profile/notifications', icon: MdOutlineNotifications },
 ];
 
 export default function DesktopNavLinks() {

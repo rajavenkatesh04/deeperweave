@@ -3,19 +3,39 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import clsx from 'clsx';
-import { BookOpenIcon, PlusCircleIcon, HomeIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+// Importing Material Design icons (Outline vs Filled versions)
 import {
-    BookOpenIcon as BookOpenSolid,
-    PlusCircleIcon as PlusCircleSolid,
-    HomeIcon as HomeSolid,
-    MagnifyingGlassIcon as MagnifyingGlassSolid
-} from '@heroicons/react/24/solid';
+    MdOutlineHome, MdHome,                  // Discover
+    MdOutlineSearch, MdSearch,              // Search
+    MdOutlineAddCircle, MdAddCircle,        // Create
+    MdOutlineMenuBook, MdMenuBook           // Blogs (Open Book)
+} from 'react-icons/md';
 
 const links = [
-    { name: 'Discover', href: '/discover', icon: HomeIcon, solidIcon: HomeSolid },
-    { name: 'Search', href: '/search', icon: MagnifyingGlassIcon, solidIcon: MagnifyingGlassSolid },
-    { name: 'Create', href: '/create', icon: PlusCircleIcon, solidIcon: PlusCircleSolid },
-    { name: 'Blogs', href: '/blog', icon: BookOpenIcon, solidIcon: BookOpenSolid },
+    {
+        name: 'Discover',
+        href: '/discover',
+        icon: MdOutlineHome,
+        solidIcon: MdHome
+    },
+    {
+        name: 'Search',
+        href: '/search',
+        icon: MdOutlineSearch,
+        solidIcon: MdSearch
+    },
+    {
+        name: 'Create',
+        href: '/create',
+        icon: MdOutlineAddCircle,
+        solidIcon: MdAddCircle
+    },
+    {
+        name: 'Blogs',
+        href: '/blog',
+        icon: MdOutlineMenuBook,
+        solidIcon: MdMenuBook
+    },
 ];
 
 export default function MobileNavLinks() {
@@ -25,6 +45,7 @@ export default function MobileNavLinks() {
         <>
             {links.map((link) => {
                 const isActive = pathname === link.href;
+                // Dynamically select the Solid or Outline icon based on state
                 const LinkIcon = isActive ? link.solidIcon : link.icon;
 
                 return (

@@ -16,9 +16,6 @@ import UserBadge from "@/app/ui/user/UserBadge";
 
 // --- SUB-COMPONENTS ---
 
-/**
- * Renders the username with a click-to-copy interaction.
- */
 function CopyableHandle({ username }: { username: string }) {
     const [copied, setCopied] = useState(false);
 
@@ -44,9 +41,6 @@ function CopyableHandle({ username }: { username: string }) {
     );
 }
 
-/**
- * Displays a single statistic (Logs, Followers, Following) with a link.
- */
 const Stat = ({ value, label, href }: { value: number; label: string; href: string }) => (
     <Link href={href} className="flex flex-col md:flex-row items-center md:gap-1 group cursor-pointer">
         <span className="font-bold text-lg md:text-base text-zinc-900 dark:text-zinc-100 group-hover:opacity-80">
@@ -58,9 +52,6 @@ const Stat = ({ value, label, href }: { value: number; label: string; href: stri
     </Link>
 );
 
-/**
- * Reusable button for profile actions (Edit, Follow, etc.).
- */
 const ActionButton = ({ children, onClick, href }: { children: React.ReactNode, onClick?: () => void, href?: string }) => {
     const className = "flex items-center justify-center w-full md:w-auto px-5 py-1.5 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg text-sm font-semibold text-zinc-900 dark:text-zinc-100 transition-colors";
 
@@ -81,7 +72,7 @@ export default function ProfileHeader({
                                           followingCount,
                                           timelineCount,
                                       }: {
-    profile: UserProfile; // Ensure UserProfile definition includes 'content_preference'
+    profile: UserProfile;
     isOwnProfile: boolean;
     isPrivate: boolean;
     initialFollowStatus: 'not_following' | 'pending' | 'accepted';
@@ -98,7 +89,6 @@ export default function ProfileHeader({
     /**
      * 2. Determine NSFW Status
      * Checks the user's content preference.
-     * If preference is 'all', we tag the profile as NSFW/Unrestricted.
      */
     const isNsfw = profile.content_preference === 'all';
 
@@ -163,15 +153,8 @@ export default function ProfileHeader({
                         <div className="-mt-1 flex items-center gap-2">
                             <CopyableHandle username={profile.username} />
 
-                            {/* --- NSFW Badge --- */}
-                            {/* Only rendered if content_preference matches 'all' */}
-                            {isNsfw && (
-                                <span className="px-1.5 py-0.5 rounded-[2px] border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 text-[9px] font-bold text-red-600 dark:text-red-400 uppercase tracking-widest leading-none select-none" title="This profile may contain sensitive content">
-                                    NSFW
-                                </span>
-                            )}
-
-                            <UserBadge role={profile.role} />
+                            {/* New UserBadge handles both Role and NSFW */}
+                            <UserBadge role={profile.role} isNsfw={isNsfw} />
                         </div>
 
                         {/* Stats (Desktop Only) */}
@@ -198,7 +181,6 @@ export default function ProfileHeader({
                                 )}
                                 <div className="flex items-center gap-1">
                                     <CalendarIcon className="w-3.5 h-3.5" />
-                                    {/* Used the dynamic date here */}
                                     <span>Joined {joinDate}</span>
                                 </div>
                             </div>

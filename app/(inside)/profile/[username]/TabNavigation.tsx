@@ -4,21 +4,22 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import clsx from 'clsx';
 import { motion, LayoutGroup } from 'framer-motion';
+// Importing Material Design Outline icons
 import {
-    HomeIcon,
-    ClockIcon,
-    DocumentTextIcon,
-    EllipsisHorizontalIcon,
-    RectangleStackIcon,
-    ListBulletIcon,
-} from '@heroicons/react/24/outline';
+    MdOutlineLeaderboard,
+    MdOutlineTimeline,
+    MdOutlineFormatListBulleted,
+    MdOutlineArticle,
+    MdOutlineMoreHoriz,
+    MdOutlineViewStream
+} from 'react-icons/md';
 
 const ICONS: Record<string, React.ElementType> = {
-    Podium: HomeIcon,
-    Timeline: ClockIcon,
-    Lists: ListBulletIcon,
-    Posts: DocumentTextIcon,
-    More: EllipsisHorizontalIcon,
+    Podium: MdOutlineLeaderboard,
+    Timeline: MdOutlineTimeline,
+    Lists: MdOutlineFormatListBulleted,
+    Posts: MdOutlineArticle,
+    More: MdOutlineMoreHoriz,
 };
 
 const TAB_ACCENTS: Record<string, string> = {
@@ -57,21 +58,19 @@ export default function TabNavigation({
                     <nav
                         className="
                             relative flex items-center h-14
-                            w-full justify-between
+                            w-full
                             overflow-x-auto scrollbar-hide
-                            md:justify-center md:gap-12
                         "
                         aria-label="Tabs"
                     >
                         {/* Change Log:
-                           1. Added 'w-full' and 'justify-between' for mobile evenly spaced layout.
-                           2. Removed 'gap-8' (mobile gap) to allow justify-between to work.
-                           3. Kept 'md:justify-center md:gap-12' to preserve desktop styling.
+                           1. Removed 'justify-between', 'md:justify-center', 'md:gap-12'.
+                           2. The children (Links) now dictate the spacing via 'flex-1'.
                         */}
 
                         {tabs.map((tab) => {
                             const isActive = pathname === tab.href;
-                            const Icon = ICONS[tab.name] || RectangleStackIcon;
+                            const Icon = ICONS[tab.name] || MdOutlineViewStream;
                             const accentColor = TAB_ACCENTS[tab.name] || 'bg-zinc-900 dark:bg-zinc-100';
 
                             return (
@@ -80,7 +79,8 @@ export default function TabNavigation({
                                     href={tab.href}
                                     aria-label={tab.name}
                                     className={clsx(
-                                        'group relative flex items-center gap-2 h-full px-1',
+                                        // Added 'flex-1', 'w-full', 'justify-center' to make tabs equal width and centered
+                                        'group relative flex flex-1 w-full justify-center items-center gap-2 h-full px-1',
                                         'text-xs font-bold uppercase tracking-widest whitespace-nowrap select-none transition-colors duration-200',
                                         isActive
                                             ? 'text-zinc-900 dark:text-zinc-100'
@@ -90,7 +90,7 @@ export default function TabNavigation({
                                     <Icon
                                         className={clsx(
                                             'w-4 h-4 transition-all duration-300',
-                                            isActive ? 'scale-110 stroke-[2.5px]' : 'group-hover:scale-105'
+                                            isActive ? 'scale-110' : 'group-hover:scale-105'
                                         )}
                                     />
 
