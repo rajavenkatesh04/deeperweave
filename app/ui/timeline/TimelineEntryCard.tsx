@@ -18,7 +18,7 @@ import {
     PhotoIcon as PhotoSolidIcon
 } from '@heroicons/react/24/solid';
 import { motion, AnimatePresence } from 'framer-motion';
-import CinematicInfoCard from '@/app/ui/blog/CinematicInfoCard';
+import MediaInfoCard from '@/app/ui/blog/MediaInfoCard';
 import { toast } from 'sonner';
 import { deleteTimelineEntry } from '@/lib/actions/timeline-actions';
 import { TimelineEntry, UserProfile } from "@/lib/definitions";
@@ -461,7 +461,7 @@ export default function TimelineEntryCard({
             </AnimatePresence>
 
             {selectedItem && (
-                <CinematicInfoCard
+                <MediaInfoCard
                     tmdbId={selectedItem.tmdb_id}
                     mediaType={selectedItem.media_type}
                     initialData={selectedItem.media_type === 'movie' ? entry.movies! : entry.series!}

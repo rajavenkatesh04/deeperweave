@@ -1,4 +1,4 @@
-import ProfileSectionDisplay from '@/app/ui/profile/ProfileSectionDisplay';
+import ProfileSectionDisplay from '@/app/ui/podium/ProfileSectionDisplay';
 import { getPodiumData } from '@/lib/data/user-data';
 import { createClient } from '@/utils/supabase/server'; // Import auth client
 import { notFound } from 'next/navigation';

@@ -9,16 +9,16 @@ import { countries } from '@/lib/data/countries';
 
 export type CinematicSearchResult = {
     id: number;
-    title: string;          // Normalized: 'title' for movies, 'name' for TV/Person
-    name?: string;          // Compatibility for UI
-    release_date?: string;   // Normalized: 'release_date' | 'first_air_date'
-    poster_path: string | null; // Normalized: 'poster_path' | 'profile_path'
-    profile_path?: string | null; // Compatibility for UI
+    title: string;
+    name?: string;
+    release_date?: string;
+    poster_path: string | null;
+    profile_path?: string | null;
     backdrop_path?: string | null;
     overview?: string;
     media_type: 'movie' | 'tv' | 'person';
-    department?: string;    // for persons
-    known_for_department?: string; // Compatibility for UI
+    department?: string;
+    known_for_department?: string;
 };
 
 export interface RichCinematicDetails {
@@ -75,26 +75,17 @@ export interface PersonDetails {
     backdrops: { file_path: string }[];
 }
 
-// --- TMDB Internal Types ---
-
-// This interface matches the raw JSON from TMDB before we normalize it
 interface TmdbMultiSearchItem {
     id: number;
     media_type?: 'movie' | 'tv' | 'person';
-
-    // Media fields
     poster_path?: string | null;
     backdrop_path?: string | null;
     overview?: string;
     title?: string;
     release_date?: string;
-    vote_count?: number; // Used for sorting
-
-    // TV/Person fields
+    vote_count?: number;
     name?: string;
     first_air_date?: string;
-
-    // Person specific fields
     profile_path?: string | null;
     known_for_department?: string;
 }
@@ -106,6 +97,7 @@ interface TmdbMultiSearchResponse {
 export type RegionSpecificSection = {
     title: string;
     items: CinematicSearchResult[];
+    href: string;
 };
 
 // =====================================================================
@@ -115,22 +107,20 @@ export type RegionSpecificSection = {
 const normalizeTmdbItem = (item: TmdbMultiSearchItem, forcedMediaType: 'movie' | 'tv' | null = null): CinematicSearchResult | null => {
     const media_type = (item.media_type as 'movie' | 'tv' | 'person') || forcedMediaType;
 
-    // ✨ HANDLE PERSON
     if (media_type === 'person') {
         if (!item.profile_path) return null;
         return {
             id: item.id,
             title: item.name || 'Unknown',
             name: item.name,
-            poster_path: item.profile_path, // Normalized
-            profile_path: item.profile_path, // Raw
+            poster_path: item.profile_path,
+            profile_path: item.profile_path,
             media_type: 'person',
             department: item.known_for_department || 'Artist',
             known_for_department: item.known_for_department
         };
     }
 
-    // ✨ HANDLE MOVIE/TV
     if (!item.poster_path) return null;
 
     return {
@@ -146,7 +136,6 @@ const normalizeTmdbItem = (item: TmdbMultiSearchItem, forcedMediaType: 'movie' |
     };
 };
 
-// ✨ HELPER: Check user preference for Adult Content & Region
 async function getUserRegionProfile() {
     try {
         const supabase = await createClient();
@@ -181,6 +170,17 @@ async function getUserRegionProfile() {
     }
 }
 
+// ✨ Helper to get date ranges
+function getDateWindow(daysBack: number) {
+    const today = new Date();
+    const past = new Date();
+    past.setDate(today.getDate() - daysBack);
+    return {
+        gte: past.toISOString().split('T')[0], // YYYY-MM-DD
+        lte: today.toISOString().split('T')[0]
+    };
+}
+
 async function fetchTmdbList(endpoint: string, params: Record<string, string> = {}): Promise<CinematicSearchResult[]> {
     const TMDB_API_KEY = process.env.TMDB_API_KEY;
     if (!TMDB_API_KEY) {
@@ -192,8 +192,6 @@ async function fetchTmdbList(endpoint: string, params: Record<string, string> = 
     if (endpoint.startsWith('/movie')) forcedMediaType = 'movie';
     else if (endpoint.startsWith('/tv') || endpoint.startsWith('/discover/tv')) forcedMediaType = 'tv';
 
-    // 1. Get User Profile Data (Dynamic Region) if not passed explicitly in params
-    // Optimization: We only fetch if strictly necessary logic isn't passed
     let region = params.region;
     let includeAdult = params.include_adult;
 
@@ -206,8 +204,8 @@ async function fetchTmdbList(endpoint: string, params: Record<string, string> = 
     const queryParams = new URLSearchParams({
         api_key: TMDB_API_KEY,
         include_adult: includeAdult!,
-        region: region!,          // Affects release dates/trends
-        watch_region: region!,    // Affects provider data
+        region: region!,
+        watch_region: region!,
         ...params
     });
 
@@ -247,13 +245,16 @@ export type DiscoverFilters = {
     with_genres?: string;
     year?: number;
     page?: number;
+    // ✨ New Date Filters
+    release_date_gte?: string;
+    release_date_lte?: string;
 };
 
 export async function discoverMedia(filters: DiscoverFilters) {
     const params: Record<string, string> = {
         page: (filters.page || 1).toString(),
         sort_by: filters.sort_by || 'popularity.desc',
-        'vote_count.gte': '200',
+        'vote_count.gte': '5', // Lowered vote count for "Just Released" items
     };
 
     if (filters.region) params.region = filters.region;
@@ -265,6 +266,16 @@ export async function discoverMedia(filters: DiscoverFilters) {
         else params.first_air_date_year = filters.year.toString();
     }
 
+    // ✨ Apply Date Filters Correctly based on Media Type
+    if (filters.release_date_gte) {
+        if (filters.type === 'movie') params['primary_release_date.gte'] = filters.release_date_gte;
+        else params['first_air_date.gte'] = filters.release_date_gte;
+    }
+    if (filters.release_date_lte) {
+        if (filters.type === 'movie') params['primary_release_date.lte'] = filters.release_date_lte;
+        else params['first_air_date.lte'] = filters.release_date_lte;
+    }
+
     if (filters.with_genres === 'anime') {
         params.with_genres = '16';
         params.with_original_language = 'ja';
@@ -273,48 +284,98 @@ export async function discoverMedia(filters: DiscoverFilters) {
     return fetchTmdbList(`/discover/${filters.type}`, params);
 }
 
-// ✨ NEW: Regional Discovery Strategy
+// ✨ NEW: Regional Discovery Strategy (Updated for Recency)
 export async function getRegionalDiscoverSections(): Promise<RegionSpecificSection[]> {
     const { country, countryName } = await getUserRegionProfile();
     const sections: RegionSpecificSection[] = [];
 
+    // Get a 45-day window to ensure we catch recent hits, not just yesterday's releases (which might be empty)
+    const recentWindow = getDateWindow(45);
+
     // === INDIA LOGIC (The "Different Woods") ===
     if (country === 'IN') {
         const [bollywood, tollywood, kollywood, topTrending] = await Promise.all([
-            // Bollywood (Hindi)
-            discoverMedia({ type: 'movie', sort_by: 'popularity.desc', with_original_language: 'hi', region: 'IN' }),
-            // Tollywood (Telugu)
-            discoverMedia({ type: 'movie', sort_by: 'popularity.desc', with_original_language: 'te', region: 'IN' }),
-            // Kollywood (Tamil)
-            discoverMedia({ type: 'movie', sort_by: 'popularity.desc', with_original_language: 'ta', region: 'IN' }),
-            // What's trending in Indian Theaters
+            // Hindi - Recent Releases
+            discoverMedia({
+                type: 'movie',
+                sort_by: 'popularity.desc',
+                with_original_language: 'hi',
+                region: 'IN',
+                release_date_gte: recentWindow.gte,
+                release_date_lte: recentWindow.lte
+            }),
+            // Telugu - Recent Releases
+            discoverMedia({
+                type: 'movie',
+                sort_by: 'popularity.desc',
+                with_original_language: 'te',
+                region: 'IN',
+                release_date_gte: recentWindow.gte,
+                release_date_lte: recentWindow.lte
+            }),
+            // Tamil - Recent Releases
+            discoverMedia({
+                type: 'movie',
+                sort_by: 'popularity.desc',
+                with_original_language: 'ta',
+                region: 'IN',
+                release_date_gte: recentWindow.gte,
+                release_date_lte: recentWindow.lte
+            }),
+            // General Trending
             fetchTmdbList('/trending/all/day', { region: 'IN' })
         ]);
 
-        sections.push({ title: 'Trending in India', items: topTrending });
-        sections.push({ title: 'Bollywood Hits (Hindi)', items: bollywood });
-        sections.push({ title: 'Tollywood Blockbusters (Telugu)', items: tollywood });
-        sections.push({ title: 'Kollywood Cinema (Tamil)', items: kollywood });
+        sections.push({ title: 'Trending Now in India', items: topTrending, href: '/discover/trending' });
+        sections.push({ title: 'New in Bollywood (Hindi)', items: bollywood, href: '/discover/movies' });
+        sections.push({ title: 'Just Released (Telugu)', items: tollywood, href: '/discover/movies' });
+        sections.push({ title: 'Just Released (Tamil)', items: kollywood, href: '/discover/movies' });
     }
 
     // === SOUTH KOREA LOGIC ===
     else if (country === 'KR') {
         const [kMovies, kDramas] = await Promise.all([
-            discoverMedia({ type: 'movie', sort_by: 'popularity.desc', with_original_language: 'ko', region: 'KR' }),
-            discoverMedia({ type: 'tv', sort_by: 'popularity.desc', with_original_language: 'ko', region: 'KR' }),
+            discoverMedia({
+                type: 'movie',
+                sort_by: 'popularity.desc',
+                with_original_language: 'ko',
+                region: 'KR',
+                release_date_gte: recentWindow.gte,
+                release_date_lte: recentWindow.lte
+            }),
+            discoverMedia({
+                type: 'tv',
+                sort_by: 'popularity.desc',
+                with_original_language: 'ko',
+                region: 'KR',
+                release_date_gte: recentWindow.gte,
+                release_date_lte: recentWindow.lte
+            }),
         ]);
-        sections.push({ title: 'Top Korean Movies', items: kMovies });
-        sections.push({ title: 'Trending K-Dramas', items: kDramas });
+        sections.push({ title: 'New Korean Movies', items: kMovies, href: '/discover/movies' });
+        sections.push({ title: 'Airing K-Dramas', items: kDramas, href: '/discover/kdramas' });
     }
 
     // === JAPAN LOGIC ===
     else if (country === 'JP') {
         const [anime, liveAction] = await Promise.all([
-            discoverMedia({ type: 'tv', with_genres: '16', region: 'JP' }), // Anime
-            discoverMedia({ type: 'movie', with_original_language: 'ja', region: 'JP' }),
+            discoverMedia({
+                type: 'tv',
+                with_genres: '16',
+                region: 'JP',
+                release_date_gte: recentWindow.gte,
+                release_date_lte: recentWindow.lte
+            }),
+            discoverMedia({
+                type: 'movie',
+                with_original_language: 'ja',
+                region: 'JP',
+                release_date_gte: recentWindow.gte,
+                release_date_lte: recentWindow.lte
+            }),
         ]);
-        sections.push({ title: 'Trending Anime', items: anime });
-        sections.push({ title: 'Japanese Cinema', items: liveAction });
+        sections.push({ title: 'Airing Anime', items: anime, href: '/discover/anime' });
+        sections.push({ title: 'New Japanese Movies', items: liveAction, href: '/discover/movies' });
     }
 
     // === DEFAULT GLOBAL FALLBACK ===
@@ -322,7 +383,7 @@ export async function getRegionalDiscoverSections(): Promise<RegionSpecificSecti
         const [trending] = await Promise.all([
             fetchTmdbList('/trending/all/day', { region: country }),
         ]);
-        sections.push({ title: `Trending in ${countryName}`, items: trending });
+        sections.push({ title: `Trending in ${countryName}`, items: trending, href: '/discover/trending' });
     }
 
     return sections;
@@ -330,7 +391,7 @@ export async function getRegionalDiscoverSections(): Promise<RegionSpecificSecti
 
 export async function getTrendingHero() {
     const [movies, tvShows] = await Promise.all([
-        fetchTmdbList('/trending/movie/day'), // Will auto-detect region inside fetchTmdbList
+        fetchTmdbList('/trending/movie/day'),
         fetchTmdbList('/trending/tv/day')
     ]);
     const mixed: CinematicSearchResult[] = [];
@@ -347,11 +408,11 @@ export async function getTrendingAll() {
 }
 
 export async function getPopularMovies() {
-    return fetchTmdbList('/movie/now_playing', { language: 'en-US', page: '1' }); // region auto-detected
+    return fetchTmdbList('/movie/now_playing', { language: 'en-US', page: '1' });
 }
 
 export async function getPopularTv() {
-    return fetchTmdbList('/tv/on_the_air', { language: 'en-US', page: '1' }); // region auto-detected
+    return fetchTmdbList('/tv/on_the_air', { language: 'en-US', page: '1' });
 }
 
 export async function getDiscoverAnime() {
@@ -385,7 +446,6 @@ export async function getMovieDetails(movieId: number): Promise<RichCinematicDet
         if (!res.ok) throw new Error("Failed to fetch movie details");
         const data = await res.json();
 
-        // Safe typing for specific parts of the detailed response
         const recommendations = (data.recommendations?.results || []) as TmdbMultiSearchItem[];
 
         const director = data.credits?.crew?.find((p: any) => p.job === 'Director')?.name || 'N/A';
@@ -421,7 +481,6 @@ export async function getMovieDetails(movieId: number): Promise<RichCinematicDet
             similar: []
         };
 
-        // Cache Movie
         supabase.from('movies').upsert({
             tmdb_id: movieId,
             title: details.title,
@@ -456,7 +515,6 @@ export async function getSeriesDetails(seriesId: number): Promise<RichCinematicD
         if (!res.ok) throw new Error("Failed to fetch TV details");
         const data = await res.json();
 
-        // Safe typing
         const recommendations = (data.recommendations?.results || []) as TmdbMultiSearchItem[];
 
         const creator = data.created_by?.[0]?.name || 'N/A';
@@ -493,7 +551,6 @@ export async function getSeriesDetails(seriesId: number): Promise<RichCinematicD
             similar: []
         };
 
-        // Cache TV
         supabase.from('series').upsert({
             tmdb_id: seriesId,
             title: details.title,
@@ -529,20 +586,17 @@ export async function getPersonDetails(personId: number): Promise<PersonDetails>
         if (!res.ok) throw new Error("Failed to fetch person details");
         const data = await res.json();
 
-        // Sort credits by popularity and cast to our type
         const allCast = (data.combined_credits?.cast || []) as TmdbMultiSearchItem[];
         const sortedCast = allCast.sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0));
 
         const knownFor = sortedCast
             .map((item) => normalizeTmdbItem(item))
             .filter((item): item is CinematicSearchResult => item !== null)
-            // Deduplicate by ID
             .filter((item, index, self) =>
                 index === self.findIndex((t) => t.id === item.id)
             )
             .slice(0, 20);
 
-        // Smart Backdrop Strategy
         let backdrops = (data.tagged_images?.results || [])
             .filter((img: any) => img.aspect_ratio > 1.6)
             .map((img: any) => ({ file_path: img.file_path }));
@@ -572,7 +626,6 @@ export async function getPersonDetails(personId: number): Promise<PersonDetails>
             backdrops: backdrops.slice(0, 10)
         };
 
-        // Cache Person
         supabase.from('people').upsert({
             tmdb_id: data.id,
             name: data.name,

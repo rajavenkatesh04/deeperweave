@@ -17,7 +17,7 @@ import { useState, useEffect } from 'react';
 import DOMPurify from 'isomorphic-dompurify';
 
 // Check if these paths are correct in your project structure
-import CinematicInfoCard from "@/app/ui/blog/CinematicInfoCard";
+import MediaInfoCard from "@/app/ui/blog/MediaInfoCard";
 import LikeButton from "@/app/ui/blog/LikeButton";
 import CommentsSection from "@/app/ui/blog/CommentsSection";
 import { SpoilerBadge, NsfwBadge, PremiumBadge } from "@/app/ui/blog/BlogPostBadges";
@@ -300,7 +300,7 @@ export default function AnimatedBlogPost({
                                         </div>
                                     </div>
 
-                                    <CinematicInfoCard
+                                    <MediaInfoCard
                                         tmdbId={cinematicItem.tmdb_id}
                                         initialData={cinematicItem}
                                         mediaType={mediaType}

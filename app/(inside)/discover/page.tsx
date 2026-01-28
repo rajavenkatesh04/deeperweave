@@ -4,12 +4,14 @@ import {
     getPopularMovies,
     getPopularTv,
     getDiscoverAnime,
-    getDiscoverKdramas, getTrendingHero
+    getDiscoverKdramas,
+    getTrendingHero,
+    getRegionalDiscoverSections // Imported new function
 } from '@/lib/actions/cinematic-actions';
 import TrendingHero from '@/app/ui/discover/TrendingHero';
 import CinematicRow from '@/app/ui/discover/CinematicRow';
 import LoadingSpinner from '@/app/ui/loading-spinner';
-import {Metadata} from "next"; // Assuming this path
+import { Metadata } from "next";
 
 export const metadata: Metadata = {
     title: 'Discover',
@@ -22,14 +24,16 @@ export default async function DiscoverPage() {
 
     // Fetch all our data in parallel for maximum speed
     const [
-        heroItems,          // <--- Use the new Mixed Hero variable
+        heroItems,
+        regionalSections, // New regional data
         trendingItems,
         popularMovies,
         popularTv,
         popularAnime,
         popularKdramas
     ] = await Promise.all([
-        getTrendingHero(),  // <--- Call the new function here
+        getTrendingHero(),
+        getRegionalDiscoverSections(),
         getTrendingAll(),
         getPopularMovies(),
         getPopularTv(),
@@ -44,12 +48,22 @@ export default async function DiscoverPage() {
                     <LoadingSpinner />
                 </div>
             }>
-                {/* The Hero component gets the first 5 trending items.
-                  We pass the full list (which is 20) to the first row.
-                */}
+                {/* Hero Section */}
                 <TrendingHero items={heroItems} />
 
                 <div className="space-y-8 lg:space-y-12 py-8 lg:py-12">
+
+                    {/* 1. Personalized / Regional Rows (Priority) */}
+                    {regionalSections.map((section) => (
+                        <CinematicRow
+                            key={section.title}
+                            title={section.title}
+                            items={section.items}
+                            href={section.href} // Passed from the action now
+                        />
+                    ))}
+
+                    {/* 2. Standard Global Rows */}
                     <CinematicRow
                         title="Trending This Week"
                         items={trendingItems}

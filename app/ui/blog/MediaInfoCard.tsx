@@ -2,42 +2,59 @@
 
 import { useState, useTransition, useEffect } from 'react';
 import Image from 'next/image';
-import Link from 'next/link'; // ✨ Import Link for navigation
-import { getMovieDetails, getSeriesDetails } from '@/lib/actions/cinematic-actions';
+import Link from 'next/link';
+import { getMovieDetails, getSeriesDetails, getPersonDetails } from '@/lib/actions/cinematic-actions';
 import {
     XMarkIcon,
     FilmIcon,
     TvIcon,
     ArrowRightIcon,
-    StarIcon
+    StarIcon,
+    UserIcon,
+    MapPinIcon
 } from '@heroicons/react/24/solid';
 import LoadingSpinner from '@/app/ui/loading-spinner';
-import { Movie, Series } from '@/lib/definitions';
 
-// Simplified API Details (Just enough for a teaser)
+// --- Types ---
+
+// Common shape for initial data passed from the parent
+export interface BaseMediaData {
+    tmdb_id: number;
+    title: string; // "title" or "name"
+    poster_url: string | null;
+    backdrop_url?: string | null;
+    release_date?: string; // "release_date", "first_air_date", or "birthday"
+}
+
+// Unified API details shape
 type ApiDetails = {
-    overview: string;
+    overview?: string; // Biography for persons
+    biography?: string;
     vote_average?: number;
-    runtime?: number; // minutes
+    runtime?: number;
     number_of_seasons?: number;
-    genres: { id: number; name: string }[];
+    genres?: { id: number; name: string }[];
+    known_for_department?: string;
+    place_of_birth?: string | null;
+    birthday?: string | null;
+    deathday?: string | null;
 };
 
 interface CinematicInfoCardProps {
     tmdbId: number;
-    initialData: Movie | Series;
-    mediaType: 'movie' | 'tv';
+    initialData: BaseMediaData;
+    mediaType: 'movie' | 'tv' | 'person';
     isOpen?: boolean;
     onClose?: () => void;
 }
 
-export default function CinematicInfoCard({
-                                              tmdbId,
-                                              initialData,
-                                              mediaType,
-                                              isOpen,
-                                              onClose
-                                          }: CinematicInfoCardProps) {
+export default function MediaInfoCard({
+                                          tmdbId,
+                                          initialData,
+                                          mediaType,
+                                          isOpen,
+                                          onClose
+                                      }: CinematicInfoCardProps) {
     const isControlled = typeof isOpen !== 'undefined' && typeof onClose !== 'undefined';
     const [internalIsOpen, setInternalIsOpen] = useState(false);
     const [apiDetails, setApiDetails] = useState<ApiDetails | null>(null);
@@ -45,7 +62,7 @@ export default function CinematicInfoCard({
 
     const isModalOpen = isControlled ? isOpen : internalIsOpen;
 
-    // --- Data Fetching (Keep it simple) ---
+    // --- Data Fetching ---
     useEffect(() => {
         if (isModalOpen && !apiDetails) {
             startTransition(async () => {
@@ -53,12 +70,15 @@ export default function CinematicInfoCard({
                     if (mediaType === 'movie') {
                         const data = await getMovieDetails(tmdbId);
                         setApiDetails(data);
-                    } else {
+                    } else if (mediaType === 'tv') {
                         const data = await getSeriesDetails(tmdbId);
+                        setApiDetails(data);
+                    } else if (mediaType === 'person') {
+                        const data = await getPersonDetails(tmdbId);
                         setApiDetails(data);
                     }
                 } catch (error) {
-                    console.error("Failed to fetch teaser details:", error);
+                    console.error("Failed to fetch details:", error);
                 }
             });
         }
@@ -69,12 +89,39 @@ export default function CinematicInfoCard({
         else setInternalIsOpen(false);
     };
 
-    // Merge Data
+    // --- Merge & Normalize Data ---
     const displayDetails = { ...initialData, ...apiDetails };
-    const backdropUrl = displayDetails.backdrop_url || displayDetails.poster_url;
 
-    // Construct the Deep Link
-    const deepLinkUrl = `/discover/${mediaType}/${tmdbId}`;
+    // Fallback: For people, the API "backdrop" might be in the API response, not initial data
+    // People API returns a 'backdrop_path' which is a selected image from their work
+    const rawBackdrop = (apiDetails as any)?.backdrop_path || displayDetails.backdrop_url;
+
+    // Construct URLs
+    // Note: getPersonDetails returns full paths in some implementations, or partials in others.
+    // Assuming your action normalize logic handles basic paths, but here we ensure we have a full URL.
+    const backdropUrl = rawBackdrop?.startsWith('http')
+        ? rawBackdrop
+        : rawBackdrop ? `https://image.tmdb.org/t/p/original${rawBackdrop}` : displayDetails.poster_url;
+
+    // Deep Link
+    const deepLinkUrl = mediaType === 'person'
+        ? `/discover/actor/${tmdbId}`
+        : `/discover/${mediaType}/${tmdbId}`;
+
+    // Synopsis/Bio logic
+    const synopsis = mediaType === 'person'
+        ? (displayDetails.biography || "No biography available.")
+        : (displayDetails.overview || "No synopsis available.");
+
+    // Badge Config
+    const getBadgeConfig = () => {
+        switch (mediaType) {
+            case 'movie': return { color: 'blue', icon: FilmIcon, label: 'Movie' };
+            case 'tv': return { color: 'green', icon: TvIcon, label: 'Series' };
+            case 'person': return { color: 'purple', icon: UserIcon, label: 'Star' };
+        }
+    };
+    const badge = getBadgeConfig();
 
     return (
         <>
@@ -90,7 +137,7 @@ export default function CinematicInfoCard({
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* 1. Cinematic Header (Backdrop) */}
-                        <div className="relative h-48 sm:h-56 w-full">
+                        <div className="relative h-48 sm:h-56 w-full bg-zinc-800">
                             <Image
                                 src={backdropUrl || '/placeholder-backdrop.jpg'}
                                 alt="Backdrop"
@@ -98,26 +145,27 @@ export default function CinematicInfoCard({
                                 className="object-cover opacity-60"
                                 unoptimized
                             />
-                            {/* Gradient Overlay for Text Readability */}
+                            {/* Gradient Overlay */}
                             <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-zinc-900/40 to-transparent" />
 
                             {/* Close Button */}
                             <button
                                 onClick={handleClose}
-                                className="absolute top-4 right-4 p-2 rounded-full bg-black/40 text-white/70 hover:bg-black/60 hover:text-white backdrop-blur-md transition-colors"
+                                className="absolute top-4 right-4 p-2 rounded-full bg-black/40 text-white/70 hover:bg-black/60 hover:text-white backdrop-blur-md transition-colors z-10"
                             >
                                 <XMarkIcon className="w-5 h-5" />
                             </button>
 
                             {/* Floating Badge */}
-                            <div className="absolute top-4 left-4">
-                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide backdrop-blur-md border ${
-                                    mediaType === 'movie'
-                                        ? 'bg-blue-500/20 border-blue-500/30 text-blue-100'
-                                        : 'bg-green-500/20 border-green-500/30 text-green-100'
-                                }`}>
-                                    {mediaType === 'movie' ? <FilmIcon className="w-3 h-3" /> : <TvIcon className="w-3 h-3" />}
-                                    {mediaType === 'movie' ? 'Movie' : 'Series'}
+                            <div className="absolute top-4 left-4 z-10">
+                                <span className={`
+                                    inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide backdrop-blur-md border
+                                    ${mediaType === 'movie' ? 'bg-blue-500/20 border-blue-500/30 text-blue-100' : ''}
+                                    ${mediaType === 'tv' ? 'bg-green-500/20 border-green-500/30 text-green-100' : ''}
+                                    ${mediaType === 'person' ? 'bg-purple-500/20 border-purple-500/30 text-purple-100' : ''}
+                                `}>
+                                    <badge.icon className="w-3 h-3" />
+                                    {badge.label}
                                 </span>
                             </div>
                         </div>
@@ -143,8 +191,14 @@ export default function CinematicInfoCard({
                                     <h2 className="text-2xl font-black text-white leading-tight mb-1 line-clamp-2">
                                         {displayDetails.title}
                                     </h2>
+
                                     <div className="flex flex-wrap items-center gap-2 text-sm text-zinc-400">
-                                        <span>{displayDetails.release_date?.split('-')[0]}</span>
+                                        {/* Date / Year */}
+                                        <span>
+                                            {displayDetails.release_date || displayDetails.birthday || (mediaType === 'person' ? 'Unknown' : '')}
+                                        </span>
+
+                                        {/* Rating (Media) */}
                                         {displayDetails.vote_average && (
                                             <>
                                                 <span className="w-1 h-1 rounded-full bg-zinc-600" />
@@ -154,29 +208,47 @@ export default function CinematicInfoCard({
                                                 </div>
                                             </>
                                         )}
+
+                                        {/* Seasons (TV) */}
                                         {displayDetails.number_of_seasons && (
                                             <>
                                                 <span className="w-1 h-1 rounded-full bg-zinc-600" />
                                                 <span>{displayDetails.number_of_seasons} Seasons</span>
                                             </>
                                         )}
+
+                                        {/* Department (Person) */}
+                                        {mediaType === 'person' && displayDetails.known_for_department && (
+                                            <>
+                                                <span className="w-1 h-1 rounded-full bg-zinc-600" />
+                                                <span className="text-zinc-300">{displayDetails.known_for_department}</span>
+                                            </>
+                                        )}
                                     </div>
+
+                                    {/* Place of Birth (Person Extra) */}
+                                    {mediaType === 'person' && displayDetails.place_of_birth && (
+                                        <div className="flex items-center gap-1 text-xs text-zinc-500 mt-1">
+                                            <MapPinIcon className="w-3 h-3" />
+                                            <span className="truncate">{displayDetails.place_of_birth}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
-                            {/* 3. Short Synopsis */}
+                            {/* 3. Short Synopsis / Bio */}
                             <div className="min-h-[80px]">
                                 {isPending ? (
                                     <div className="flex justify-center py-4"><LoadingSpinner /></div>
                                 ) : (
-                                    <p className="text-sm text-zinc-300 leading-relaxed line-clamp-3">
-                                        {displayDetails.overview || "No synopsis available."}
+                                    <p className="text-sm text-zinc-300 leading-relaxed line-clamp-3 whitespace-pre-line">
+                                        {synopsis}
                                     </p>
                                 )}
                             </div>
 
-                            {/* 4. Genres Chips */}
-                            {!isPending && displayDetails.genres && (
+                            {/* 4. Genres Chips (Media Only) */}
+                            {!isPending && mediaType !== 'person' && displayDetails.genres && (
                                 <div className="flex flex-wrap gap-2">
                                     {displayDetails.genres.slice(0, 3).map(g => (
                                         <span key={g.id} className="text-xs px-2.5 py-1 rounded-md bg-white/5 border border-white/5 text-zinc-300">
@@ -195,7 +267,9 @@ export default function CinematicInfoCard({
                                     href={deepLinkUrl}
                                     className="group w-full flex items-center justify-center gap-2 bg-white text-black font-bold py-3.5 rounded-xl hover:bg-indigo-500 hover:text-white transition-all duration-300"
                                 >
-                                    <span>Full Details & Cast</span>
+                                    <span>
+                                        {mediaType === 'person' ? 'Full Profile & Filmography' : 'Full Details & Cast'}
+                                    </span>
                                     <ArrowRightIcon className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                                 </Link>
                             </div>
