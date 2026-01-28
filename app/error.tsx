@@ -9,7 +9,8 @@ import {
     ArrowLeftIcon,
     ClockIcon,
     WrenchScrewdriverIcon,
-    ShieldExclamationIcon
+    ShieldExclamationIcon,
+    EnvelopeIcon
 } from '@heroicons/react/24/outline';
 import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
 
@@ -124,12 +125,13 @@ function ErrorContent() {
                             </li>
                             <li className="flex items-center gap-2 text-xs text-zinc-700 dark:text-zinc-300">
                                 <ClockIcon className="h-4 w-4 shrink-0 text-zinc-400" />
-                                <span>If the issue persists, contact support.</span>
+                                <span>If you believe this is a mistake, please contact support.</span>
                             </li>
                         </ul>
                     </div>
 
                     <div className="space-y-3">
+                        {/* Primary Action */}
                         <Link
                             href={config.primaryActionHref}
                             className="group flex w-full h-10 items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black text-xs font-bold uppercase tracking-widest transition-all shadow-md hover:shadow-lg active:scale-95 rounded-sm"
@@ -138,7 +140,20 @@ function ErrorContent() {
                             <span>{config.primaryActionLabel}</span>
                         </Link>
 
+                        {/* Secondary Actions Row */}
                         <div className="flex gap-3">
+                            <a
+                                href="mailto:developer@deeperweave.com"
+                                className={`group flex flex-1 h-10 items-center justify-center gap-2 bg-white hover:bg-zinc-50 dark:bg-transparent dark:hover:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 text-[10px] font-bold uppercase tracking-widest transition-colors rounded-sm ${
+                                    isAuthError ? 'hover:border-rose-300 dark:hover:border-rose-800' : 'hover:border-amber-300 dark:hover:border-amber-800'
+                                }`}
+                            >
+                                <EnvelopeIcon className={`h-3 w-3 text-zinc-400 transition-colors ${
+                                    isAuthError ? 'group-hover:text-rose-500' : 'group-hover:text-amber-500'
+                                }`} />
+                                <span>Contact Support</span>
+                            </a>
+
                             <Link
                                 href="/"
                                 className={`group flex flex-1 h-10 items-center justify-center gap-2 bg-white hover:bg-zinc-50 dark:bg-transparent dark:hover:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 text-[10px] font-bold uppercase tracking-widest transition-colors rounded-sm ${

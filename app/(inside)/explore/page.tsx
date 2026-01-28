@@ -3,7 +3,7 @@ import { createClient } from '@/utils/supabase/server';
 import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
 import Link from 'next/link';
 import BlogCard from '@/app/ui/blog/BlogCard'; // Your existing component
-// import ListCard from '@/app/ui/lists/ListCard'; // You'll need this
+// import ProfileListCard from '@/app/ui/lists/ProfileListCard'; // You'll need this
 
 export default async function ExplorePage() {
     const supabase = await createClient();

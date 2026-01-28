@@ -1,9 +1,9 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getProfileByUsername, getUserProfile } from '@/lib/data/user-data';
-import { getPublicListsByUserId } from '@/lib/data/lists-data'; // Use the new fetcher
-import ListCard from '@/app/ui/profileLists/ListCard';
-import { MdCollectionsBookmark, MdAdd, MdOutlineSentimentDissatisfied } from 'react-icons/md';
+import { getPublicListsByUserId } from '@/lib/data/lists-data';
+import ProfileListCard from '@/app/ui/profileLists/ProfileListCard'; // Ensure this matches path
+import { FolderIcon, PlusIcon } from '@heroicons/react/24/outline';
 
 export default async function ProfileListsPage({
                                                    params
@@ -12,74 +12,47 @@ export default async function ProfileListsPage({
 }) {
     const { username } = await params;
 
-    // 1. Get the profile of the page we are viewing
     const profile = await getProfileByUsername(username);
     if (!profile) notFound();
 
-    // 2. Get the currently logged-in user (to check ownership)
     const currentUserData = await getUserProfile();
     const isOwner = currentUserData?.user?.id === profile.id;
 
-    // 3. Fetch lists for THIS profile ID
     const lists = await getPublicListsByUserId(profile.id);
 
     return (
-        <div className="relative min-h-screen w-full bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
-
-            {/* Background Texture */}
-            <div className="absolute inset-0 opacity-[0.03] pointer-events-none fixed"
-                 style={{
-                     backgroundImage: 'radial-gradient(circle, currentColor 1px, transparent 1px)',
-                     backgroundSize: '24px 24px'
-                 }}
-            />
-
-            <div className="relative z-10 max-w-7xl mx-auto pt-8 pb-32 px-4 md:px-6">
-
-                {lists && lists.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-                        {lists.map((list) => (
-                            <ListCard
-                                key={list.id}
-                                list={list}
-                            />
-                        ))}
-                    </div>
-                ) : (
-                    // --- EMPTY STATE ---
-                    <div className="flex flex-col items-center justify-center py-20 text-center animate-in fade-in zoom-in-95 duration-500">
-                        <div className="p-4 bg-zinc-100 dark:bg-zinc-900 rounded-full mb-6">
-                            {isOwner ? (
-                                <MdCollectionsBookmark className="w-8 h-8 text-zinc-400" />
-                            ) : (
-                                <MdOutlineSentimentDissatisfied className="w-8 h-8 text-zinc-400" />
-                            )}
-                        </div>
-
-                        <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mb-2">
-                            {isOwner ? "Create a Collection" : "No Lists Yet"}
-                        </h3>
-
-                        <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-sm mb-8 leading-relaxed">
-                            {isOwner
-                                ? "Organize your favorite movies, series, and anime into shareable lists."
-                                : `${username} hasn't created any public lists yet.`
-                            }
-                        </p>
-
-                        {/* Button ONLY shows if it is your own profile */}
-                        {isOwner && (
-                            <Link
-                                href="/lists/create"
-                                className="group flex items-center gap-2 px-6 py-2.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-md text-sm font-bold transition-transform active:scale-95 hover:opacity-90"
-                            >
-                                <MdAdd className="w-5 h-5" />
-                                <span>Create New List</span>
-                            </Link>
-                        )}
-                    </div>
+        <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20 relative z-10 max-w-7xl mx-auto pt-8 px-4 md:px-6">
+            <div className="flex items-center justify-between mb-6">
+                <div className="flex items-baseline gap-3">
+                    <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Collections</h2>
+                    <span className="text-xs font-mono text-zinc-500">{lists.length} Lists</span>
+                </div>
+                {isOwner && (
+                    <Link href="/lists/create" className="flex items-center gap-2 px-3 py-1.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-full text-xs font-bold transition-transform active:scale-95 hover:opacity-90">
+                        <PlusIcon className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">New List</span>
+                    </Link>
                 )}
             </div>
+
+            {lists && lists.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {lists.map((list) => (
+                        <ProfileListCard key={list.id} list={list} isOwner={isOwner} />
+                    ))}
+                </div>
+            ) : (
+                <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl bg-zinc-50/50 dark:bg-zinc-900/20">
+                    <div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-4 text-zinc-400">
+                        <FolderIcon className="w-8 h-8" strokeWidth={1.5} />
+                    </div>
+                    <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{isOwner ? "No lists created" : "No public lists"}</h3>
+                    <p className="text-xs text-zinc-500 mt-1 max-w-xs text-center">{isOwner ? "Start curating your favorite movies and shows into collections." : `${username} hasn't shared any lists yet.`}</p>
+                    {isOwner && (
+                        <Link href="/lists/create" className="mt-6 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">Create your first list &rarr;</Link>
+                    )}
+                </div>
+            )}
         </div>
     );
 }
