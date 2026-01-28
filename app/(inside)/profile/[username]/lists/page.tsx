@@ -1,56 +1,85 @@
+import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { DM_Serif_Display, Inter } from 'next/font/google';
-import { MdCollectionsBookmark, MdArrowForward } from 'react-icons/md';
+import { getProfileByUsername, getUserProfile } from '@/lib/data/user-data';
+import { getPublicListsByUserId } from '@/lib/data/lists-data'; // Use the new fetcher
+import ListCard from '@/app/ui/profileLists/ListCard';
+import { MdCollectionsBookmark, MdAdd, MdOutlineSentimentDissatisfied } from 'react-icons/md';
 
-// --- Fonts (Matching UserBadge Dialog) ---
-const dmSerif = DM_Serif_Display({ subsets: ['latin'], weight: '400' });
-const inter = Inter({ subsets: ['latin'] });
+export default async function ProfileListsPage({
+                                                   params
+                                               }: {
+    params: Promise<{ username: string }>
+}) {
+    const { username } = await params;
 
-export default function ListsPage() {
+    // 1. Get the profile of the page we are viewing
+    const profile = await getProfileByUsername(username);
+    if (!profile) notFound();
+
+    // 2. Get the currently logged-in user (to check ownership)
+    const currentUserData = await getUserProfile();
+    const isOwner = currentUserData?.user?.id === profile.id;
+
+    // 3. Fetch lists for THIS profile ID
+    const lists = await getPublicListsByUserId(profile.id);
+
     return (
-        <main className={`min-h-[85vh] w-full flex items-center justify-center p-4 ${inter.className}`}>
+        <div className="relative min-h-screen w-full bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
 
-            {/* --- Card Container (Styled exactly like the Dialog.Panel) --- */}
-            <div className="w-full max-w-sm relative transform overflow-hidden rounded-3xl bg-white/80 dark:bg-zinc-900/90 backdrop-blur-xl p-8 text-center align-middle shadow-[0_20px_50px_-12px_rgba(0,0,0,0.15)] dark:shadow-black/50 transition-all border border-white/50 dark:border-white/10 ring-1 ring-black/5">
+            {/* Background Texture */}
+            <div className="absolute inset-0 opacity-[0.03] pointer-events-none fixed"
+                 style={{
+                     backgroundImage: 'radial-gradient(circle, currentColor 1px, transparent 1px)',
+                     backgroundSize: '24px 24px'
+                 }}
+            />
 
-                {/* --- Top Glow Effect (Purple/Pink for "Creativity") --- */}
-                <div className="absolute top-0 inset-x-0 h-40 bg-gradient-to-b from-fuchsia-500/20 to-transparent opacity-40 pointer-events-none" />
+            <div className="relative z-10 max-w-7xl mx-auto pt-8 pb-32 px-4 md:px-6">
 
-                <div className="relative flex flex-col items-center pt-2">
-
-                    {/* --- Icon with Glow --- */}
-                    <div className="relative mb-8">
-                        {/* Background Blur Glow */}
-                        <div className="absolute inset-0 blur-2xl opacity-50 bg-fuchsia-400 dark:bg-fuchsia-900 scale-150" />
-
-                        {/* Icon */}
-                        <div className="relative z-10 w-16 h-16 text-fuchsia-600 dark:text-fuchsia-400 drop-shadow-sm">
-                            <MdCollectionsBookmark className="w-full h-full" />
+                {lists && lists.length > 0 ? (
+                    <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                        {lists.map((list) => (
+                            <ListCard
+                                key={list.id}
+                                list={list}
+                            />
+                        ))}
+                    </div>
+                ) : (
+                    // --- EMPTY STATE ---
+                    <div className="flex flex-col items-center justify-center py-20 text-center animate-in fade-in zoom-in-95 duration-500">
+                        <div className="p-4 bg-zinc-100 dark:bg-zinc-900 rounded-full mb-6">
+                            {isOwner ? (
+                                <MdCollectionsBookmark className="w-8 h-8 text-zinc-400" />
+                            ) : (
+                                <MdOutlineSentimentDissatisfied className="w-8 h-8 text-zinc-400" />
+                            )}
                         </div>
+
+                        <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mb-2">
+                            {isOwner ? "Create a Collection" : "No Lists Yet"}
+                        </h3>
+
+                        <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-sm mb-8 leading-relaxed">
+                            {isOwner
+                                ? "Organize your favorite movies, series, and anime into shareable lists."
+                                : `${username} hasn't created any public lists yet.`
+                            }
+                        </p>
+
+                        {/* Button ONLY shows if it is your own profile */}
+                        {isOwner && (
+                            <Link
+                                href="/lists/create"
+                                className="group flex items-center gap-2 px-6 py-2.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-md text-sm font-bold transition-transform active:scale-95 hover:opacity-90"
+                            >
+                                <MdAdd className="w-5 h-5" />
+                                <span>Create New List</span>
+                            </Link>
+                        )}
                     </div>
-
-                    {/* --- Typography --- */}
-                    <h1 className={`${dmSerif.className} text-3xl text-zinc-900 dark:text-white mb-3`}>
-                        Lists Are Coming
-                    </h1>
-
-                    <p className="text-sm leading-relaxed text-zinc-500 dark:text-zinc-400 max-w-[260px] mx-auto mb-8">
-                        Curate your own cinematic universe. Soon you'll be able to build custom collections like "Horror Classics" or "Ghibli Favorites" and share them with the world.
-                    </p>
-
-                    {/* --- Action Button (Matching "Understood" button style) --- */}
-                    <div className="w-full">
-                        <Link
-                            href="/discover"
-                            className="group w-full flex items-center justify-center gap-2 relative overflow-hidden rounded-full bg-zinc-900 dark:bg-white px-6 py-3.5 text-xs font-bold uppercase tracking-widest text-white dark:text-black transition-transform active:scale-[0.98] shadow-lg hover:shadow-xl hover:bg-zinc-800 dark:hover:bg-zinc-200"
-                        >
-                            <span>Explore Meanwhile</span>
-                            <MdArrowForward className="w-3 h-3" />
-                        </Link>
-                    </div>
-
-                </div>
+                )}
             </div>
-        </main>
+        </div>
     );
 }
