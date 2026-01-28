@@ -1,3 +1,4 @@
+//
 @import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
 
 body {
@@ -52,6 +53,26 @@ body,
 
 .tiptap.ProseMirror {
   font-family: "DM Sans", sans-serif;
+
+  /* ✨ ADDED: Image & Media Handling for Desktop/Mobile */
+  img {
+    display: block;
+    max-width: 100%;    /* Prevents overflow on desktop & scales on mobile */
+    height: auto;       /* Maintains aspect ratio */
+    margin: 1.5rem 0;   /* Adds breathing room */
+    border-radius: 0.5rem;
+
+    &.ProseMirror-selectednode {
+      outline: 3px solid #6366f1; /* Indigo-500 highlight when clicked */
+      outline-offset: 2px;
+    }
+  }
+
+  /* Handles YouTube embeds if you add them later */
+  iframe {
+    max-width: 100%;
+    border-radius: 0.5rem;
+  }
 }
 
 /* ✨ FIX: Add this rule to contain the sticky toolbar */

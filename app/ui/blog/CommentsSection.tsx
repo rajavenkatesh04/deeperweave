@@ -1,13 +1,13 @@
 // @/app/ui/blog/CommentsSection.tsx
 
 'use client';
-import { useActionState, useRef } from 'react';
+import { useActionState, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { postComment } from '@/lib/actions/blog-actions';
 import { CommentWithAuthor, UserProfile } from '@/lib/definitions';
 import Image from 'next/image';
 import Link from 'next/link';
-import { UserCircleIcon, PaperAirplaneIcon, ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
+import { User, SendHorizontal, MessageSquare } from 'lucide-react';
 
 function SubmitButton() {
     const { pending } = useFormStatus();
@@ -15,12 +15,10 @@ function SubmitButton() {
         <button
             type="submit"
             disabled={pending}
-            className="group flex items-center gap-2 px-5 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-black hover:bg-zinc-700 dark:hover:bg-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            className="group flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all"
         >
-            <span className="text-xs font-bold uppercase tracking-widest">
-                {pending ? 'Transmitting...' : 'Send'}
-            </span>
-            <PaperAirplaneIcon className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+            {pending ? 'Posting...' : 'Comment'}
+            <SendHorizontal size={14} className={`group-hover:translate-x-1 transition-transform ${pending ? 'opacity-0' : 'opacity-100'}`} />
         </button>
     );
 }
@@ -33,6 +31,20 @@ type CommentState = {
     error?: undefined;
 } | null;
 
+// Helper to format date like "2 days ago" or "Oct 24, 2024"
+const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`;
+
+    return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+};
+
 export default function CommentsSection({
                                             postId,
                                             comments,
@@ -44,6 +56,7 @@ export default function CommentsSection({
 }) {
     const formRef = useRef<HTMLFormElement>(null);
     const isLoggedIn = !!currentUserProfile;
+    const [isFocused, setIsFocused] = useState(false);
 
     const commentAction = async (prevState: CommentState, formData: FormData) => {
         if (!isLoggedIn) return { error: "You must be logged in." };
@@ -52,6 +65,7 @@ export default function CommentsSection({
 
     const [state, formAction] = useActionState(commentAction, null);
 
+    // Reset form on error or success
     if (state?.error && formRef.current) {
         formRef.current.reset();
     }
@@ -59,127 +73,133 @@ export default function CommentsSection({
     const reversedComments = [...comments].reverse();
 
     return (
-        <section className="pt-2">
+        <section className="w-full max-w-4xl">
 
-            {/* --- INPUT TERMINAL --- */}
-            <form
-                ref={formRef}
-                action={formAction}
-                className="mb-10 bg-zinc-50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 p-1"
-            >
-                <div className="flex items-start gap-0 bg-white dark:bg-black border border-zinc-100 dark:border-zinc-800/50 p-4">
-                    {/* User Avatar */}
-                    <div className="flex-shrink-0 mr-4 pt-1">
-                        {isLoggedIn ? (
-                            <div className="relative w-8 h-8">
-                                <Image
-                                    src={currentUserProfile.profile_pic_url || '/placeholder-user.jpg'}
-                                    fill
-                                    alt="User"
-                                    className="object-cover grayscale"
-                                />
-                                <div className="absolute inset-0 border border-zinc-200 dark:border-zinc-700" />
-                            </div>
-                        ) : (
-                            <UserCircleIcon className="w-8 h-8 text-zinc-300 dark:text-zinc-700" />
-                        )}
-                    </div>
+            {/* --- ADD COMMENT INPUT --- */}
+            <div className="flex gap-4 mb-8">
+                {/* Current User Avatar */}
+                <div className="shrink-0">
+                    {isLoggedIn ? (
+                        <div className="relative w-10 h-10 rounded-full overflow-hidden bg-zinc-100 dark:bg-zinc-800">
+                            <Image
+                                src={currentUserProfile.profile_pic_url || '/placeholder-user.jpg'}
+                                fill
+                                alt="Your Avatar"
+                                className="object-cover"
+                            />
+                        </div>
+                    ) : (
+                        <div className="w-10 h-10 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center">
+                            <User size={20} className="text-zinc-500" />
+                        </div>
+                    )}
+                </div>
 
-                    {/* Input Field */}
-                    <div className="flex-1">
-                        <label htmlFor="comment" className="sr-only">Add comment</label>
+                <div className="flex-1">
+                    <form
+                        ref={formRef}
+                        action={formAction}
+                        className="relative"
+                    >
+                        <label htmlFor="comment" className="sr-only">Add a comment</label>
                         <textarea
                             id="comment"
                             name="comment"
-                            rows={3}
+                            rows={isFocused ? 3 : 1}
+                            onFocus={() => setIsFocused(true)}
+                            onBlur={(e) => {
+                                if (!e.target.value) setIsFocused(false);
+                            }}
                             disabled={!isLoggedIn}
-                            placeholder={isLoggedIn ? "Enter log entry..." : "Authentication required to comment..."}
-                            className="w-full bg-transparent border-0 p-0 text-sm md:text-base text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:ring-0 resize-y min-h-[80px] font-mono"
+                            placeholder={isLoggedIn ? "Add a comment..." : "Sign in to comment..."}
+                            className="w-full bg-transparent border-0 border-b border-zinc-200 dark:border-zinc-700 py-2 px-0 text-sm md:text-base text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-500 focus:ring-0 focus:border-zinc-900 dark:focus:border-white transition-all resize-none leading-relaxed"
                             required
                         />
 
-                        {/* Toolbar / Actions */}
-                        <div className="mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800 flex justify-between items-center">
-                            <div className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">
-                                {isLoggedIn ? 'Ready to transmit' : 'System Locked'}
+                        {/* Underline Animation (Optional active state visual) */}
+                        <div className={`h-[2px] bg-zinc-900 dark:bg-white transition-all duration-300 ${isFocused ? 'w-full' : 'w-0'}`} />
+
+                        {/* Actions (Cancel / Submit) */}
+                        {(isFocused || state?.error) && (
+                            <div className="flex items-center justify-between mt-3">
+                                <div className="text-red-600 text-xs">
+                                    {state?.error && state.error}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsFocused(false)}
+                                        className="px-4 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                    {isLoggedIn ? (
+                                        <SubmitButton />
+                                    ) : (
+                                        <Link
+                                            href="/auth/login"
+                                            className="px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-medium hover:bg-blue-700 transition-colors"
+                                        >
+                                            Sign In
+                                        </Link>
+                                    )}
+                                </div>
                             </div>
-
-                            {isLoggedIn ? (
-                                <SubmitButton />
-                            ) : (
-                                <Link
-                                    href="/auth/login"
-                                    className="text-xs font-bold uppercase tracking-widest text-zinc-900 dark:text-zinc-100 hover:underline decoration-1 underline-offset-4"
-                                >
-                                    Login to Access
-                                </Link>
-                            )}
-                        </div>
-                        {state?.error && (
-                            <p className="text-red-600 text-xs font-mono mt-2 text-right border-t border-red-100 dark:border-red-900/30 pt-2">
-                                [ERROR]: {state.error}
-                            </p>
                         )}
-                    </div>
+                    </form>
                 </div>
-            </form>
+            </div>
 
-            {/* --- COMMENTS LIST (LOG ENTRIES) --- */}
-            <div className="space-y-4">
+            {/* --- COMMENTS LIST --- */}
+            <div className="space-y-6">
                 {comments.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12 border border-dashed border-zinc-200 dark:border-zinc-800 opacity-50">
-                        <ChatBubbleLeftRightIcon className="w-8 h-8 text-zinc-400 mb-2" />
-                        <p className="text-xs font-mono uppercase tracking-widest text-zinc-500">No transmissions received</p>
+                    <div className="text-center py-10">
+                        <p className="text-zinc-500 dark:text-zinc-400 text-sm">No comments yet. Be the first to share your thoughts.</p>
                     </div>
                 ) : (
-                    reversedComments.map((comment, index) => (
-                        <div
-                            key={comment.id}
-                            className="group relative pl-4 border-l border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors"
-                        >
-                            {/* Decorative Timeline Dot */}
-                            <div className="absolute -left-[5px] top-0 w-[9px] h-[9px] bg-zinc-200 dark:bg-zinc-800 group-hover:bg-zinc-400 dark:group-hover:bg-zinc-500 rounded-full border-2 border-white dark:border-black transition-colors" />
-
-                            <div className="flex gap-4 mb-1">
-                                {/* Meta Header */}
-                                <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-wider text-zinc-400">
-                                    <span className="text-zinc-900 dark:text-zinc-100 font-bold">
-                                        {`LOG_${(reversedComments.length - index).toString().padStart(3, '0')}`}
-                                    </span>
-                                    <span>//</span>
-                                    <span>{new Date(comment.created_at).toLocaleDateString()}</span>
-                                    <span>//</span>
-                                    <span>{new Date(comment.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    reversedComments.map((comment) => (
+                        <div key={comment.id} className="flex gap-4 group">
+                            {/* Author Avatar */}
+                            <Link href={`/profile/${comment.author.username}`} className="shrink-0 mt-1">
+                                <div className="relative w-10 h-10 rounded-full overflow-hidden bg-zinc-100 dark:bg-zinc-800">
+                                    <Image
+                                        src={comment.author.profile_pic_url || '/placeholder-user.jpg'}
+                                        fill
+                                        alt={comment.author.display_name}
+                                        className="object-cover"
+                                    />
                                 </div>
-                            </div>
+                            </Link>
 
-                            <div className="flex items-start gap-4">
-                                {/* Author Avatar */}
-                                <Link href={`/profile/${comment.author.username}`} className="shrink-0 mt-1">
-                                    <div className="relative w-8 h-8">
-                                        <Image
-                                            src={comment.author.profile_pic_url || '/placeholder-user.jpg'}
-                                            width={32}
-                                            height={32}
-                                            alt={comment.author.display_name}
-                                            className="object-cover grayscale group-hover:grayscale-0 transition-all"
-                                        />
-                                        <div className="absolute inset-0 border border-zinc-100 dark:border-zinc-800" />
-                                    </div>
-                                </Link>
-
-                                {/* Comment Body */}
-                                <div className="flex-1 pb-4">
+                            <div className="flex-1">
+                                {/* Header: Name + Time */}
+                                <div className="flex items-baseline gap-2 mb-1">
                                     <Link
                                         href={`/profile/${comment.author.username}`}
-                                        className="text-sm font-bold text-zinc-900 dark:text-zinc-100 hover:underline decoration-1 underline-offset-4 block mb-1"
+                                        className="text-xs md:text-sm font-semibold text-zinc-900 dark:text-zinc-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                                     >
-                                        {comment.author.display_name}
+                                        @{comment.author.username}
                                     </Link>
-                                    <p className="text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap font-light">
-                                        {comment.content}
-                                    </p>
+                                    <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                                        {formatDate(comment.created_at)}
+                                    </span>
                                 </div>
+
+                                {/* Content */}
+                                <p className="text-sm text-zinc-800 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap">
+                                    {comment.content}
+                                </p>
+
+                                {/* Action Row (Reply / Like placeholders - for future use) */}
+                                {/* <div className="flex items-center gap-4 mt-2">
+                                    <button className="flex items-center gap-1 text-xs font-medium text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200">
+                                        <ThumbsUp size={14} /> 12
+                                    </button>
+                                    <button className="text-xs font-medium text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200">
+                                        Reply
+                                    </button>
+                                </div>
+                                */}
                             </div>
                         </div>
                     ))

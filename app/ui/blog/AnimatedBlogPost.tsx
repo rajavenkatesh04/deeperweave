@@ -1,38 +1,48 @@
 'use client';
 
 import { motion, Variants, AnimatePresence, useScroll, useTransform } from "framer-motion";
-import { Eye, ArrowUp, FilmIcon, ArrowUpRightIcon, ChevronLeft } from "lucide-react";
+import {
+    Eye,
+    ArrowUp,
+    Film,
+    ExternalLink,
+    ChevronLeft,
+    Lock,
+    MessageSquare,
+    Heart
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useState, useEffect } from 'react';
+import DOMPurify from 'isomorphic-dompurify';
+
+// Check if these paths are correct in your project structure
 import CinematicInfoCard from "@/app/ui/blog/CinematicInfoCard";
 import LikeButton from "@/app/ui/blog/LikeButton";
 import CommentsSection from "@/app/ui/blog/CommentsSection";
-import DOMPurify from 'isomorphic-dompurify';
-import { useState, useEffect } from 'react';
-import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
 import { SpoilerBadge, NsfwBadge, PremiumBadge } from "@/app/ui/blog/badges";
-import { LockClosedIcon, EyeIcon } from "@heroicons/react/24/outline";
 
 // --- ANIMATION VARIANTS ---
 const pageVariants: Variants = {
     initial: { opacity: 0 },
-    animate: { opacity: 1, transition: { duration: 0.8, ease: "circOut" } }
+    animate: { opacity: 1, transition: { duration: 0.6, ease: "easeOut" } }
 };
 
 const contentVariants: Variants = {
     initial: { opacity: 0, y: 20 },
-    animate: { opacity: 1, y: 0, transition: { duration: 0.6, delay: 0.4, ease: "easeOut" } }
+    animate: { opacity: 1, y: 0, transition: { duration: 0.5, delay: 0.2 } }
 };
 
 const ScrollToTop = () => {
     return (
         <motion.button
-            className="fixed bottom-8 right-8 z-40 p-3 bg-white text-black dark:bg-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-800 shadow-2xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+            className="fixed bottom-6 right-6 z-40 p-3 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-black rounded-full shadow-lg hover:scale-110 transition-transform"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            whileTap={{ scale: 0.9 }}
         >
-            <ArrowUp size={18} />
+            <ArrowUp size={20} />
         </motion.button>
     );
 };
@@ -55,13 +65,24 @@ interface AnimatedBlogPostProps {
 }
 
 export default function AnimatedBlogPost({
-                                             post, author, movie, series, likeCount, userHasLiked, comments, viewerData, nsfw, rating
+                                             post,
+                                             author,
+                                             movie,
+                                             series,
+                                             likeCount,
+                                             userHasLiked,
+                                             comments,
+                                             viewerData,
+                                             nsfw,
+                                             rating
                                          }: AnimatedBlogPostProps) {
     const [showContent, setShowContent] = useState(!nsfw);
     const [isCinematicModalOpen, setIsCinematicModalOpen] = useState(false);
 
     const { scrollY } = useScroll();
-    const headerTitleOpacity = useTransform(scrollY, [300, 500], [0, 1]);
+    // Fade in the navbar title only after scrolling past the hero
+    const navTitleOpacity = useTransform(scrollY, [300, 400], [0, 1]);
+    const navBackgroundOpacity = useTransform(scrollY, [0, 100], [0, 1]);
 
     const sanitizedHtml = DOMPurify.sanitize(post.content_html);
     const cinematicItem = movie || series;
@@ -73,76 +94,96 @@ export default function AnimatedBlogPost({
         }
     }, [post?.title]);
 
-    const dateStr = new Date(post.created_at).toLocaleDateString(undefined, { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '.');
+    // Format date simply (e.g., "October 24, 2024")
+    const dateStr = new Date(post.created_at).toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
 
     return (
         <motion.article
-            className="min-h-screen bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 pb-32 font-sans relative"
+            className="min-h-screen bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 font-sans selection:bg-zinc-200 dark:selection:bg-zinc-800"
             variants={pageVariants}
             initial="initial"
             animate="animate"
         >
-            {/* --- STICKY NAV BAR --- */}
-            <nav className="sticky top-0 z-[70] bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-900 h-14 w-full flex items-center px-4 md:px-6">
-                <div className="max-w-6xl mx-auto w-full flex items-center justify-between">
+            {/* --- NAV BAR --- */}
+            <motion.nav
+                style={{ backgroundColor: `rgba(var(--background-rgb), ${navBackgroundOpacity})` }}
+                className="fixed top-0 z-[60] w-full h-16 flex items-center px-4 md:px-8 border-b border-transparent data-[scrolled=true]:border-zinc-200 dark:data-[scrolled=true]:border-zinc-900 transition-colors"
+            >
+                {/* Background blur handled via separate div if needed, or backdrop-filter class below */}
+                <div className="absolute inset-0 bg-white/80 dark:bg-black/80 backdrop-blur-md -z-10" />
+
+                <div className="max-w-5xl mx-auto w-full flex items-center justify-between">
                     <button
                         onClick={() => window.history.back()}
-                        className="flex items-center gap-2 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors group"
+                        className="flex items-center gap-2 text-zinc-600 hover:text-black dark:text-zinc-400 dark:hover:text-white transition-colors"
                     >
-                        <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
-                        <span className="text-[10px] font-bold uppercase tracking-widest hidden sm:block">Archive</span>
+                        <ChevronLeft size={20} />
+                        <span className="text-sm font-medium">Back</span>
                     </button>
 
                     <motion.div
-                        style={{ opacity: headerTitleOpacity }}
+                        style={{ opacity: navTitleOpacity }}
                         className="flex-1 flex justify-center px-4 overflow-hidden"
                     >
-                        <span className="text-xs font-bold uppercase tracking-widest truncate text-zinc-500 dark:text-zinc-400">
+                        <span className="text-sm font-semibold truncate text-zinc-900 dark:text-white">
                             {post.title}
                         </span>
                     </motion.div>
 
-                    <div className="flex items-center gap-4">
-                        <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-600 hidden md:block">
-                            ID: {post.id.slice(0, 8)}
-                        </span>
-                    </div>
+                    {/* Placeholder for right side balance or actions */}
+                    <div className="w-[60px]" />
                 </div>
-            </nav>
+            </motion.nav>
 
             {/* --- HERO SECTION --- */}
-            <div className="relative w-full h-[60vh] md:h-[75vh] flex flex-col justify-end overflow-hidden border-b border-zinc-200 dark:border-zinc-900 bg-zinc-100 dark:bg-zinc-950">
-                {post.banner_url ? (
-                    <Image src={post.banner_url} alt="" fill className="object-cover opacity-80 dark:opacity-50 transition-all duration-1000 scale-105" priority />
-                ) : (
-                    <div className="absolute inset-0 flex items-center justify-center opacity-10">
-                        <span className={`${PlayWriteNewZealandFont.className} text-[20vw] text-zinc-900 dark:text-white`}>Archive</span>
+            <div className="relative w-full h-[50vh] md:h-[65vh] flex flex-col justify-end overflow-hidden bg-zinc-50 dark:bg-zinc-950">
+                {post.banner_url && (
+                    <div className="absolute inset-0">
+                        <Image
+                            src={post.banner_url}
+                            alt=""
+                            fill
+                            className="object-cover transition-transform duration-[2s] hover:scale-105
+                                       opacity-100 dark:opacity-60"
+                            priority
+                        />
+                        {/* Gradient overlay: Subtle white fade for light mode text, darker fade for dark mode */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-white via-white/40 to-transparent dark:from-black dark:via-black/60 dark:to-transparent" />
                     </div>
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-black via-transparent to-transparent" />
 
-                <div className="relative z-10 w-full max-w-6xl mx-auto px-6 pb-12 md:pb-20">
-                    <div className="space-y-6">
-                        <div className="flex flex-wrap items-center gap-4">
-                            <span className="bg-zinc-900 dark:bg-white text-white dark:text-black px-2 py-1 text-[10px] font-bold uppercase tracking-widest">
-                                ID: {post.id.slice(0, 8)}
+                <div className="relative z-10 w-full max-w-5xl mx-auto px-6 pb-10 md:pb-16">
+                    <div className="space-y-4 md:space-y-6">
+                        {/* Meta Tags */}
+                        <div className="flex flex-wrap items-center gap-3">
+                            <span className="text-zinc-600 dark:text-zinc-400 text-xs md:text-sm font-medium">
+                                {dateStr}
                             </span>
-                            <span className="text-zinc-500 font-mono text-[10px] tracking-widest uppercase">{dateStr}</span>
-                            <div className="flex gap-2">
-                                {post.is_premium && <PremiumBadge />}
-                                {post.is_nsfw && <NsfwBadge />}
-                                {post.has_spoilers && <SpoilerBadge />}
-                            </div>
+                            {(post.is_premium || post.is_nsfw || post.has_spoilers) && (
+                                <div className="flex gap-2 scale-90 origin-left">
+                                    {post.is_premium && <PremiumBadge />}
+                                    {post.is_nsfw && <NsfwBadge />}
+                                    {post.has_spoilers && <SpoilerBadge />}
+                                </div>
+                            )}
                         </div>
 
-                        <h1 className={`${PlayWriteNewZealandFont.className} text-5xl md:text-8xl font-bold leading-tight tracking-tight text-zinc-900 dark:text-white max-w-4xl`}>
+                        {/* Title - Uses serif for editorial feel, responsive sizing fixed */}
+                        <h1 className="font-serif text-3xl md:text-5xl lg:text-6xl font-bold leading-tight tracking-tight text-zinc-900 dark:text-white max-w-3xl">
                             {post.title}
                         </h1>
 
                         {rating && (
-                            <div className="flex items-center gap-1 pt-2">
+                            <div className="flex items-center gap-1">
                                 {[...Array(5)].map((_, i) => (
-                                    <div key={i} className={`h-1 w-8 ${i < rating ? 'bg-amber-500' : 'bg-zinc-200 dark:bg-zinc-800'}`} />
+                                    <div
+                                        key={i}
+                                        className={`h-1.5 w-6 rounded-full ${i < rating ? 'bg-zinc-900 dark:bg-white' : 'bg-zinc-300 dark:bg-zinc-800'}`}
+                                    />
                                 ))}
                             </div>
                         )}
@@ -150,104 +191,100 @@ export default function AnimatedBlogPost({
                 </div>
             </div>
 
-            {/* --- CONTENT WRAPPER (RELATIVE FOR OVERLAY) --- */}
-            <div className="relative min-h-[500px]">
+            {/* --- CONTENT WRAPPER --- */}
+            <div className="relative max-w-5xl mx-auto px-6 py-12 md:py-16">
 
-                {/* --- REDDIT-STYLE NSFW OVERLAY (ABSOLUTE within Content Wrapper) --- */}
+                {/* --- NSFW GATE --- */}
                 <AnimatePresence>
                     {nsfw && !showContent && (
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            // Changed from fixed inset-0 to absolute inset-0
-                            className="absolute inset-0 z-50 flex items-start justify-center pt-32 bg-white/95 dark:bg-black/95 backdrop-blur-md"
+                            className="absolute inset-x-0 top-0 z-20 h-[500px] flex flex-col items-center justify-center bg-white/90 dark:bg-black/90 backdrop-blur-sm text-center px-4"
                         >
-                            <div className="relative z-10 flex flex-col items-center text-center max-w-sm px-4">
-                                <div className="w-16 h-16 mb-6 flex items-center justify-center bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl">
-                                    <LockClosedIcon className="w-8 h-8 text-zinc-400 dark:text-zinc-600" />
-                                </div>
-                                <h2 className="text-xl font-bold uppercase tracking-[0.2em] mb-2 text-zinc-900 dark:text-white">
-                                    Restricted Access
-                                </h2>
-                                <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-8 leading-relaxed">
-                                    This entry contains NSFW material. <br/> Access restricted to authorized personnel.
-                                </p>
-                                <button
-                                    onClick={() => setShowContent(true)}
-                                    className="flex items-center gap-3 px-8 py-4 bg-zinc-900 dark:bg-white text-white dark:text-black text-[10px] font-bold uppercase tracking-widest hover:opacity-90 transition-all shadow-xl border border-transparent hover:scale-105"
-                                >
-                                    <EyeIcon className="w-4 h-4" />
-                                    View (must be 18+)
-                                </button>
-                            </div>
+                            <Lock className="w-10 h-10 mb-4 text-zinc-400" />
+                            <h2 className="text-lg font-bold text-zinc-900 dark:text-white mb-2">
+                                Sensitive Content
+                            </h2>
+                            <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-6 max-w-md">
+                                This post contains material that may not be suitable for all audiences.
+                            </p>
+                            <button
+                                onClick={() => setShowContent(true)}
+                                className="px-6 py-3 bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black text-sm font-medium rounded-lg transition-colors"
+                            >
+                                View Content
+                            </button>
                         </motion.div>
                     )}
                 </AnimatePresence>
 
-                {/* --- MAIN CONTENT AREA --- */}
-                {/* Applied blur effect here if content is hidden */}
-                <motion.div
-                    className={`max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 px-6 pt-16 md:pt-24 transition-all duration-500 ${!showContent ? 'blur-md opacity-20 pointer-events-none select-none h-[600px] overflow-hidden' : ''}`}
-                    variants={contentVariants}
-                >
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16">
 
-                    {/* Left Sidebar */}
-                    <div className="lg:col-span-3">
-                        <div className="lg:sticky lg:top-24 space-y-8">
-                            <Link href={`/profile/${author.username}`} className="group block space-y-4">
-                                <div className="relative w-16 h-16 border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900  group-hover:grayscale-0 transition-all">
-                                    <Image src={author.profile_pic_url || '/placeholder-user.jpg'} alt="" fill className="object-cover" />
-                                </div>
-                                <div>
-                                    <p className="text-xs font-bold uppercase tracking-widest text-zinc-900 dark:text-zinc-100">{author.display_name}</p>
-                                    <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 group-hover:text-zinc-900 dark:group-hover:text-zinc-400 transition-colors">@{author.username}</p>
-                                </div>
-                            </Link>
+                    {/* --- MAIN CONTENT (Left/Center) --- */}
+                    <motion.div
+                        className={`lg:col-span-8 space-y-12 transition-all duration-500 ${!showContent ? 'blur-sm opacity-50 h-[400px] overflow-hidden' : ''}`}
+                        variants={contentVariants}
+                    >
+                        {/* Prose / Body Text */}
+                        <div
+                            className="
+                                prose prose-zinc dark:prose-invert max-w-none
+                                prose-headings:font-serif prose-headings:font-semibold
+                                prose-p:font-light prose-p:leading-7 prose-p:text-zinc-700 dark:prose-p:text-zinc-300
+                                prose-a:text-zinc-900 dark:prose-a:text-white prose-a:no-underline hover:prose-a:underline
 
-                            <div className="pt-8 border-t border-zinc-200 dark:border-zinc-900 space-y-4">
-                                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-600">
-                                    <Eye size={12} />
-                                    <span>{post.view_count.toLocaleString()} Views</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                                /* --- IMAGE SIZING FIXES --- */
+                                [&_img]:max-w-full
+                                [&_img]:w-auto
+                                [&_img]:mx-auto
+                                [&_img]:rounded-lg
+                                [&_img]:shadow-sm
 
-                    {/* Right Area */}
-                    <div className="lg:col-span-9 space-y-20">
-                        <section className="prose prose-zinc dark:prose-invert max-w-none">
-                            <div
-                                className="font-light leading-relaxed text-zinc-700 dark:text-zinc-300 first-letter:text-5xl first-letter:font-bold first-letter:mr-3 first-letter:float-left first-letter:text-zinc-900 dark:first-letter:text-white"
-                                dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
-                            />
-                        </section>
+                                /* Mobile: shorter max height */
+                                [&_img]:max-h-[350px]
 
+                                /* Tablet/Desktop: taller max height */
+                                md:[&_img]:max-h-[550px]
+
+                                /* First Letter Drop Cap Style */
+                                first-letter:text-4xl first-letter:font-serif first-letter:font-bold
+                                first-letter:mr-2 first-letter:float-left text-zinc-900 dark:text-white
+                            "
+                            dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
+                        />
+
+                        {/* Linked Movie/Series Card */}
                         {post.type === 'review' && cinematicItem && (
-                            <div className="space-y-6 pt-12 border-t border-zinc-200 dark:border-zinc-900">
-                                <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400 dark:text-zinc-600">Archive Dossier</h3>
+                            <div className="pt-8 border-t border-zinc-200 dark:border-zinc-800">
+                                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-6">
+                                    Featured Media
+                                </h3>
                                 <div
                                     onClick={() => setIsCinematicModalOpen(true)}
-                                    className="group cursor-pointer flex flex-col md:flex-row border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/50 hover:border-zinc-900 dark:hover:border-zinc-500 transition-all duration-500"
+                                    className="group cursor-pointer flex gap-4 md:gap-6 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition-all bg-zinc-50 dark:bg-zinc-900/30"
                                 >
-                                    <div className="relative w-full md:w-32 h-48  group-hover:grayscale-0 transition-all duration-700">
+                                    <div className="relative w-20 h-28 md:w-24 md:h-36 flex-shrink-0 rounded-lg overflow-hidden bg-zinc-200 dark:bg-zinc-800">
                                         {cinematicItem.poster_url ? (
                                             <Image src={cinematicItem.poster_url} alt="" fill className="object-cover" />
                                         ) : (
-                                            <div className="flex items-center justify-center h-full bg-zinc-100 dark:bg-zinc-900"><FilmIcon className="w-6 h-6 text-zinc-300 dark:text-zinc-700"/></div>
+                                            <div className="flex items-center justify-center h-full">
+                                                <Film className="w-6 h-6 text-zinc-400" />
+                                            </div>
                                         )}
                                     </div>
-                                    <div className="p-8 flex-1 flex flex-col justify-center">
-                                        <div className="flex items-center gap-3 mb-2">
-                                            <span className="text-[9px] font-bold uppercase tracking-widest bg-zinc-200 dark:bg-zinc-800 px-2 py-0.5 text-zinc-700 dark:text-zinc-300">{mediaType === 'movie' ? 'Film' : 'Series'}</span>
-                                            <span className="text-[9px] font-mono text-zinc-400 dark:text-zinc-600">// {new Date(cinematicItem.release_date).getFullYear()}</span>
-                                        </div>
-                                        <h4 className={`${PlayWriteNewZealandFont.className} text-3xl font-bold text-zinc-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors`}>
+                                    <div className="flex flex-col justify-center">
+                                        <h4 className="font-serif text-xl md:text-2xl font-bold text-zinc-900 dark:text-white group-hover:underline decoration-1 underline-offset-4">
                                             {cinematicItem.title}
                                         </h4>
-                                        <div className="mt-4 flex items-center gap-2 text-[9px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-600">
-                                            <span>Access Data</span>
-                                            <ArrowUpRightIcon className="w-3 h-3 translate-y-0.5 opacity-0 group-hover:opacity-100 transition-all" />
+                                        <div className="flex items-center gap-2 mt-2 text-xs md:text-sm text-zinc-500">
+                                            <span className="capitalize">{mediaType === 'movie' ? 'Film' : 'Series'}</span>
+                                            <span>•</span>
+                                            <span>{new Date(cinematicItem.release_date).getFullYear()}</span>
+                                        </div>
+                                        <div className="mt-4 flex items-center gap-1 text-xs font-medium text-zinc-900 dark:text-zinc-300">
+                                            View Details <ExternalLink size={12} />
                                         </div>
                                     </div>
                                 </div>
@@ -262,24 +299,69 @@ export default function AnimatedBlogPost({
                             </div>
                         )}
 
-                        <div className="space-y-12 pt-12 border-t border-zinc-200 dark:border-zinc-900">
-                            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-                                <h3 className={`${PlayWriteNewZealandFont.className} text-4xl font-bold text-zinc-900 dark:text-white`}>Discourse.</h3>
-                                <div className="flex items-center gap-6">
+                        {/* Interaction Section */}
+                        <div className="pt-10 space-y-8">
+                            <div className="flex items-center justify-between">
+                                <h3 className="font-serif text-2xl font-bold text-zinc-900 dark:text-white">
+                                    Discussion
+                                </h3>
+                                <div className="flex items-center gap-4">
                                     <LikeButton postId={post.id} initialLikes={likeCount} userHasLiked={userHasLiked} />
-                                    <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-600 border border-zinc-200 dark:border-zinc-900 px-2 py-1">Logs: {comments.length}</span>
+                                    <div className="flex items-center gap-2 text-zinc-500 text-sm">
+                                        <MessageSquare size={18} />
+                                        <span>{comments.length}</span>
+                                    </div>
                                 </div>
                             </div>
-                            <div className="bg-zinc-50 dark:bg-zinc-950/30 border border-zinc-200 dark:border-zinc-900 p-6 md:p-12">
-                                <CommentsSection
-                                    postId={post.id}
-                                    comments={comments}
-                                    currentUserProfile={viewerData?.profile ?? null}
-                                />
+
+                            <CommentsSection
+                                postId={post.id}
+                                comments={comments}
+                                currentUserProfile={viewerData?.profile ?? null}
+                            />
+                        </div>
+                    </motion.div>
+
+                    {/* --- SIDEBAR (Right/Bottom) --- */}
+                    <div className="lg:col-span-4 lg:pl-8 lg:border-l border-zinc-100 dark:border-zinc-800">
+                        <div className="lg:sticky lg:top-24 space-y-8">
+
+                            {/* Author Profile */}
+                            <div className="flex items-center gap-4 lg:block lg:text-center lg:space-y-4">
+                                <Link href={`/profile/${author.username}`} className="block relative group">
+                                    <div className="relative w-12 h-12 lg:w-24 lg:h-24 mx-auto rounded-full overflow-hidden border border-zinc-200 dark:border-zinc-800 group-hover:border-zinc-400 transition-colors">
+                                        <Image
+                                            src={author.profile_pic_url || '/placeholder-user.jpg'}
+                                            alt={author.display_name || "Author"}
+                                            fill
+                                            className="object-cover"
+                                        />
+                                    </div>
+                                </Link>
+                                <div>
+                                    <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold mb-1">Written By</p>
+                                    <Link href={`/profile/${author.username}`} className="text-lg font-bold text-zinc-900 dark:text-white hover:underline">
+                                        {author.display_name}
+                                    </Link>
+                                    <p className="text-sm text-zinc-500">@{author.username}</p>
+                                </div>
                             </div>
+
+                            <div className="h-px w-full bg-zinc-100 dark:bg-zinc-800" />
+
+                            {/* Stats */}
+                            <div className="flex lg:flex-col gap-6 lg:gap-4 justify-center">
+                                <div className="flex items-center lg:justify-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+                                    <Eye size={16} />
+                                    <span>{post.view_count.toLocaleString()} Reads</span>
+                                </div>
+                                {/* You could add more stats here or related posts */}
+                            </div>
+
                         </div>
                     </div>
-                </motion.div>
+
+                </div>
             </div>
 
             <ScrollToTop />

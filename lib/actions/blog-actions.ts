@@ -293,3 +293,141 @@ export async function postComment(postId: string, formData: FormData) {
     revalidatePath(`/blog/[slug]`, 'page');
     return { success: 'Comment posted!' };
 }
+
+// =====================================================================
+// == UPDATE POST ACTION
+// =====================================================================
+const UpdatePostSchema = z.object({
+    postId: z.string().uuid(),
+    title: z.string().min(3),
+    content_html: z.string().min(50),
+    // Optional because we might keep the existing one
+    cinematicApiId: z.coerce.number().optional(),
+    media_type: z.enum(['movie', 'tv']).optional(),
+    banner_url: z.string().optional().or(z.literal('')),
+    rating: z.coerce.number().min(0).max(5).step(0.5).optional(),
+    is_premium: z.string().optional().transform(value => value === 'on'),
+    is_nsfw: z.string().optional().transform(value => value === 'on'),
+    has_spoilers: z.string().optional().transform(value => value === 'on'),
+});
+
+export async function updatePost(
+    prevState: CreatePostState,
+    formData: FormData
+): Promise<CreatePostState> {
+    const supabase = await createClient();
+    const userData = await getUserProfile();
+
+    // 1. Auth Check
+    if (!userData?.user) return { message: 'You must be logged in.' };
+
+    const postId = formData.get('postId') as string;
+
+    // 2. Ownership Check
+    const { data: existingPost } = await supabase
+        .from('posts')
+        .select('author_id, slug')
+        .eq('id', postId)
+        .single();
+
+    if (!existingPost || existingPost.author_id !== userData.user.id) {
+        return { message: 'Unauthorized: You do not own this post.' };
+    }
+
+    // 3. Validation
+    const validatedFields = UpdatePostSchema.safeParse(Object.fromEntries(formData.entries()));
+    if (!validatedFields.success) {
+        return { errors: validatedFields.error.flatten().fieldErrors };
+    }
+
+    const {
+        title, content_html, banner_url, cinematicApiId, media_type,
+        rating, is_premium, is_nsfw, has_spoilers
+    } = validatedFields.data;
+
+    // 4. Handle Cinematic Data (Movies/TV)
+    let movieId: number | null = null;
+    let seriesId: number | null = null;
+
+    if (cinematicApiId && media_type) {
+        try {
+            if (media_type === 'movie') {
+                await getMovieDetails(cinematicApiId);
+                movieId = cinematicApiId;
+            } else if (media_type === 'tv') {
+                await getSeriesDetails(cinematicApiId);
+                seriesId = cinematicApiId;
+            }
+        } catch (error) {
+            return { message: "Server Error: Could not fetch details for the linked item." };
+        }
+    }
+
+    // 5. Update Database
+    const { error } = await supabase
+        .from('posts')
+        .update({
+            title,
+            content_html,
+            banner_url: banner_url || null, // Allow clearing banner
+            type: cinematicApiId ? 'review' : 'general',
+            movie_id: movieId,
+            series_id: seriesId,
+            rating,
+            is_premium,
+            is_nsfw,
+            has_spoilers,
+            // We typically DO NOT update the slug to prevent broken links
+        })
+        .eq('id', postId);
+
+    if (error) {
+        console.error("Update error:", error);
+        return { message: `Database Error: Could not update post.` };
+    }
+
+    revalidatePath(`/blog/${existingPost.slug}`);
+    revalidatePath('/blog');
+    redirect(`/blog/${existingPost.slug}`);
+}
+
+// =====================================================================
+// == DELETE POST ACTION
+// =====================================================================
+export async function deletePost(postId: string) {
+    const supabase = await createClient();
+    const userData = await getUserProfile();
+
+    // ✨ FIX: Check for both user AND profile.
+    // This tells TypeScript that subsequent access to 'userData.profile' is safe.
+    if (!userData?.user || !userData.profile) {
+        return { success: false, error: 'Unauthorized' };
+    }
+
+    // 1. Ownership Check
+    const { data: post } = await supabase
+        .from('posts')
+        .select('author_id')
+        .eq('id', postId)
+        .single();
+
+    if (!post || post.author_id !== userData.user.id) {
+        return { success: false, error: 'You can only delete your own posts.' };
+    }
+
+    // 2. Soft Delete (Set deleted_at)
+    const { error } = await supabase
+        .from('posts')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', postId);
+
+    if (error) {
+        console.error("Delete error", error);
+        return { success: false, error: 'Failed to delete post' };
+    }
+
+    revalidatePath('/blog');
+    // TypeScript is now happy because we guarded against null profile at the top
+    revalidatePath(`/profile/${userData.profile.username}/posts`);
+    return { success: true };
+}
