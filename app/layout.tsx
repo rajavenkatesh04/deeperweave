@@ -21,7 +21,7 @@ export const viewport: Viewport = {
     initialScale: 1,
     maximumScale: 1,
     userScalable: false,
-    viewportFit: 'cover', // This is the magic key for the notch
+    viewportFit: 'auto', // This is the magic key for the notch
 }
 
 export default function RootLayout({

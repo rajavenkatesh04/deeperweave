@@ -1,23 +1,27 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.deeperweave.app', // Must match what you typed in init
+  appId: 'com.deeperweave.app',
   appName: 'DeeperWeave',
-  webDir: 'public', // This is just a placeholder, don't worry about it
+  webDir: 'public',
   server: {
-    // ⚠️ REPLACE THIS with your actual deployed URL!
-    // If you don't have a domain yet, use your vercel.app link.
-    url: 'https://www.deeperweave.com/',
+    url: 'https://www.deeperweave.com/', // Your live URL
     cleartext: true,
     androidScheme: 'https'
   },
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,
-      backgroundColor: "#000000", // Dark mode background
+      backgroundColor: "#000000",
       showSpinner: true,
       androidSpinnerStyle: "large",
       spinnerColor: "#ffffff",
+    },
+    // 👇 ADD THIS BLOCK
+    StatusBar: {
+      overlaysWebView: false, // 🛑 STOP drawing behind the status bar
+      style: 'DARK', // or 'LIGHT' depending on your preference
+      backgroundColor: '#000000', // Match this to your app theme
     },
   },
 };
