@@ -11,7 +11,7 @@ const features = [
         id: 'history',
         label: "Track",
         title: "Precision Logging.",
-        description: "Log movies, anime, series & kdrama. Rate, review, and tag.",
+        description: "Log movies, anime, series & kdrama. Rate, review, and tag your viewing context.",
         component: <WatchHistoryMockup />,
         color: "from-blue-500/20 to-purple-500/20"
     },
@@ -19,7 +19,7 @@ const features = [
         id: 'analytics',
         label: "Analyze",
         title: "Deep Insights.",
-        description: "Visualize habits with cinematic heatmaps and stats.",
+        description: "Visualize your habits with cinematic heatmaps and watch time stats.",
         component: <AnalyticsMockup />,
         color: "from-emerald-500/20 to-teal-500/20"
     },
@@ -27,7 +27,7 @@ const features = [
         id: 'blogs',
         label: "Write",
         title: "Full-Length Blogs.",
-        description: "Publish essays and reviews with a rich text editor.",
+        description: "Publish essays and reviews with a rich text editor built for cinephiles.",
         component: <BlogMockup />,
         color: "from-orange-500/20 to-red-500/20"
     },
@@ -44,7 +44,6 @@ const features = [
 export default function FeatureCarousel() {
     const [currentIndex, setCurrentIndex] = useState(0);
 
-    // Auto-Scroll Logic
     useEffect(() => {
         const timer = setInterval(() => {
             setCurrentIndex((prev) => (prev + 1) % features.length);
@@ -52,11 +51,10 @@ export default function FeatureCarousel() {
         return () => clearInterval(timer);
     }, []);
 
-    // Animation Variants: Pushed from Right to Left
     const slideVariants = {
-        enter: { x: 50, opacity: 0 },   // Enter from Right
+        enter: { x: 50, opacity: 0 },
         center: { x: 0, opacity: 1 },
-        exit: { x: -50, opacity: 0 }    // Exit to Left
+        exit: { x: -50, opacity: 0 }
     };
 
     return (
@@ -74,47 +72,48 @@ export default function FeatureCarousel() {
                         exit="exit"
                         transition={{ duration: 0.5, ease: "easeOut" }}
                     >
-                        {/* LEFT: Text Content - Compact on Mobile */}
-                        <div className="w-full md:w-2/5 shrink-0 px-6 pt-6 pb-2 md:p-12 flex flex-col justify-center items-start z-10 bg-white dark:bg-zinc-900 border-b md:border-b-0 md:border-r border-zinc-100 dark:border-zinc-800">
-                            <div className="space-y-3 md:space-y-6">
+                        {/* LEFT: Text Content */}
+                        <div className="w-full md:w-2/5 shrink-0 px-6 pt-8 pb-6 md:p-12 flex flex-col justify-center items-start z-10 bg-white dark:bg-zinc-900 border-b md:border-b-0 md:border-r border-zinc-100 dark:border-zinc-800">
+
+                            {/* Header Row: Label + Inline Dots */}
+                            <div className="flex items-center gap-4 mb-4 md:mb-6 w-full">
                                 <span className={clsx("inline-block px-2 py-0.5 md:px-3 md:py-1 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-widest bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400", geistSans.className)}>
                                     {features[currentIndex].label}
                                 </span>
 
+                                {/* Inline Pagination Dots */}
+                                <div className="flex gap-1.5">
+                                    {features.map((_, index) => (
+                                        <button
+                                            key={index}
+                                            onClick={() => setCurrentIndex(index)}
+                                            className={clsx(
+                                                "transition-all duration-300 rounded-full h-1 md:h-1.5",
+                                                index === currentIndex
+                                                    ? "w-4 md:w-6 bg-zinc-900 dark:bg-white"
+                                                    : "w-1 md:w-1.5 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700"
+                                            )}
+                                            aria-label={`Go to slide ${index + 1}`}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="space-y-4 md:space-y-6">
                                 <h2 className="text-3xl md:text-5xl lg:text-6xl font-black tracking-tighter text-zinc-900 dark:text-white leading-[0.9]">
                                     {features[currentIndex].title}
                                 </h2>
 
-                                <p className="text-xs md:text-base text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-sm line-clamp-2 md:line-clamp-none">
+                                {/* Increased Font Size */}
+                                <p className="text-sm md:text-lg text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-sm">
                                     {features[currentIndex].description}
                                 </p>
                             </div>
-
-                            {/* Pagination Dots */}
-                            <div className="mt-4 md:mt-12 flex gap-2 md:gap-3">
-                                {features.map((_, index) => (
-                                    <button
-                                        key={index}
-                                        onClick={() => setCurrentIndex(index)}
-                                        className={clsx(
-                                            "transition-all duration-300 rounded-full h-1 md:h-1.5",
-                                            index === currentIndex
-                                                ? "w-6 md:w-8 bg-zinc-900 dark:bg-white"
-                                                : "w-1 md:w-1.5 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700"
-                                        )}
-                                        aria-label={`Go to slide ${index + 1}`}
-                                    />
-                                ))}
-                            </div>
                         </div>
 
-                        {/* RIGHT: Visual/Mockup Area - Takes remaining space */}
+                        {/* RIGHT: Visual/Mockup Area */}
                         <div className="relative w-full md:w-3/5 flex-1 min-h-0 bg-zinc-50 dark:bg-black/40 overflow-hidden flex items-center justify-center p-4 md:p-8">
-
-                            {/* Dynamic Background Glow */}
                             <div className={`absolute inset-0 bg-gradient-to-br ${features[currentIndex].color} opacity-30`} />
-
-                            {/* Mockup Container: Ensures h-full constraint */}
                             <div className="relative w-full max-w-sm md:max-w-xl h-full flex items-center justify-center z-10">
                                 {features[currentIndex].component}
                             </div>

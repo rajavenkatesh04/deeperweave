@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { FilmIcon, Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import { motion, AnimatePresence } from "framer-motion";
 import clsx from "clsx";
+import {PlayWriteNewZealandFont} from "@/app/ui/fonts";
 
 export default function LandingNavbar() {
     const [scrolled, setScrolled] = useState(false);
@@ -38,14 +39,36 @@ export default function LandingNavbar() {
                 {/* Safe Area Spacer (for notches) is handled by padding, but we ensure the content stays within bounds */}
                 <div className="max-w-7xl mx-auto px-4 md:px-8 flex items-center justify-between">
 
-                    {/* Logo */}
-                    <Link href="/" className="flex items-center gap-2.5 group relative z-50">
-                        <div className="h-7 w-7 md:h-8 md:w-8 bg-zinc-900 dark:bg-white flex items-center justify-center text-white dark:text-zinc-900 rounded-md shadow-sm group-hover:scale-105 transition-transform">
-                            <FilmIcon className="w-3.5 h-3.5 md:w-4 md:h-4" strokeWidth={2.5} />
+                    {/* Logo Option 1: Interwoven Frames */}
+                    <Link href="/" className="flex items-center gap-3 group relative z-50">
+                        <div className="relative h-8 w-8 flex items-center justify-center">
+                            {/* Abstract Woven Logo */}
+                            <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                className="w-8 h-8 text-zinc-900 dark:text-white transition-transform duration-300 group-hover:rotate-90"
+                                strokeWidth={2}
+                            >
+                                <path
+                                    d="M7 4V20M17 4V20M3 8H21M3 16H21"
+                                    className="opacity-30"
+                                    strokeLinecap="round"
+                                />
+                                <path
+                                    d="M7 8H17V16H7z"
+                                    className="group-hover:fill-zinc-900 dark:group-hover:fill-white transition-colors duration-300"
+                                    strokeLinejoin="round"
+                                />
+                            </svg>
+
+                            {/* Glow effect behind */}
+                            <div className="absolute inset-0 bg-zinc-900/20 dark:bg-white/20 blur-lg rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
-                        <span className="text-xs md:text-sm font-bold tracking-tight uppercase text-zinc-900 dark:text-white">
-                            Deeper Weave
-                        </span>
+
+                        <span className={`${PlayWriteNewZealandFont.className} text-lg md:text-xl font-bold tracking-tight text-zinc-900 dark:text-white`}>
+        DeeperWeave
+    </span>
                     </Link>
 
                     {/* Desktop Navigation */}
@@ -71,14 +94,22 @@ export default function LandingNavbar() {
                         </Link>
                     </div>
 
-                    {/* Mobile Menu Toggle */}
-                    <button
-                        onClick={() => setIsMobileMenuOpen(true)}
-                        className="md:hidden p-2 -mr-2 text-zinc-900 dark:text-white active:scale-95 transition-transform"
-                        aria-label="Open Menu"
-                    >
-                        <Bars3Icon className="w-6 h-6" />
-                    </button>
+                    {/* Mobile Actions (Login + Toggle) */}
+                    <div className="flex items-center gap-4 md:hidden">
+                        <Link
+                            href="/auth/login"
+                            className="text-xs font-bold uppercase tracking-widest text-zinc-900 dark:text-white"
+                        >
+                            Log In
+                        </Link>
+                        <button
+                            onClick={() => setIsMobileMenuOpen(true)}
+                            className="p-2 -mr-2 text-zinc-900 dark:text-white active:scale-95 transition-transform"
+                            aria-label="Open Menu"
+                        >
+                            <Bars3Icon className="w-6 h-6" />
+                        </button>
+                    </div>
                 </div>
             </nav>
 
