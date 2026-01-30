@@ -22,15 +22,23 @@ export default async function Navigation() {
 
                 {/* Logo Section */}
                 <div className="relative z-10 flex-none h-24 flex items-center px-5 border-b border-zinc-200 dark:border-zinc-800 whitespace-nowrap overflow-hidden">
-                    <Link href="/" className="flex items-center gap-4">
-                        {/* Fixed Logo Box - Pinned Position */}
-                        <div className="shrink-0 w-10 h-10 bg-black dark:bg-white flex items-center justify-center text-white dark:text-black font-bold text-xs rounded-sm">
-                            DW
+                    <Link href="/" className="flex items-center gap-4 group/logo">
+                        {/* Fixed Logo Image - Pinned Position */}
+                        <div className="relative h-10 w-10 flex-shrink-0">
+                            <Image
+                                src="https://jyjynjpznlvezjhnuwhi.supabase.co/storage/v1/object/public/website_assests/icon-512x512.png"
+                                alt="Deeper Weave Logo"
+                                width={40}
+                                height={40}
+                                className="rounded-xl object-cover shadow-sm"
+                                priority
+                            />
                         </div>
-                        {/* Text - Added delay-200 to wait for expansion */}
+
+                        {/* Text - Animates based on Sidebar hover */}
                         <div className="flex flex-col opacity-0 -translate-x-4 group-hover/sidebar:opacity-100 group-hover/sidebar:translate-x-0 transition-all duration-300 ease-out delay-200">
                             <p className={`${PlayWriteNewZealandFont.className} text-xl font-bold text-zinc-900 dark:text-zinc-100 leading-none`}>
-                                Deeper Weave
+                                DeeperWeave
                             </p>
                         </div>
                     </Link>
