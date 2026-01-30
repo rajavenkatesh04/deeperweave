@@ -93,6 +93,7 @@ export default function NotificationItem({ id, type, is_read, actor, payload, ti
                 <div className="flex flex-col min-w-0">
                     <div className="text-sm text-zinc-900 dark:text-zinc-100 truncate pr-2">
                         <span className="font-bold mr-1.5">{actor.display_name || actor.username}</span>
+                        <br/>
                         <span className="text-zinc-500 dark:text-zinc-400 font-normal">
                             {type === 'FOLLOW_REQUEST' && "requested to follow you."}
                             {type === 'LIKE' && "liked your post."}
@@ -106,7 +107,7 @@ export default function NotificationItem({ id, type, is_read, actor, payload, ti
                         {!is_read && (
                             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
                         )}
-                        <p className="text-[10px] text-zinc-400 uppercase tracking-wider font-medium truncate">
+                        <p className="text-[10px] text-zinc-400 uppercase tracking-wider font-medium text-wrap">
                             {new Date(timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                             {payload?.title && <span className="normal-case ml-1 opacity-75 border-l border-zinc-300 dark:border-zinc-700 pl-2">On &quot;{payload.title}&quot;</span>}
                         </p>
