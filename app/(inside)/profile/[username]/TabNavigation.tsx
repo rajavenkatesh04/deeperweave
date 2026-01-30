@@ -57,7 +57,7 @@ export default function TabNavigation({
 
     return (
         // FIX: Lowered to z-10 so it stays below modals (which should be z-50 or z-100)
-        <div className="sticky top-0 z-11 w-full bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-200 dark:border-zinc-800">
+        <div className="sticky top-0 z-50 w-full bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-200 dark:border-zinc-800">
             <div className="max-w-4xl mx-auto px-2 md:px-4">
                 <LayoutGroup id="profile-tabs">
                     <nav

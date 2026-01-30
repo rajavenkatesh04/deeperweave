@@ -481,17 +481,27 @@ export async function getMovieDetails(movieId: number): Promise<RichCinematicDet
             similar: []
         };
 
-        supabase.from('movies').upsert({
-            tmdb_id: movieId,
-            title: details.title,
-            poster_url: details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : null,
-            backdrop_url: details.backdrop_path ? `https://image.tmdb.org/t/p/original${details.backdrop_path}` : null,
-            release_date: details.release_date,
-            director: details.director,
-            overview: details.overview,
-            genres: details.genres,
-            cast: details.cast
-        }).then(({ error }) => { if (error) console.error("Movie Cache Error:", error); });
+        // ✨ OPTIMIZATION: Check if exists to prevent "Write-on-Read" storm
+        // Only insert if the movie is completely missing from our DB.
+        const { data: existingMovie } = await supabase
+            .from('movies')
+            .select('tmdb_id')
+            .eq('tmdb_id', movieId)
+            .single();
+
+        if (!existingMovie) {
+            supabase.from('movies').upsert({
+                tmdb_id: movieId,
+                title: details.title,
+                poster_url: details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : null,
+                backdrop_url: details.backdrop_path ? `https://image.tmdb.org/t/p/original${details.backdrop_path}` : null,
+                release_date: details.release_date,
+                director: details.director,
+                overview: details.overview,
+                genres: details.genres,
+                cast: details.cast
+            }).then(({ error }) => { if (error) console.error("Movie Cache Error:", error); });
+        }
 
         return details;
 
@@ -551,18 +561,28 @@ export async function getSeriesDetails(seriesId: number): Promise<RichCinematicD
             similar: []
         };
 
-        supabase.from('series').upsert({
-            tmdb_id: seriesId,
-            title: details.title,
-            poster_url: details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : null,
-            backdrop_url: details.backdrop_path ? `https://image.tmdb.org/t/p/original${details.backdrop_path}` : null,
-            release_date: details.release_date,
-            creator: details.creator,
-            number_of_seasons: details.number_of_seasons,
-            overview: details.overview,
-            genres: details.genres,
-            cast: details.cast
-        }).then(({ error }) => { if (error) console.error("TV Cache Error:", error); });
+        // ✨ OPTIMIZATION: Check if exists to prevent "Write-on-Read" storm
+        // Only insert if the series is completely missing from our DB.
+        const { data: existingSeries } = await supabase
+            .from('series')
+            .select('tmdb_id')
+            .eq('tmdb_id', seriesId)
+            .single();
+
+        if (!existingSeries) {
+            supabase.from('series').upsert({
+                tmdb_id: seriesId,
+                title: details.title,
+                poster_url: details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : null,
+                backdrop_url: details.backdrop_path ? `https://image.tmdb.org/t/p/original${details.backdrop_path}` : null,
+                release_date: details.release_date,
+                creator: details.creator,
+                number_of_seasons: details.number_of_seasons,
+                overview: details.overview,
+                genres: details.genres,
+                cast: details.cast
+            }).then(({ error }) => { if (error) console.error("TV Cache Error:", error); });
+        }
 
         return details;
 
@@ -626,20 +646,33 @@ export async function getPersonDetails(personId: number): Promise<PersonDetails>
             backdrops: backdrops.slice(0, 10)
         };
 
-        supabase.from('people').upsert({
-            tmdb_id: data.id,
-            name: data.name,
-            biography: data.biography,
-            birthday: data.birthday || null,
-            deathday: data.deathday || null,
-            place_of_birth: data.place_of_birth,
-            profile_path: data.profile_path,
-            known_for_department: data.known_for_department,
-            gender: data.gender,
-            updated_at: new Date().toISOString(),
-        }).then(({ error }) => {
-            if (error && error.code !== '42P01') console.error("Actor Cache Error:", error);
-        });
+        // ✨ OPTIMIZATION: Stale-While-Revalidate
+        // Check if the person exists AND if the data is older than 7 days
+        const { data: existingPerson } = await supabase
+            .from('people')
+            .select('updated_at')
+            .eq('tmdb_id', data.id)
+            .single();
+
+        const ONE_WEEK = 7 * 24 * 60 * 60 * 1000;
+        const isStale = !existingPerson || !existingPerson.updated_at || (Date.now() - new Date(existingPerson.updated_at).getTime() > ONE_WEEK);
+
+        if (isStale) {
+            supabase.from('people').upsert({
+                tmdb_id: data.id,
+                name: data.name,
+                biography: data.biography,
+                birthday: data.birthday || null,
+                deathday: data.deathday || null,
+                place_of_birth: data.place_of_birth,
+                profile_path: data.profile_path,
+                known_for_department: data.known_for_department,
+                gender: data.gender,
+                updated_at: new Date().toISOString(),
+            }).then(({ error }) => {
+                if (error && error.code !== '42P01') console.error("Actor Cache Error:", error);
+            });
+        }
 
         return details;
 

@@ -192,12 +192,12 @@ export async function updateProfile(prevState: EditProfileState, formData: FormD
         return { message: 'Database error: Could not update profile details.' };
     }
 
-    // 5. Handle Dynamic Sections
+    // 5. Handle Dynamic Sections (Optimized to reduce DB Writes)
     if (sections_json) {
         try {
             const sections = JSON.parse(sections_json);
 
-            // Cache Data
+            // A. Collect all IDs needed
             const moviesToCache = new Set<number>();
             const seriesToCache = new Set<number>();
             const peopleToCache = new Set<number>();
@@ -214,13 +214,38 @@ export async function updateProfile(prevState: EditProfileState, formData: FormD
                 }
             });
 
-            await Promise.all([
-                ...Array.from(moviesToCache).map(id => getMovieDetails(id)),
-                ...Array.from(seriesToCache).map(id => getSeriesDetails(id)),
-                ...Array.from(peopleToCache).map(id => getPersonDetails(id))
-            ]);
+            // B. Batch Check & Fetch Missing Items
+            // This prevents "N+1" fetches. We only fetch what is NOT in the DB.
 
-            // Database Update
+            // --- Movies ---
+            const movieIds = Array.from(moviesToCache);
+            if (movieIds.length > 0) {
+                const { data: existing } = await supabase.from('movies').select('tmdb_id').in('tmdb_id', movieIds);
+                const existingSet = new Set(existing?.map(m => m.tmdb_id) || []);
+                const missing = movieIds.filter(id => !existingSet.has(id));
+                if (missing.length > 0) await Promise.all(missing.map(id => getMovieDetails(id)));
+            }
+
+            // --- Series ---
+            const seriesIds = Array.from(seriesToCache);
+            if (seriesIds.length > 0) {
+                const { data: existing } = await supabase.from('series').select('tmdb_id').in('tmdb_id', seriesIds);
+                const existingSet = new Set(existing?.map(s => s.tmdb_id) || []);
+                const missing = seriesIds.filter(id => !existingSet.has(id));
+                if (missing.length > 0) await Promise.all(missing.map(id => getSeriesDetails(id)));
+            }
+
+            // --- People ---
+            const personIds = Array.from(peopleToCache);
+            if (personIds.length > 0) {
+                const { data: existing } = await supabase.from('people').select('tmdb_id').in('tmdb_id', personIds);
+                const existingSet = new Set(existing?.map(p => Number(p.tmdb_id)) || []);
+                const missing = personIds.filter(id => !existingSet.has(id));
+                if (missing.length > 0) await Promise.all(missing.map(id => getPersonDetails(id)));
+            }
+
+            // C. Database Update (Sections & Items)
+            // Use a transaction-like approach: delete old sections for this user, insert new ones.
             await supabase.from('profile_sections').delete().eq('user_id', user.id);
 
             for (let i = 0; i < sections.length; i++) {
@@ -265,7 +290,6 @@ export async function updateProfile(prevState: EditProfileState, formData: FormD
 
     revalidatePath('/profile', 'layout');
 
-    // CHANGE: Return success message instead of redirecting immediately
     return { message: 'Success' };
 }
 
