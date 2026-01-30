@@ -10,24 +10,28 @@ import {
     MdOutlineFormatListBulleted,
     MdOutlineArticle,
     MdOutlineMoreHoriz,
-    MdOutlineViewStream
+    MdOutlineViewStream,
+    MdOutlineAnalytics,
+    MdHistory // ✨ Import Icon
 } from 'react-icons/md';
 
 // --- Configuration ---
 const ICONS: Record<string, React.ElementType> = {
     Podium: MdOutlineLeaderboard,
-    Timeline: MdOutlineTimeline,
+    Timeline: MdHistory ,
     Lists: MdOutlineFormatListBulleted,
     Posts: MdOutlineArticle,
+    Analytics: MdOutlineTimeline, // ✨ Add Icon
     More: MdOutlineMoreHoriz,
 };
 
-// We use text colors for the active state to make it pop against the subtle background
+// ✨ Add Accent Color
 const ACCENT_COLORS: Record<string, string> = {
     Podium: 'text-orange-600 dark:text-orange-400',
     Timeline: 'text-blue-600 dark:text-blue-400',
     Lists: 'text-pink-600 dark:text-pink-400',
     Posts: 'text-teal-600 dark:text-teal-400',
+    Analytics: 'text-emerald-600 dark:text-emerald-400',
     More: 'text-purple-600 dark:text-purple-400',
 };
 
@@ -43,6 +47,7 @@ export default function TabNavigation({
 
     const tabs = [
         { name: 'Podium', href: `${baseUrl}/podium` },
+        { name: 'Analytics', href: `${baseUrl}/analytics` },
         { name: 'Timeline', href: `${baseUrl}/timeline` },
         { name: 'Lists', href: `${baseUrl}/lists` },
         { name: 'Posts', href: `${baseUrl}/posts` },
@@ -55,7 +60,6 @@ export default function TabNavigation({
     return (
         <div className="sticky top-0 z-40 w-full bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-200 dark:border-zinc-800">
             <div className="max-w-4xl mx-auto px-2 md:px-4">
-                {/* LayoutGroup ensures shared layout animations between the tabs */}
                 <LayoutGroup id="profile-tabs">
                     <nav
                         className="flex items-center h-14 w-full overflow-x-auto scrollbar-hide gap-1 md:gap-2"
@@ -73,7 +77,6 @@ export default function TabNavigation({
                                     className="relative flex-1 min-w-[60px] h-10 group outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 rounded-full"
                                 >
                                     <motion.div
-                                        // Tactile feedback on click
                                         whileTap={{ scale: 0.95 }}
                                         className={clsx(
                                             "relative w-full h-full flex items-center justify-center gap-2 rounded-full px-3 py-1.5 transition-colors duration-300 z-10",
@@ -82,17 +85,12 @@ export default function TabNavigation({
                                                 : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
                                         )}
                                     >
-                                        {/* Icon */}
                                         <Icon className={clsx("w-5 h-5 md:w-4 md:h-4 relative z-10")} />
-
-                                        {/* Label */}
                                         <span className={clsx(
                                             "hidden md:block text-xs md:text-sm font-bold tracking-wide uppercase relative z-10",
                                         )}>
                                             {tab.name}
                                         </span>
-
-                                        {/* --- THE MAGIC: SLIDING BACKGROUND --- */}
                                         {isActive && (
                                             <motion.div
                                                 layoutId="active-tab-pill"
@@ -104,8 +102,6 @@ export default function TabNavigation({
                                                 className="absolute inset-0 bg-zinc-100 dark:bg-zinc-800/80 rounded-full shadow-sm"
                                             />
                                         )}
-
-                                        {/* Hover Effect (Subtle glow when NOT active) */}
                                         {!isActive && (
                                             <div className="absolute inset-0 rounded-full bg-zinc-100/50 dark:bg-zinc-800/30 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
                                         )}
