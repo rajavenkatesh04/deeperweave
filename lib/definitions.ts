@@ -5,7 +5,7 @@
  * =====================================================================
  */
 
-export type UserRole = 'user' | 'critic' | 'verified' | 'staff' | 'support';
+export type UserRole = 'user' | 'critic' | 'verified' | 'staff' | 'support' | 'tester';
 
 export interface UserProfile {
     id: string; // UUID from Supabase Auth

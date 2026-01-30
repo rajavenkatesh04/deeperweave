@@ -9,6 +9,10 @@ const config: Config = {
     theme: {
         extend: {
             keyframes: {
+                orbit: {
+                    '0%': { transform: 'rotate(0deg)' },
+                    '100%': { transform: 'rotate(360deg)' },
+                },
                 /* Original gradient (kept for safety) */
                 gradient: {
                     "0%, 100%": { backgroundPosition: "0% 50%" },

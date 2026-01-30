@@ -2,14 +2,14 @@
 
 import { useState, Fragment, ReactNode } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-// replacing heroicons with react-icons/md (Material Design)
 import {
-    MdEngineering,      // Staff: "Architect/Builder"
-    MdSupportAgent,     // Support: "Support Specialist"
-    MdVerified,         // Verified: "Official Badge"
-    MdRateReview,       // Critic: "Reviews/Analysis"
-    MdExplicit,         // NSFW: "Mature Content"
-    MdClose             // UI: Close button
+    MdEngineering,
+    MdSupportAgent,
+    MdVerified,
+    MdRateReview,
+    MdExplicit,
+    MdClose,
+    MdBugReport
 } from 'react-icons/md';
 import { UserRole } from '@/lib/definitions';
 import { DM_Serif_Display, Inter } from 'next/font/google';
@@ -29,6 +29,7 @@ type BadgeConfigData = {
         triggerBorder: string;
         modalGlow: string;
         modalIconText: string;
+        shimmer?: string;
     };
 };
 
@@ -36,66 +37,79 @@ const BADGE_CONFIG: Record<string, BadgeConfigData> = {
     staff: {
         title: "Staff Member",
         description: "An official architect of the Deeperweave platform. This user helps build, maintain, and curate the experience.",
-        // Icon: Engineering (Person with gear) represents "Architect/Builder"
         icon: <MdEngineering className="w-full h-full" />,
         colors: {
             triggerBg: "bg-zinc-900 dark:bg-zinc-100",
             triggerText: "text-zinc-100 dark:text-zinc-900",
             triggerBorder: "border-zinc-700",
             modalGlow: "from-zinc-500/20 to-transparent",
-            modalIconText: "text-zinc-900 dark:text-white"
+            modalIconText: "text-zinc-900 dark:text-white",
+            shimmer: "from-zinc-400 via-zinc-200 to-zinc-400"
         }
     },
     support: {
         title: "Official Support",
         description: "A verified support specialist dedicated to resolving technical issues and ensuring account security.",
-        // Icon: Support Agent (Person with headset)
         icon: <MdSupportAgent className="w-full h-full" />,
         colors: {
             triggerBg: "bg-emerald-100 dark:bg-emerald-900/30",
             triggerText: "text-emerald-700 dark:text-emerald-400",
             triggerBorder: "border-emerald-200 dark:border-emerald-800",
             modalGlow: "from-emerald-500/30 to-transparent",
-            modalIconText: "text-emerald-600 dark:text-emerald-400"
+            modalIconText: "text-emerald-600 dark:text-emerald-400",
+            shimmer: "from-emerald-400 via-emerald-200 to-emerald-400"
         }
     },
     verified: {
         title: "Verified Account",
         description: "The authentic presence of a notable public figure, creator, or entity within the cinematic weave.",
-        // Icon: Verified Badge (Standard checkmark badge)
         icon: <MdVerified className="w-full h-full" />,
         colors: {
             triggerBg: "bg-transparent",
             triggerText: "text-blue-500 dark:text-blue-400",
             triggerBorder: "border-transparent",
             modalGlow: "from-blue-500/30 to-transparent",
-            modalIconText: "text-blue-600 dark:text-blue-400"
+            modalIconText: "text-blue-600 dark:text-blue-400",
+            shimmer: "from-blue-400 via-blue-300 to-blue-400"
         }
     },
     critic: {
         title: "Verified Critic",
         description: "A recognized voice in film criticism. This user provides top-tier analysis and journalistic reviews.",
-        // Icon: Rate Review (Paper with star/pen) represents criticism
         icon: <MdRateReview className="w-full h-full" />,
         colors: {
             triggerBg: "bg-indigo-50 dark:bg-indigo-900/30",
             triggerText: "text-indigo-600 dark:text-indigo-300",
             triggerBorder: "border-indigo-200 dark:border-indigo-800",
             modalGlow: "from-indigo-500/30 to-transparent",
-            modalIconText: "text-indigo-600 dark:text-indigo-400"
+            modalIconText: "text-indigo-600 dark:text-indigo-400",
+            shimmer: "from-indigo-400 via-indigo-200 to-indigo-400"
+        }
+    },
+    tester: {
+        title: "Beta Tester",
+        description: "An elite tester who helps identify bugs, provide feedback, and shape the future of Deeperweave through early access.",
+        icon: <MdBugReport className="w-full h-full" />,
+        colors: {
+            triggerBg: "bg-purple-50 dark:bg-purple-900/30",
+            triggerText: "text-purple-600 dark:text-purple-300",
+            triggerBorder: "border-purple-200 dark:border-purple-800",
+            modalGlow: "from-purple-500/30 to-transparent",
+            modalIconText: "text-purple-600 dark:text-purple-400",
+            shimmer: "from-purple-400 via-purple-200 to-purple-400"
         }
     },
     nsfw: {
         title: "Sensitive Profile",
         description: "This profile may contain content suitable for mature audiences only. Viewer discretion is advised.",
-        // Icon: Explicit (Standard 'E' icon for mature content)
         icon: <MdExplicit className="w-full h-full" />,
         colors: {
             triggerBg: "bg-rose-50 dark:bg-rose-950/30",
             triggerText: "text-rose-600 dark:text-rose-400",
             triggerBorder: "border-rose-200 dark:border-rose-900",
             modalGlow: "from-rose-500/30 to-transparent",
-            modalIconText: "text-rose-600 dark:text-rose-500"
+            modalIconText: "text-rose-600 dark:text-rose-500",
+            shimmer: "from-rose-400 via-rose-200 to-rose-400"
         }
     }
 };
@@ -103,9 +117,8 @@ const BADGE_CONFIG: Record<string, BadgeConfigData> = {
 // --- Single Interactive Badge Component ---
 function InteractiveBadge({ type, config }: { type: string, config: BadgeConfigData }) {
     const [isOpen, setIsOpen] = useState(false);
-
-    // Custom render logic for NSFW badge to match the "boxy" style
     const isBoxyStyle = type === 'nsfw';
+    const isVerified = type === 'verified';
 
     return (
         <>
@@ -117,31 +130,60 @@ function InteractiveBadge({ type, config }: { type: string, config: BadgeConfigD
                     setIsOpen(true);
                 }}
                 className={`
-                    group relative flex items-center justify-center focus:outline-none transition-transform active:scale-95
-                    ${type === 'verified'
+                    group relative flex items-center justify-center focus:outline-none transition-transform active:scale-95 overflow-hidden
+                    ${isVerified
                     ? ''
                     : isBoxyStyle
-                        // Boxy Style (NSFW)
                         ? `px-1.5 py-0.5 rounded-[2px] border ${config.colors.triggerBg} ${config.colors.triggerBorder}`
-                        // Rounded Pill Style (Others)
                         : `gap-1.5 px-2.5 py-0.5 rounded-full border ${config.colors.triggerBg} ${config.colors.triggerBorder}`
                 }
                 `}
             >
-                {type === 'verified' ? (
-                    <div className={`${config.colors.triggerText} hover:brightness-110 transition-all`}>
+                {/* Continuous Background Shimmer Effect */}
+                {!isVerified && config.colors.shimmer && (
+                    <>
+                        <div
+                            className={`absolute inset-0`}
+                            style={{
+                                background: `linear-gradient(90deg, transparent, ${config.colors.shimmer.includes('zinc') ? 'rgba(161, 161, 170, 0.2)' :
+                                    config.colors.shimmer.includes('emerald') ? 'rgba(52, 211, 153, 0.2)' :
+                                        config.colors.shimmer.includes('indigo') ? 'rgba(129, 140, 248, 0.2)' :
+                                            config.colors.shimmer.includes('purple') ? 'rgba(168, 85, 247, 0.2)' :
+                                                'rgba(251, 113, 133, 0.2)'}, transparent)`,
+                                animation: 'shimmer 3s linear infinite'
+                            }}
+                        />
+                        <style jsx>{`
+                            @keyframes shimmer {
+                                0% { transform: translateX(-100%); }
+                                100% { transform: translateX(200%); }
+                            }
+                        `}</style>
+                    </>
+                )}
+
+                {/* Pulse Effect for Verified */}
+                {isVerified && (
+                    <>
+                        <div className="absolute inset-0 rounded-full bg-blue-400/20 dark:bg-blue-500/20 animate-ping" style={{ animationDuration: '3s' }} />
+                        <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-400/0 via-blue-400/30 to-blue-400/0 animate-pulse" style={{ animationDuration: '2s' }} />
+                    </>
+                )}
+
+                {isVerified ? (
+                    <div className={`relative ${config.colors.triggerText} hover:brightness-110 transition-all hover:scale-110 duration-300`}>
                         <div className="w-5 h-5">{config.icon}</div>
                     </div>
                 ) : isBoxyStyle ? (
-                    // Boxy Content (Text only, small font)
-                    <span className={`text-[9px] font-bold uppercase tracking-widest leading-none select-none ${config.colors.triggerText}`}>
+                    <span className={`relative text-[9px] font-bold uppercase tracking-widest leading-none select-none ${config.colors.triggerText}`}>
                         NSFW
                     </span>
                 ) : (
-                    // Standard Pill Content (Icon + Text)
                     <>
-                        <div className={`w-3.5 h-3.5 ${config.colors.triggerText}`}>{config.icon}</div>
-                        <span className={`text-[10px] font-bold uppercase tracking-widest ${config.colors.triggerText}`}>
+                        <div className={`relative w-3.5 h-3.5 ${config.colors.triggerText} group-hover:scale-110 transition-transform duration-300`}>
+                            {config.icon}
+                        </div>
+                        <span className={`relative text-[10px] font-bold uppercase tracking-widest ${config.colors.triggerText}`}>
                             {type === 'staff' ? 'Staff' : type}
                         </span>
                     </>
@@ -151,7 +193,6 @@ function InteractiveBadge({ type, config }: { type: string, config: BadgeConfigD
             {/* --- Sleek Modal --- */}
             <Transition appear show={isOpen} as={Fragment}>
                 <Dialog as="div" className={`relative z-[100] ${inter.className}`} onClose={() => setIsOpen(false)}>
-
                     <Transition.Child
                         as={Fragment}
                         enter="ease-out duration-500"
@@ -176,7 +217,6 @@ function InteractiveBadge({ type, config }: { type: string, config: BadgeConfigD
                                 leaveTo="opacity-0 scale-95 translate-y-4"
                             >
                                 <Dialog.Panel className="w-full max-w-sm relative transform overflow-hidden rounded-3xl bg-white/80 dark:bg-zinc-900/90 backdrop-blur-xl p-8 text-left align-middle shadow-[0_20px_50px_-12px_rgba(0,0,0,0.15)] dark:shadow-black/50 transition-all border border-white/50 dark:border-white/10 ring-1 ring-black/5">
-
                                     <div className={`absolute top-0 inset-x-0 h-40 bg-gradient-to-b ${config.colors.modalGlow} opacity-40 pointer-events-none`} />
 
                                     <button
@@ -188,7 +228,7 @@ function InteractiveBadge({ type, config }: { type: string, config: BadgeConfigD
 
                                     <div className="relative flex flex-col items-center text-center pt-4">
                                         <div className="relative mb-6">
-                                            <div className={`absolute inset-0 blur-2xl opacity-50 ${config.colors.modalIconText.replace('text-', 'bg-')}`} />
+                                            <div className={`absolute inset-0 blur-2xl opacity-50 ${config.colors.modalIconText.replace('text-', 'bg-')} animate-pulse`} style={{ animationDuration: '3s' }} />
                                             <div className={`relative z-10 w-16 h-16 ${config.colors.modalIconText} drop-shadow-sm`}>
                                                 {config.icon}
                                             </div>
@@ -211,7 +251,8 @@ function InteractiveBadge({ type, config }: { type: string, config: BadgeConfigD
                                                 className="group w-full relative overflow-hidden rounded-full bg-zinc-900 dark:bg-white px-6 py-3.5 text-xs font-bold uppercase tracking-widest text-white dark:text-black transition-transform active:scale-[0.98] shadow-lg hover:shadow-xl hover:bg-zinc-800 dark:hover:bg-zinc-200"
                                                 onClick={() => setIsOpen(false)}
                                             >
-                                                <span>Understood</span>
+                                                <span className="relative z-10">Understood</span>
+                                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
                                             </button>
                                         </div>
                                     </div>
@@ -229,12 +270,10 @@ function InteractiveBadge({ type, config }: { type: string, config: BadgeConfigD
 export default function UserBadge({ role, isNsfw }: { role: UserRole, isNsfw?: boolean }) {
     const activeBadges = [];
 
-    // 1. Add NSFW badge if applicable
     if (isNsfw && BADGE_CONFIG.nsfw) {
         activeBadges.push({ type: 'nsfw', config: BADGE_CONFIG.nsfw });
     }
 
-    // 2. Add Role badge if applicable
     if (role && role !== 'user' && BADGE_CONFIG[role]) {
         activeBadges.push({ type: role, config: BADGE_CONFIG[role] });
     }
