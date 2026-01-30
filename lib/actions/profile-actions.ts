@@ -5,7 +5,7 @@ import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 import {revalidatePath, revalidateTag} from 'next/cache';
 import { ProfileSearchResult, UserProfile } from '@/lib/definitions';
-import { getMovieDetails, getSeriesDetails, getPersonDetails } from './cinematic-actions'; // Ensure getPersonDetails is exported from here
+import { getMovieDetails, getSeriesDetails, getPersonDetails, RichCinematicDetails, PersonDetails } from './cinematic-actions';
 import { unstable_noStore as noStore } from 'next/cache';
 
 // =====================================================================
@@ -57,7 +57,6 @@ export async function completeProfile(prevState: OnboardingState, formData: Form
     }
     const { username, display_name, date_of_birth, country, gender } = validatedFields.data;
 
-    // Check for username uniqueness
     const { data: existingProfile } = await supabase
         .from('profiles').select('username').eq('username', username).neq('id', user.id).maybeSingle();
     if (existingProfile) {
@@ -67,7 +66,6 @@ export async function completeProfile(prevState: OnboardingState, formData: Form
         };
     }
 
-    // Upsert ensures row is created if missing
     const { error } = await supabase
         .from('profiles')
         .upsert({
@@ -103,12 +101,11 @@ export type EditProfileState = {
     };
 };
 
-// Schema now expects a JSON string for sections instead of individual fields
 const UpdateProfileSchema = z.object({
     username: z.string().min(3, 'Username must be at least 3 characters.').regex(/^[a-z0-9_]+$/, 'Username can only contain lowercase letters, numbers, and underscores.'),
     display_name: z.string().min(1, 'Display name is required.'),
     bio: z.string().max(160, 'Bio cannot be longer than 160 characters.').optional(),
-    sections_json: z.string().optional(), // The entire UI state serialized
+    sections_json: z.string().optional(),
 });
 
 export async function updateProfile(prevState: EditProfileState, formData: FormData): Promise<EditProfileState> {
@@ -152,7 +149,7 @@ export async function updateProfile(prevState: EditProfileState, formData: FormD
         bio: bio,
     };
 
-    // 3. Handle Profile Picture (Cleanup + Upload)
+    // 3. Handle Profile Picture
     const profilePicFile = formData.get('profile_pic') as File;
     if (profilePicFile && profilePicFile.size > 0) {
         try {
@@ -192,7 +189,7 @@ export async function updateProfile(prevState: EditProfileState, formData: FormD
         return { message: 'Database error: Could not update profile details.' };
     }
 
-    // 5. Handle Dynamic Sections (Optimized to reduce DB Writes)
+    // 5. Handle Dynamic Sections (CACHE ON WRITE)
     if (sections_json) {
         try {
             const sections = JSON.parse(sections_json);
@@ -214,8 +211,8 @@ export async function updateProfile(prevState: EditProfileState, formData: FormD
                 }
             });
 
-            // B. Batch Check & Fetch Missing Items
-            // This prevents "N+1" fetches. We only fetch what is NOT in the DB.
+            // B. Fetch & Insert Missing Items (Write Logic Here)
+            // This logic is now centralized here to avoid write-storms during browsing
 
             // --- Movies ---
             const movieIds = Array.from(moviesToCache);
@@ -223,7 +220,25 @@ export async function updateProfile(prevState: EditProfileState, formData: FormD
                 const { data: existing } = await supabase.from('movies').select('tmdb_id').in('tmdb_id', movieIds);
                 const existingSet = new Set(existing?.map(m => m.tmdb_id) || []);
                 const missing = movieIds.filter(id => !existingSet.has(id));
-                if (missing.length > 0) await Promise.all(missing.map(id => getMovieDetails(id)));
+
+                if (missing.length > 0) {
+                    await Promise.all(missing.map(async (id) => {
+                        try {
+                            const details = await getMovieDetails(id);
+                            await supabase.from('movies').upsert({
+                                tmdb_id: details.id,
+                                title: details.title,
+                                poster_url: details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : null,
+                                backdrop_url: details.backdrop_path ? `https://image.tmdb.org/t/p/original${details.backdrop_path}` : null,
+                                release_date: details.release_date,
+                                director: details.director,
+                                overview: details.overview,
+                                genres: details.genres,
+                                cast: details.cast
+                            });
+                        } catch (e) { console.error(`Failed to cache movie ${id}`, e); }
+                    }));
+                }
             }
 
             // --- Series ---
@@ -232,7 +247,26 @@ export async function updateProfile(prevState: EditProfileState, formData: FormD
                 const { data: existing } = await supabase.from('series').select('tmdb_id').in('tmdb_id', seriesIds);
                 const existingSet = new Set(existing?.map(s => s.tmdb_id) || []);
                 const missing = seriesIds.filter(id => !existingSet.has(id));
-                if (missing.length > 0) await Promise.all(missing.map(id => getSeriesDetails(id)));
+
+                if (missing.length > 0) {
+                    await Promise.all(missing.map(async (id) => {
+                        try {
+                            const details = await getSeriesDetails(id);
+                            await supabase.from('series').upsert({
+                                tmdb_id: details.id,
+                                title: details.title,
+                                poster_url: details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : null,
+                                backdrop_url: details.backdrop_path ? `https://image.tmdb.org/t/p/original${details.backdrop_path}` : null,
+                                release_date: details.release_date,
+                                creator: details.creator,
+                                number_of_seasons: details.number_of_seasons,
+                                overview: details.overview,
+                                genres: details.genres,
+                                cast: details.cast
+                            });
+                        } catch (e) { console.error(`Failed to cache series ${id}`, e); }
+                    }));
+                }
             }
 
             // --- People ---
@@ -241,11 +275,29 @@ export async function updateProfile(prevState: EditProfileState, formData: FormD
                 const { data: existing } = await supabase.from('people').select('tmdb_id').in('tmdb_id', personIds);
                 const existingSet = new Set(existing?.map(p => Number(p.tmdb_id)) || []);
                 const missing = personIds.filter(id => !existingSet.has(id));
-                if (missing.length > 0) await Promise.all(missing.map(id => getPersonDetails(id)));
+
+                if (missing.length > 0) {
+                    await Promise.all(missing.map(async (id) => {
+                        try {
+                            const details = await getPersonDetails(id);
+                            await supabase.from('people').upsert({
+                                tmdb_id: details.id,
+                                name: details.name,
+                                biography: details.biography,
+                                birthday: details.birthday || null,
+                                deathday: details.deathday || null,
+                                place_of_birth: details.place_of_birth,
+                                profile_path: details.profile_path,
+                                known_for_department: details.known_for_department,
+                                gender: details.gender,
+                                updated_at: new Date().toISOString(),
+                            });
+                        } catch (e) { console.error(`Failed to cache person ${id}`, e); }
+                    }));
+                }
             }
 
             // C. Database Update (Sections & Items)
-            // Use a transaction-like approach: delete old sections for this user, insert new ones.
             await supabase.from('profile_sections').delete().eq('user_id', user.id);
 
             for (let i = 0; i < sections.length; i++) {
@@ -289,7 +341,6 @@ export async function updateProfile(prevState: EditProfileState, formData: FormD
     }
 
     revalidatePath('/profile', 'layout');
-
     return { message: 'Success' };
 }
 
@@ -361,16 +412,12 @@ export async function updateProfileSettings(prevState: SettingsState, formData: 
     return { message: 'Your settings have been saved successfully!' };
 }
 
-// Find the searchProfiles function and update the .select() part
-// ... imports
-
 export async function searchProfiles(query: string): Promise<ProfileSearchResult[]> {
     if (query.length < 2) return [];
 
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    // 1. Perform the Search
     const { data: profiles, error } = await supabase
         .from('profiles')
         .select(`
@@ -390,9 +437,7 @@ export async function searchProfiles(query: string): Promise<ProfileSearchResult
         return [];
     }
 
-    // 2. Enrich with Follow Status (if logged in)
-    // We do this efficiently by fetching relationships for the found IDs in one go.
-    let followMap = new Map<string, string>(); // TargetID -> Status
+    let followMap = new Map<string, string>();
 
     if (user && profiles.length > 0) {
         const profileIds = profiles.map(p => p.id);
@@ -410,12 +455,9 @@ export async function searchProfiles(query: string): Promise<ProfileSearchResult
         }
     }
 
-    // 3. Merge Data
     const results: ProfileSearchResult[] = profiles.map(profile => ({
         ...profile,
-        // Map DB visibility to specific string if needed, mostly it matches
         visibility: profile.visibility as 'public' | 'private',
-        // Default to 'not_following' if not found in map
         follow_status: (followMap.get(profile.id) || 'not_following') as 'not_following' | 'pending' | 'accepted'
     }));
 
@@ -483,9 +525,7 @@ export async function deleteMyAccount(
         };
     }
 
-    // Clean up storage before DB
     try {
-        // 1. Profile Pics
         const { data: profileFiles } = await supabase.storage.from('profile_pics').list(user.id);
         if (profileFiles && profileFiles.length > 0) {
             const filesToRemove = profileFiles.map(file => `${user.id}/${file.name}`);
@@ -493,7 +533,6 @@ export async function deleteMyAccount(
             if (removeError) console.error("Failed to delete profile pics:", removeError);
         }
 
-        // 2. Timeline Photos (if applicable)
         const { data: timelineFiles } = await supabase.storage.from('timeline_photos').list(user.id);
         if (timelineFiles && timelineFiles.length > 0) {
             const timelineRemovals = timelineFiles.map(file => `${user.id}/${file.name}`);
@@ -504,7 +543,6 @@ export async function deleteMyAccount(
         console.error('Error cleaning up storage files:', storageError);
     }
 
-    // Delete DB Record
     const { error: rpcError } = await supabase.rpc('delete_my_account');
 
     if (rpcError) {

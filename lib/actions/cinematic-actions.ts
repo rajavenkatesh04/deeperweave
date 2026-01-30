@@ -1,7 +1,7 @@
 'use server';
 
-import { createClient } from '@/utils/supabase/server';
 import { countries } from '@/lib/data/countries';
+import { createClient } from '@/utils/supabase/server';
 
 // =====================================================================
 // == TYPE DEFINITIONS
@@ -170,7 +170,6 @@ async function getUserRegionProfile() {
     }
 }
 
-// ✨ Helper to get date ranges
 function getDateWindow(daysBack: number) {
     const today = new Date();
     const past = new Date();
@@ -245,7 +244,6 @@ export type DiscoverFilters = {
     with_genres?: string;
     year?: number;
     page?: number;
-    // ✨ New Date Filters
     release_date_gte?: string;
     release_date_lte?: string;
 };
@@ -254,7 +252,7 @@ export async function discoverMedia(filters: DiscoverFilters) {
     const params: Record<string, string> = {
         page: (filters.page || 1).toString(),
         sort_by: filters.sort_by || 'popularity.desc',
-        'vote_count.gte': '5', // Lowered vote count for "Just Released" items
+        'vote_count.gte': '5',
     };
 
     if (filters.region) params.region = filters.region;
@@ -266,7 +264,6 @@ export async function discoverMedia(filters: DiscoverFilters) {
         else params.first_air_date_year = filters.year.toString();
     }
 
-    // ✨ Apply Date Filters Correctly based on Media Type
     if (filters.release_date_gte) {
         if (filters.type === 'movie') params['primary_release_date.gte'] = filters.release_date_gte;
         else params['first_air_date.gte'] = filters.release_date_gte;
@@ -284,18 +281,13 @@ export async function discoverMedia(filters: DiscoverFilters) {
     return fetchTmdbList(`/discover/${filters.type}`, params);
 }
 
-// ✨ NEW: Regional Discovery Strategy (Updated for Recency)
 export async function getRegionalDiscoverSections(): Promise<RegionSpecificSection[]> {
     const { country, countryName } = await getUserRegionProfile();
     const sections: RegionSpecificSection[] = [];
-
-    // Get a 45-day window to ensure we catch recent hits, not just yesterday's releases (which might be empty)
     const recentWindow = getDateWindow(45);
 
-    // === INDIA LOGIC (The "Different Woods") ===
     if (country === 'IN') {
         const [bollywood, tollywood, kollywood, topTrending] = await Promise.all([
-            // Hindi - Recent Releases
             discoverMedia({
                 type: 'movie',
                 sort_by: 'popularity.desc',
@@ -304,7 +296,6 @@ export async function getRegionalDiscoverSections(): Promise<RegionSpecificSecti
                 release_date_gte: recentWindow.gte,
                 release_date_lte: recentWindow.lte
             }),
-            // Telugu - Recent Releases
             discoverMedia({
                 type: 'movie',
                 sort_by: 'popularity.desc',
@@ -313,7 +304,6 @@ export async function getRegionalDiscoverSections(): Promise<RegionSpecificSecti
                 release_date_gte: recentWindow.gte,
                 release_date_lte: recentWindow.lte
             }),
-            // Tamil - Recent Releases
             discoverMedia({
                 type: 'movie',
                 sort_by: 'popularity.desc',
@@ -322,7 +312,6 @@ export async function getRegionalDiscoverSections(): Promise<RegionSpecificSecti
                 release_date_gte: recentWindow.gte,
                 release_date_lte: recentWindow.lte
             }),
-            // General Trending
             fetchTmdbList('/trending/all/day', { region: 'IN' })
         ]);
 
@@ -331,8 +320,6 @@ export async function getRegionalDiscoverSections(): Promise<RegionSpecificSecti
         sections.push({ title: 'Just Released (Telugu)', items: tollywood, href: '/discover/movies' });
         sections.push({ title: 'Just Released (Tamil)', items: kollywood, href: '/discover/movies' });
     }
-
-    // === SOUTH KOREA LOGIC ===
     else if (country === 'KR') {
         const [kMovies, kDramas] = await Promise.all([
             discoverMedia({
@@ -355,8 +342,6 @@ export async function getRegionalDiscoverSections(): Promise<RegionSpecificSecti
         sections.push({ title: 'New Korean Movies', items: kMovies, href: '/discover/movies' });
         sections.push({ title: 'Airing K-Dramas', items: kDramas, href: '/discover/kdramas' });
     }
-
-    // === JAPAN LOGIC ===
     else if (country === 'JP') {
         const [anime, liveAction] = await Promise.all([
             discoverMedia({
@@ -377,8 +362,6 @@ export async function getRegionalDiscoverSections(): Promise<RegionSpecificSecti
         sections.push({ title: 'Airing Anime', items: anime, href: '/discover/anime' });
         sections.push({ title: 'New Japanese Movies', items: liveAction, href: '/discover/movies' });
     }
-
-    // === DEFAULT GLOBAL FALLBACK ===
     else {
         const [trending] = await Promise.all([
             fetchTmdbList('/trending/all/day', { region: country }),
@@ -429,11 +412,10 @@ export async function searchCinematic(query: string): Promise<CinematicSearchRes
 }
 
 // =====================================================================
-// == DETAILS & CACHING ACTIONS
+// == DETAILS ACTIONS (PURE FETCH - NO CACHE)
 // =====================================================================
 
 export async function getMovieDetails(movieId: number): Promise<RichCinematicDetails> {
-    const supabase = await createClient();
     const TMDB_API_KEY = process.env.TMDB_API_KEY;
     if (!TMDB_API_KEY) throw new Error("TMDB API Key not configured.");
 
@@ -447,13 +429,12 @@ export async function getMovieDetails(movieId: number): Promise<RichCinematicDet
         const data = await res.json();
 
         const recommendations = (data.recommendations?.results || []) as TmdbMultiSearchItem[];
-
         const director = data.credits?.crew?.find((p: any) => p.job === 'Director')?.name || 'N/A';
         const usRelease = data.release_dates?.results?.find((r: any) => r.iso_3166_1 === 'US');
         const certification = usRelease?.release_dates?.[0]?.certification || 'NR';
         const providers = data["watch/providers"]?.results?.IN || data["watch/providers"]?.results?.US || {};
 
-        const details: RichCinematicDetails = {
+        return {
             id: data.id,
             title: data.title,
             media_type: 'movie',
@@ -480,31 +461,6 @@ export async function getMovieDetails(movieId: number): Promise<RichCinematicDet
             images: data.images || { backdrops: [] },
             similar: []
         };
-
-        // ✨ OPTIMIZATION: Check if exists to prevent "Write-on-Read" storm
-        // Only insert if the movie is completely missing from our DB.
-        const { data: existingMovie } = await supabase
-            .from('movies')
-            .select('tmdb_id')
-            .eq('tmdb_id', movieId)
-            .single();
-
-        if (!existingMovie) {
-            supabase.from('movies').upsert({
-                tmdb_id: movieId,
-                title: details.title,
-                poster_url: details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : null,
-                backdrop_url: details.backdrop_path ? `https://image.tmdb.org/t/p/original${details.backdrop_path}` : null,
-                release_date: details.release_date,
-                director: details.director,
-                overview: details.overview,
-                genres: details.genres,
-                cast: details.cast
-            }).then(({ error }) => { if (error) console.error("Movie Cache Error:", error); });
-        }
-
-        return details;
-
     } catch (error) {
         console.error("TMDB Fetch Error:", error);
         throw new Error("Could not fetch movie details.");
@@ -512,7 +468,6 @@ export async function getMovieDetails(movieId: number): Promise<RichCinematicDet
 }
 
 export async function getSeriesDetails(seriesId: number): Promise<RichCinematicDetails> {
-    const supabase = await createClient();
     const TMDB_API_KEY = process.env.TMDB_API_KEY;
     if (!TMDB_API_KEY) throw new Error("TMDB API Key not configured.");
 
@@ -526,13 +481,12 @@ export async function getSeriesDetails(seriesId: number): Promise<RichCinematicD
         const data = await res.json();
 
         const recommendations = (data.recommendations?.results || []) as TmdbMultiSearchItem[];
-
         const creator = data.created_by?.[0]?.name || 'N/A';
         const usRating = data.content_ratings?.results?.find((r: any) => r.iso_3166_1 === 'US');
         const certification = usRating?.rating || 'NR';
         const providers = data["watch/providers"]?.results?.IN || data["watch/providers"]?.results?.US || {};
 
-        const details: RichCinematicDetails = {
+        return {
             id: data.id,
             title: data.name,
             media_type: 'tv',
@@ -560,32 +514,6 @@ export async function getSeriesDetails(seriesId: number): Promise<RichCinematicD
             images: data.images || { backdrops: [] },
             similar: []
         };
-
-        // ✨ OPTIMIZATION: Check if exists to prevent "Write-on-Read" storm
-        // Only insert if the series is completely missing from our DB.
-        const { data: existingSeries } = await supabase
-            .from('series')
-            .select('tmdb_id')
-            .eq('tmdb_id', seriesId)
-            .single();
-
-        if (!existingSeries) {
-            supabase.from('series').upsert({
-                tmdb_id: seriesId,
-                title: details.title,
-                poster_url: details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : null,
-                backdrop_url: details.backdrop_path ? `https://image.tmdb.org/t/p/original${details.backdrop_path}` : null,
-                release_date: details.release_date,
-                creator: details.creator,
-                number_of_seasons: details.number_of_seasons,
-                overview: details.overview,
-                genres: details.genres,
-                cast: details.cast
-            }).then(({ error }) => { if (error) console.error("TV Cache Error:", error); });
-        }
-
-        return details;
-
     } catch (error) {
         console.error("TMDB TV Fetch Error:", error);
         throw new Error("Could not fetch series details.");
@@ -593,7 +521,6 @@ export async function getSeriesDetails(seriesId: number): Promise<RichCinematicD
 }
 
 export async function getPersonDetails(personId: number): Promise<PersonDetails> {
-    const supabase = await createClient();
     const TMDB_API_KEY = process.env.TMDB_API_KEY;
     if (!TMDB_API_KEY) throw new Error("TMDB API Key not configured.");
 
@@ -627,7 +554,7 @@ export async function getPersonDetails(personId: number): Promise<PersonDetails>
                 .map((m) => ({ file_path: m.backdrop_path! }));
         }
 
-        const details: PersonDetails = {
+        return {
             id: data.id,
             name: data.name,
             biography: data.biography,
@@ -638,44 +565,12 @@ export async function getPersonDetails(personId: number): Promise<PersonDetails>
             known_for_department: data.known_for_department,
             gender: data.gender,
             also_known_as: data.also_known_as || [],
-
             backdrop_path: backdrops[0]?.file_path || null,
             social_ids: data.external_ids || {},
             images: data.images?.profiles || [],
             known_for: knownFor,
             backdrops: backdrops.slice(0, 10)
         };
-
-        // ✨ OPTIMIZATION: Stale-While-Revalidate
-        // Check if the person exists AND if the data is older than 7 days
-        const { data: existingPerson } = await supabase
-            .from('people')
-            .select('updated_at')
-            .eq('tmdb_id', data.id)
-            .single();
-
-        const ONE_WEEK = 7 * 24 * 60 * 60 * 1000;
-        const isStale = !existingPerson || !existingPerson.updated_at || (Date.now() - new Date(existingPerson.updated_at).getTime() > ONE_WEEK);
-
-        if (isStale) {
-            supabase.from('people').upsert({
-                tmdb_id: data.id,
-                name: data.name,
-                biography: data.biography,
-                birthday: data.birthday || null,
-                deathday: data.deathday || null,
-                place_of_birth: data.place_of_birth,
-                profile_path: data.profile_path,
-                known_for_department: data.known_for_department,
-                gender: data.gender,
-                updated_at: new Date().toISOString(),
-            }).then(({ error }) => {
-                if (error && error.code !== '42P01') console.error("Actor Cache Error:", error);
-            });
-        }
-
-        return details;
-
     } catch (error) {
         console.error("TMDB Person Fetch Error:", error);
         throw new Error("Could not fetch person details.");
