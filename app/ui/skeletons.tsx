@@ -363,3 +363,139 @@ export function PostCardGridSkeleton() {
         </div>
     );
 }
+
+
+// --- 11. ANALYTICS SKELETONS ---
+
+// Heatmap Skeleton (Mimics app/ui/analytics/heatmap.tsx)
+export function HeatmapSkeleton() {
+    return (
+        <div className="p-6 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm h-full">
+            {/* Header: Count + Year Pills */}
+            <div className="flex flex-col sm:flex-row justify-between mb-8 gap-4">
+                <div className="flex items-baseline gap-2">
+                    <SkeletonBlock className="h-10 w-16 rounded-md" />
+                    <SkeletonBlock className="h-4 w-24 rounded-full" />
+                </div>
+                <div className="flex gap-2">
+                    <SkeletonBlock className="h-8 w-16 rounded-full" />
+                    <SkeletonBlock className="h-8 w-16 rounded-full" />
+                </div>
+            </div>
+
+            {/* Grid: 4 columns of months */}
+            <div className="grid grid-cols-3 md:grid-cols-4 gap-x-6 gap-y-8">
+                {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="flex flex-col gap-2">
+                        <SkeletonBlock className="h-3 w-10 rounded-sm" />
+                        {/* Days Grid (7x5 approx) */}
+                        <div className="grid grid-cols-7 gap-1">
+                            {Array.from({ length: 35 }).map((_, j) => (
+                                <div key={j} className="w-full aspect-square bg-zinc-200 dark:bg-zinc-800 rounded-[1px] animate-pulse" />
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+// Stats Overview Skeleton (Mimics app/ui/analytics/stats-overview.tsx)
+export function StatsOverviewSkeleton() {
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Time Card */}
+            <div className="p-6 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl h-48 flex flex-col justify-between">
+                <div className="flex items-center gap-2">
+                    <SkeletonBlock className="h-4 w-4 rounded-full" />
+                    <SkeletonBlock className="h-3 w-24 rounded-full" />
+                </div>
+                <div>
+                    <div className="flex items-baseline gap-2 mb-2">
+                        <SkeletonBlock className="h-12 w-32 rounded-md" />
+                        <SkeletonBlock className="h-6 w-10 rounded-md" />
+                    </div>
+                    <SkeletonBlock className="h-3 w-40 rounded-full" />
+                </div>
+            </div>
+
+            {/* Buddy Card */}
+            <div className="p-6 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl h-48 flex flex-col justify-between">
+                <div className="flex items-center gap-2">
+                    <SkeletonBlock className="h-4 w-4 rounded-full" />
+                    <SkeletonBlock className="h-3 w-32 rounded-full" />
+                </div>
+                <div className="flex items-center gap-4">
+                    <SkeletonBlock className="h-14 w-14 rounded-full shrink-0 border-2 border-zinc-100 dark:border-zinc-800" />
+                    <div className="space-y-2">
+                        <SkeletonBlock className="h-6 w-32 rounded-md" />
+                        <SkeletonBlock className="h-3 w-24 rounded-full" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// Platform Chart Skeleton (Mimics app/ui/analytics/platform-chart.tsx)
+export function PlatformChartSkeleton() {
+    return (
+        <div className="flex flex-col h-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6">
+            {/* Header */}
+            <div className="flex items-center gap-2 mb-6 border-b border-zinc-100 dark:border-zinc-900 pb-4">
+                <SkeletonBlock className="h-4 w-4 rounded-full" />
+                <SkeletonBlock className="h-3 w-32 rounded-full" />
+            </div>
+
+            {/* Donut Circle */}
+            <div className="flex-1 flex items-center justify-center min-h-[220px]">
+                <div className="relative w-48 h-48 rounded-full border-8 border-zinc-100 dark:border-zinc-900 animate-pulse flex items-center justify-center">
+                    <div className="flex flex-col items-center gap-1">
+                        <SkeletonBlock className="h-8 w-12 rounded-md" />
+                        <SkeletonBlock className="h-2 w-8 rounded-full" />
+                    </div>
+                </div>
+            </div>
+
+            {/* Legend List */}
+            <div className="mt-6 space-y-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                            <SkeletonBlock className="h-2.5 w-2.5 rounded-full" />
+                            <SkeletonBlock className="h-3 w-20 rounded-full" />
+                        </div>
+                        <SkeletonBlock className="h-3 w-8 rounded-full" />
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+// Full Analytics Page Skeleton
+export function AnalyticsPageSkeleton() {
+    return (
+        <div className="w-full pb-20 relative z-10 max-w-4xl mx-auto pt-8 px-4 md:px-6">
+            {/* Page Title */}
+            <div className="mb-10 space-y-2">
+                <SkeletonBlock className="h-8 w-40 rounded-md" />
+                <SkeletonBlock className="h-4 w-64 rounded-full" />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+                {/* Left Col */}
+                <div className="lg:col-span-2 space-y-8">
+                    <HeatmapSkeleton />
+                    <StatsOverviewSkeleton />
+                </div>
+
+                {/* Right Col */}
+                <div className="h-full">
+                    <PlatformChartSkeleton />
+                </div>
+            </div>
+        </div>
+    );
+}
