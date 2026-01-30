@@ -499,3 +499,74 @@ export function AnalyticsPageSkeleton() {
         </div>
     );
 }
+
+
+// ... existing imports
+
+// --- 12. MORE / SETTINGS PAGE SKELETON ---
+export function MorePageSkeleton() {
+    return (
+        <div className="w-full pb-20 relative z-10 max-w-2xl mx-auto pt-8 px-4 md:px-6">
+            {/* Header */}
+            <div className="mb-10 space-y-2">
+                <SkeletonBlock className="h-8 w-32 rounded-md" />
+                <SkeletonBlock className="h-4 w-48 rounded-full" />
+            </div>
+
+            <div className="space-y-10">
+                {/* Section 1 */}
+                <div className="space-y-4">
+                    <SkeletonBlock className="h-3 w-20 rounded-full" /> {/* Label */}
+                    <div className="space-y-3">
+                        {/* Menu Item 1 */}
+                        <div className="flex items-center p-4 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl h-20">
+                            <SkeletonBlock className="w-10 h-10 rounded-xl shrink-0 mr-4" />
+                            <div className="space-y-2 flex-1">
+                                <SkeletonBlock className="h-4 w-32 rounded-md" />
+                                <SkeletonBlock className="h-3 w-48 rounded-full" />
+                            </div>
+                        </div>
+                        {/* Menu Item 2 */}
+                        <div className="flex items-center p-4 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl h-20">
+                            <SkeletonBlock className="w-10 h-10 rounded-xl shrink-0 mr-4" />
+                            <div className="space-y-2 flex-1">
+                                <SkeletonBlock className="h-4 w-24 rounded-md" />
+                                <SkeletonBlock className="h-3 w-40 rounded-full" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Section 2 */}
+                <div className="space-y-4">
+                    <SkeletonBlock className="h-3 w-24 rounded-full" />
+                    <div className="space-y-3">
+                        <div className="flex items-center p-4 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl h-16">
+                            <SkeletonBlock className="w-10 h-10 rounded-xl shrink-0 mr-4" />
+                            <SkeletonBlock className="h-4 w-28 rounded-md" />
+                        </div>
+                        <div className="flex items-center p-4 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl h-16">
+                            <SkeletonBlock className="w-10 h-10 rounded-xl shrink-0 mr-4" />
+                            <SkeletonBlock className="h-4 w-32 rounded-md" />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Section 3 (Session) */}
+                <div className="space-y-4">
+                    <SkeletonBlock className="h-3 w-16 rounded-full" />
+                    <div className="p-5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl h-32 flex flex-col justify-between">
+                        <div className="flex justify-between items-start">
+                            <div className="space-y-2">
+                                <SkeletonBlock className="h-4 w-24 rounded-md" />
+                                <SkeletonBlock className="h-3 w-40 rounded-full" />
+                            </div>
+                            <SkeletonBlock className="h-6 w-16 rounded-full" />
+                        </div>
+                        <SkeletonBlock className="h-11 w-full rounded-xl" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}

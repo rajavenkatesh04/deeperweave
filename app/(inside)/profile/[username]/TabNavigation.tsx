@@ -47,10 +47,10 @@ export default function TabNavigation({
 
     const tabs = [
         { name: 'Podium', href: `${baseUrl}/podium` },
-        { name: 'Analytics', href: `${baseUrl}/analytics` },
         { name: 'Timeline', href: `${baseUrl}/timeline` },
         { name: 'Lists', href: `${baseUrl}/lists` },
         { name: 'Posts', href: `${baseUrl}/posts` },
+        { name: 'Analytics', href: `${baseUrl}/analytics` },
     ];
 
     if (isOwnProfile) {

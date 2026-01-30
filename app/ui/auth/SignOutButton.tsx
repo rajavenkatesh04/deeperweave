@@ -4,6 +4,9 @@ import { useState, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { PowerIcon } from '@heroicons/react/24/outline';
 import { logout } from '@/lib/actions/auth-actions';
+import LoadingSpinner from '@/app/ui/loading-spinner';
+import clsx from 'clsx';
+import { geistSans } from '@/app/ui/fonts';
 
 export default function SignOutButton({
                                           children,
@@ -13,6 +16,7 @@ export default function SignOutButton({
     className?: string;
 }) {
     const [isOpen, setIsOpen] = useState(false);
+    const [isSigningOut, setIsSigningOut] = useState(false);
 
     return (
         <>
@@ -27,7 +31,12 @@ export default function SignOutButton({
 
             {/* The Confirmation Modal */}
             <Transition appear show={isOpen} as={Fragment}>
-                <Dialog as="div" className="relative z-[100]" onClose={() => setIsOpen(false)}>
+                <Dialog
+                    as="div"
+                    className={clsx("relative z-[100]", geistSans.className)}
+                    onClose={() => !isSigningOut && setIsOpen(false)}
+                >
+                    {/* Backdrop */}
                     <Transition.Child
                         as={Fragment}
                         enter="ease-out duration-300"
@@ -37,9 +46,10 @@ export default function SignOutButton({
                         leaveFrom="opacity-100"
                         leaveTo="opacity-0"
                     >
-                        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" />
+                        <div className="fixed inset-0 bg-black/20 dark:bg-black/40 backdrop-blur-sm" />
                     </Transition.Child>
 
+                    {/* Modal Position */}
                     <div className="fixed inset-0 overflow-y-auto">
                         <div className="flex min-h-full items-center justify-center p-4 text-center">
                             <Transition.Child
@@ -51,43 +61,55 @@ export default function SignOutButton({
                                 leaveFrom="opacity-100 scale-100"
                                 leaveTo="opacity-0 scale-95"
                             >
-                                <Dialog.Panel className="w-full max-w-sm bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 shadow-2xl p-6 relative">
-                                    {/* Decorative Corners */}
-                                    <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-zinc-900 dark:border-zinc-100" />
-                                    <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-zinc-900 dark:border-zinc-100" />
-                                    <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-zinc-900 dark:border-zinc-100" />
-                                    <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-zinc-900 dark:border-zinc-100" />
+                                <Dialog.Panel className="w-full max-w-xs transform overflow-hidden rounded-2xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 p-6 text-left align-middle shadow-xl transition-all">
 
-                                    <div className="text-center space-y-4">
-                                        <div className="mx-auto flex h-12 w-12 items-center justify-center bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-500">
-                                            <PowerIcon className="h-6 w-6" />
+                                    <div className="flex flex-col items-center gap-4 text-center">
+                                        {/* Icon */}
+                                        <div className="h-10 w-10 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center text-red-600 dark:text-red-500">
+                                            <PowerIcon className="h-5 w-5" strokeWidth={2} />
                                         </div>
 
-                                        <Dialog.Title className="text-lg font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-100">
-                                            Terminate Session?
-                                        </Dialog.Title>
+                                        {/* Text */}
+                                        <div className="space-y-1">
+                                            <Dialog.Title as="h3" className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+                                                Sign out
+                                            </Dialog.Title>
+                                            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                                                Are you sure? You will need to log in again to access your library.
+                                            </p>
+                                        </div>
 
-                                        <Dialog.Description className="text-sm text-zinc-500 dark:text-zinc-400 font-mono">
-                                            Are you sure you want to log out? Local session data will be cleared.
-                                        </Dialog.Description>
-
-                                        <div className="flex gap-3 pt-4">
+                                        {/* Actions */}
+                                        <div className="flex gap-3 w-full mt-2">
                                             <button
+                                                type="button"
                                                 onClick={() => setIsOpen(false)}
-                                                className="flex-1 py-2 px-4 border border-zinc-200 dark:border-zinc-800 text-xs font-bold uppercase tracking-wider hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors text-zinc-900 dark:text-zinc-100"
+                                                disabled={isSigningOut}
+                                                className="flex-1 h-10 rounded-xl border border-zinc-200 dark:border-zinc-800 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors disabled:opacity-50"
                                             >
                                                 Cancel
                                             </button>
-                                            <form action={logout} className="flex-1">
+
+                                            <form
+                                                action={logout}
+                                                className="flex-1"
+                                                onSubmit={() => setIsSigningOut(true)}
+                                            >
                                                 <button
                                                     type="submit"
-                                                    className="w-full h-full py-2 px-4 bg-red-600 text-white text-xs font-bold uppercase tracking-wider hover:bg-red-500 transition-colors"
+                                                    disabled={isSigningOut}
+                                                    className="w-full h-10 flex items-center justify-center rounded-xl bg-red-600 text-sm font-bold text-white hover:bg-red-700 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
                                                 >
-                                                    Confirm
+                                                    {isSigningOut ? (
+                                                        <LoadingSpinner className="text-white w-4 h-4" />
+                                                    ) : (
+                                                        "Confirm"
+                                                    )}
                                                 </button>
                                             </form>
                                         </div>
                                     </div>
+
                                 </Dialog.Panel>
                             </Transition.Child>
                         </div>
