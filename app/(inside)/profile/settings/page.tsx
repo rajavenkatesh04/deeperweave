@@ -23,16 +23,7 @@ export default async function SettingsPage() {
                 />
             </div>
 
-            <div className="max-w-3xl mx-auto px-6 mt-8 md:mt-12">
-                <div className="mb-10 pl-6 border-l-2 border-zinc-900 dark:border-zinc-100">
-                    <h1 className={`${PlayWriteNewZealandFont.className} text-3xl text-zinc-900 dark:text-zinc-100 mb-2`}>
-                        Settings
-                    </h1>
-                    <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-md leading-relaxed">
-                        Manage your profile visibility, account identity, and content preferences.
-                    </p>
-                </div>
-
+            <div className="max-w-4xl mx-auto px-6 mt-8 md:mt-12">
                 {/* Settings Form */}
                 <SettingsForm
                     profile={userData.profile}

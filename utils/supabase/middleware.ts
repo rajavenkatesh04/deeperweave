@@ -4,6 +4,8 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { checkProfileCompletion } from '@/lib/data/user-data';
 
+// utils/supabase/middleware.ts
+
 export async function updateSession(request: NextRequest) {
     let supabaseResponse = NextResponse.next({
         request,
@@ -33,22 +35,17 @@ export async function updateSession(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     const { pathname } = request.nextUrl;
 
-    // --- MODIFIED LOGIC ---
-
-    // ✨ FIX: Removed '/blog' from the list of protected routes.
-    // These routes now require a *complete* profile to access.
     const protectedAppRoutes = ['/profile', '/create', '/settings'];
-
-    // All routes that require a user to be logged in at all.
     const allProtectedRoutes = [...protectedAppRoutes, '/onboarding'];
 
     if (user) {
-        // If user is logged in, redirect away from auth pages
-        if (pathname.startsWith('/auth')) {
+        // FIX: Allow the user to stay on the reset password page if they are logged in.
+        // Otherwise, redirect them away from other auth pages (like login/signup) to profile.
+        if (pathname.startsWith('/auth') && pathname !== '/auth/reset-password') {
             return NextResponse.redirect(new URL('/profile', request.url));
         }
 
-        // NEW: Redirect logged-in user away from Landing Page ('/')
+        // Redirect logged-in user away from Landing Page ('/')
         if (pathname === '/') {
             return NextResponse.redirect(new URL('/profile', request.url));
         }
@@ -56,20 +53,16 @@ export async function updateSession(request: NextRequest) {
         // Check profile completion status
         const isProfileComplete = await checkProfileCompletion(user.id);
 
-        // If profile is NOT complete and user is trying to access a main app route...
         if (!isProfileComplete && protectedAppRoutes.some(route => pathname.startsWith(route))) {
-            // ...redirect them to onboarding.
             return NextResponse.redirect(new URL('/onboarding', request.url));
         }
 
-        // If profile IS complete and user tries to access onboarding...
         if (isProfileComplete && pathname.startsWith('/onboarding')) {
-            // ...redirect them to their profile.
             return NextResponse.redirect(new URL('/profile', request.url));
         }
 
     } else {
-        // If user is not logged in, protect only the defined routes
+        // If user is not logged in, protect the defined routes
         if (allProtectedRoutes.some(route => pathname.startsWith(route))) {
             return NextResponse.redirect(new URL('/auth/login', request.url));
         }

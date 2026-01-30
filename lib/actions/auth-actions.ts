@@ -195,7 +195,6 @@ const ForgotPasswordSchema = z.object({
     email: z.string().email({ message: 'Please enter a valid email address.' }),
 });
 
-// --- ADD THIS NEW ACTION ---
 export async function requestPasswordReset(
     prevState: ForgotPasswordState,
     formData: FormData
@@ -214,19 +213,18 @@ export async function requestPasswordReset(
 
     const { email } = validatedFields.data;
 
-    // This is the URL your user will be redirected to after clicking the
-    // reset link in their email.
     const origin = new URL(process.env.NEXT_PUBLIC_BASE_URL!).origin;
-    const redirectTo = `${origin}/auth/reset-password`;
+
+    // FIX: Redirect to /auth/confirm first to exchange the code for a session,
+    // then forward the user to the reset-password page.
+    const redirectTo = `${origin}/auth/confirm?next=/auth/reset-password`;
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: redirectTo,
     });
 
     if (error) {
-        // Don't reveal if the email exists or not, just log the error
         console.error('Password reset error:', error);
-        // Return a generic success message to prevent email enumeration
         return {
             success: true,
             message: 'If an account with this email exists, a reset link has been sent.'
