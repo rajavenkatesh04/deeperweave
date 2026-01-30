@@ -6,11 +6,12 @@ import { useRouter } from 'next/navigation';
 import RequestActions from '@/app/(inside)/profile/notifications/RequestActions';
 import { markNotificationAsRead, dismissNotification } from '@/lib/actions/notification-actions';
 import { HeartIcon, ChatBubbleLeftIcon, UserPlusIcon, XMarkIcon } from '@heroicons/react/24/solid';
+import { geistSans } from '@/app/ui/fonts';
 
 type NotificationType = 'FOLLOW_REQUEST' | 'LIKE' | 'COMMENT' | 'SYSTEM' | 'NEW_FOLLOWER' | 'new_follower';
 
 interface NotificationProps {
-    id: string; // The ID of the notification row
+    id: string;
     type: NotificationType;
     is_read: boolean;
     actor: {
@@ -19,92 +20,110 @@ interface NotificationProps {
         profile_pic_url: string | undefined;
         display_name: string | undefined;
     };
-    payload?: any; // Contains slug, post_thumbnail etc
+    payload?: any;
     timestamp: string;
 }
 
 export default function NotificationItem({ id, type, is_read, actor, payload, timestamp }: NotificationProps) {
     const router = useRouter();
 
-    // Handle clicking the main body (Navigate + Mark Read)
+    // Interaction Handler
     const handleInteraction = async () => {
         if (!is_read && type !== 'FOLLOW_REQUEST') {
-            // Fire and forget - don't await to keep nav snappy
             markNotificationAsRead(id);
         }
-
-        // Navigate if it's content
         if ((type === 'LIKE' || type === 'COMMENT') && payload?.slug) {
             router.push(`/blog/${payload.slug}`);
         }
     };
 
+    // Helper: Determine Icon & Color based on type
+    const getIcon = () => {
+        switch (type) {
+            case 'LIKE': return <HeartIcon className="w-3 h-3 text-white" />;
+            case 'COMMENT': return <ChatBubbleLeftIcon className="w-3 h-3 text-white" />;
+            case 'FOLLOW_REQUEST':
+            case 'NEW_FOLLOWER':
+            case 'new_follower': return <UserPlusIcon className="w-3 h-3 text-white" />;
+            default: return null;
+        }
+    };
+
+    const getBadgeColor = () => {
+        switch (type) {
+            case 'LIKE': return 'bg-red-500 border-red-500';
+            case 'COMMENT': return 'bg-blue-500 border-blue-500';
+            default: return 'bg-zinc-900 dark:bg-zinc-700 border-zinc-900 dark:border-zinc-700';
+        }
+    };
+
     return (
         <div
-            className={`group relative flex items-center gap-3 p-4 border-b border-zinc-100 dark:border-zinc-900 transition-all
-                ${is_read ? 'bg-white dark:bg-black hover:bg-zinc-50 dark:hover:bg-zinc-900/50' : 'bg-blue-50/50 dark:bg-blue-900/10 hover:bg-blue-50 dark:hover:bg-blue-900/20'}
+            onClick={handleInteraction}
+            className={`
+                group relative flex items-center justify-between p-4 mb-3
+                bg-white dark:bg-zinc-950 border rounded-2xl transition-all duration-200 cursor-pointer
+                ${is_read
+                ? 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
+                : 'border-blue-200 dark:border-blue-900/50 bg-blue-50/30 dark:bg-blue-900/10'
+            }
+                ${geistSans.className}
             `}
         >
-            {/* UNREAD INDICATOR DOT */}
-            {!is_read && (
-                <div className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-blue-500 rounded-full" />
-            )}
+            {/* LEFT SIDE: Avatar & Text */}
+            <div className="flex items-center gap-4 flex-1 min-w-0">
 
-            {/* CLICKABLE AREA (Covering most of the card) */}
-            <div onClick={handleInteraction} className="flex-1 flex items-center gap-3 cursor-pointer min-w-0">
-
-                {/* 1. Avatar */}
-                <div className="shrink-0 relative">
-                    <div className="w-10 h-10 md:w-12 md:h-12 relative bg-zinc-200 dark:bg-zinc-800 shadow-sm">
+                {/* Avatar with Badge */}
+                <div className="relative shrink-0">
+                    <div className="w-11 h-11 relative rounded-full overflow-hidden border border-zinc-100 dark:border-zinc-800">
                         <Image
                             src={actor.profile_pic_url || '/placeholder-user.jpg'}
                             alt={actor.username}
                             fill
                             className="object-cover"
                         />
-                        <div className="absolute inset-0 border border-black/5 dark:border-white/10 pointer-events-none" />
                     </div>
-                    {/* Tiny Icon Badge */}
-                    <div className="absolute -bottom-1 -right-1 p-0.5 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 shadow-sm z-10">
-                        {type === 'LIKE' && <HeartIcon className="w-2.5 h-2.5 text-red-600" />}
-                        {type === 'COMMENT' && <ChatBubbleLeftIcon className="w-2.5 h-2.5 text-blue-600" />}
-                        {type === 'FOLLOW_REQUEST' && <UserPlusIcon className="w-2.5 h-2.5 text-zinc-900 dark:text-zinc-100" />}
+                    {/* Badge Indicator */}
+                    <div className={`absolute -bottom-0.5 -right-0.5 p-1 rounded-full border-2 border-white dark:border-zinc-950 shadow-sm flex items-center justify-center ${getBadgeColor()}`}>
+                        {getIcon()}
                     </div>
                 </div>
 
-                {/* 2. Text Content */}
-                <div className="flex-1 min-w-0 flex flex-col justify-center">
-                    <div className="text-sm leading-tight truncate pr-8">
-                        <span className="font-bold text-zinc-900 dark:text-zinc-100">
-                            {actor.display_name || actor.username}
-                        </span>
-                        <span className="text-zinc-600 dark:text-zinc-400 ml-1">
-                            {type === 'FOLLOW_REQUEST' && "requested to follow."}
+                {/* Text Content */}
+                <div className="flex flex-col min-w-0">
+                    <div className="text-sm text-zinc-900 dark:text-zinc-100 truncate pr-2">
+                        <span className="font-bold mr-1.5">{actor.display_name || actor.username}</span>
+                        <span className="text-zinc-500 dark:text-zinc-400 font-normal">
+                            {type === 'FOLLOW_REQUEST' && "requested to follow you."}
                             {type === 'LIKE' && "liked your post."}
                             {type === 'COMMENT' && "commented on your post."}
                             {(type === 'NEW_FOLLOWER' || type === 'new_follower') && "started following you."}
                         </span>
                     </div>
 
-                    {/* Post Title Context */}
-                    {payload?.title && (
-                        <p className="text-xs text-zinc-500 dark:text-zinc-500 mt-0.5 truncate italic">
-                            "{payload.title}"
+                    <div className="flex items-center gap-2 mt-0.5">
+                        {/* Unread Dot */}
+                        {!is_read && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+                        )}
+                        <p className="text-[10px] text-zinc-400 uppercase tracking-wider font-medium truncate">
+                            {new Date(timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                            {payload?.title && <span className="normal-case ml-1 opacity-75 border-l border-zinc-300 dark:border-zinc-700 pl-2">On &quot;{payload.title}&quot;</span>}
                         </p>
-                    )}
-
-                    <p className="text-[10px] uppercase tracking-widest text-zinc-400 mt-1.5 font-medium">
-                        {new Date(timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                    </p>
+                    </div>
                 </div>
             </div>
 
-            {/* 3. Right Side Actions (Thumbnail or Buttons) */}
-            <div className="shrink-0 pl-2 flex items-center gap-3 z-20">
+            {/* RIGHT SIDE: Actions or Thumbnail */}
+            <div className="flex items-center gap-3 pl-3 shrink-0">
+
+                {/* 1. Content Thumbnail or Request Actions */}
                 {type === 'FOLLOW_REQUEST' ? (
-                    <RequestActions requesterId={actor.id} />
+                    <div onClick={(e) => e.stopPropagation()}>
+                        <RequestActions requesterId={actor.id} />
+                    </div>
                 ) : payload?.post_thumbnail ? (
-                    <div onClick={handleInteraction} className="cursor-pointer block relative w-10 h-10 md:w-12 md:h-12 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 transition-colors">
+                    <div className="relative w-10 h-10 rounded-lg overflow-hidden border border-zinc-100 dark:border-zinc-800 shadow-sm group-hover:border-zinc-300 transition-colors">
                         <Image
                             src={payload.post_thumbnail}
                             alt="Post"
@@ -114,17 +133,17 @@ export default function NotificationItem({ id, type, is_read, actor, payload, ti
                     </div>
                 ) : null}
 
-                {/* DISMISS BUTTON (X) - Only for Activity, not requests */}
+                {/* 2. Dismiss Button (Standard 'More' style arrow/close) */}
                 {type !== 'FOLLOW_REQUEST' && (
                     <button
                         onClick={(e) => {
-                            e.stopPropagation(); // Prevent navigation
+                            e.stopPropagation();
                             dismissNotification(id);
                         }}
-                        className="p-1 text-zinc-300 hover:text-red-500 transition-colors"
+                        className="p-1.5 text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-all"
                         title="Dismiss"
                     >
-                        <XMarkIcon className="w-4 h-4" />
+                        <XMarkIcon className="w-4 h-4" strokeWidth={2.5} />
                     </button>
                 )}
             </div>

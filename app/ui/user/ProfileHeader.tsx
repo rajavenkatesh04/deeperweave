@@ -9,7 +9,8 @@ import {
     MapPinIcon,
     CalendarIcon,
     CheckIcon,
-    DocumentDuplicateIcon
+    DocumentDuplicateIcon,
+    BellIcon // ✨ Added Import
 } from '@heroicons/react/24/outline';
 import { geistSans } from "@/app/ui/fonts";
 import UserBadge from "@/app/ui/user/UserBadge";
@@ -189,7 +190,21 @@ export default function ProfileHeader({
                         {/* Mobile Action Button */}
                         <div className="md:hidden mt-2">
                             {isOwnProfile ? (
-                                <ActionButton href="/profile/edit">Edit profile</ActionButton>
+                                <div className="flex gap-2 w-full">
+                                    {/* Edit Button takes remaining space */}
+                                    <div className="flex-1">
+                                        <ActionButton href="/profile/edit">Edit profile</ActionButton>
+                                    </div>
+
+                                    {/* Notifications Button (Square-ish) */}
+                                    <Link
+                                        href="/profile/notifications"
+                                        className="flex items-center justify-center px-4 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg text-zinc-900 dark:text-zinc-100 transition-colors"
+                                        title="Notifications"
+                                    >
+                                        <BellIcon className="w-5 h-5" />
+                                    </Link>
+                                </div>
                             ) : (
                                 <FollowButton profileId={profile.id} isPrivate={isPrivate} initialFollowStatus={initialFollowStatus} />
                             )}
