@@ -594,20 +594,25 @@ export async function getPersonDetails(personId: number): Promise<PersonDetails>
 }
 
 // =====================================================================
-// == CACHE HELPERS (NOW SECURE VIA ADMIN CLIENT)
+// == CACHE HELPERS (FINAL "DEEP DATA" VERSIONS)
 // =====================================================================
 
 export async function cacheMovie(movieId: number) {
     const supabaseAdmin = await createAdminClient();
 
-    // 1. Check if exists
-    const { data: existing } = await supabaseAdmin.from('movies').select('tmdb_id').eq('tmdb_id', movieId).maybeSingle();
+    // 1. Check if exists to avoid unnecessary API calls
+    const { data: existing } = await supabaseAdmin
+        .from('movies')
+        .select('tmdb_id')
+        .eq('tmdb_id', movieId)
+        .maybeSingle();
+
     if (existing) return;
 
-    // 2. Fetch
+    // 2. Fetch fresh deep data
     const details = await getMovieDetails(movieId);
 
-    // 3. Insert using Admin Privileges
+    // 3. Upsert with all Deep Data fields
     await supabaseAdmin.from('movies').upsert({
         tmdb_id: details.id,
         title: details.title,
@@ -616,25 +621,36 @@ export async function cacheMovie(movieId: number) {
         release_date: details.release_date,
         director: details.director,
         overview: details.overview,
-        genres: details.genres,
-        cast: details.cast,
-        // ✨ Cache new fields if your DB supports them
+        genres: details.genres, // stored as jsonb
+        cast: details.cast,     // stored as jsonb
+
+        // ✨ Deep Data Fields
         runtime: details.runtime,
         budget: details.budget,
         revenue: details.revenue,
         original_language: details.original_language,
-        production_companies: details.production_companies.map(c => c.name) // Store names as array
+        // Store full objects (with logos) in JSONB, not just names
+        production_companies: details.production_companies,
+        crew: details.crew
     }, { onConflict: 'tmdb_id' });
 }
 
 export async function cacheSeries(seriesId: number) {
     const supabaseAdmin = await createAdminClient();
 
-    const { data: existing } = await supabaseAdmin.from('series').select('tmdb_id').eq('tmdb_id', seriesId).maybeSingle();
+    // 1. Check if exists
+    const { data: existing } = await supabaseAdmin
+        .from('series')
+        .select('tmdb_id')
+        .eq('tmdb_id', seriesId)
+        .maybeSingle();
+
     if (existing) return;
 
+    // 2. Fetch fresh deep data
     const details = await getSeriesDetails(seriesId);
 
+    // 3. Upsert
     await supabaseAdmin.from('series').upsert({
         tmdb_id: details.id,
         title: details.title,
@@ -646,26 +662,39 @@ export async function cacheSeries(seriesId: number) {
         overview: details.overview,
         genres: details.genres,
         cast: details.cast,
-        // ✨ Cache new fields
+
+        // ✨ Deep Data Fields
         status: details.status,
-        networks: details.networks?.map(n => n.name),
-        last_air_date: details.last_episode_to_air?.air_date,
-        next_episode_date: details.next_episode_to_air?.air_date
+        original_language: details.original_language,
+        // Store full objects in JSONB
+        networks: details.networks,
+        production_companies: details.production_companies,
+        crew: details.crew,
+        // Dates
+        last_air_date: details.last_episode_to_air?.air_date || null,
+        next_episode_date: details.next_episode_to_air?.air_date || null
     }, { onConflict: 'tmdb_id' });
 }
 
 export async function cachePerson(personId: number) {
     const supabaseAdmin = await createAdminClient();
 
-    const { data: existing } = await supabaseAdmin.from('people').select('tmdb_id, updated_at').eq('tmdb_id', personId).maybeSingle();
+    // 1. Check for stale data (older than 7 days)
+    const { data: existing } = await supabaseAdmin
+        .from('people')
+        .select('tmdb_id, updated_at')
+        .eq('tmdb_id', personId)
+        .maybeSingle();
 
     const ONE_WEEK = 7 * 24 * 60 * 60 * 1000;
     const isStale = !existing || !existing.updated_at || (Date.now() - new Date(existing.updated_at).getTime() > ONE_WEEK);
 
     if (!isStale) return;
 
+    // 2. Fetch fresh details
     const details = await getPersonDetails(personId);
 
+    // 3. Upsert
     await supabaseAdmin.from('people').upsert({
         tmdb_id: details.id,
         name: details.name,
@@ -676,6 +705,9 @@ export async function cachePerson(personId: number) {
         profile_path: details.profile_path,
         known_for_department: details.known_for_department,
         gender: details.gender,
+        // ✨ Deep Data Field
+        also_known_as: details.also_known_as, // stored as jsonb array
+
         updated_at: new Date().toISOString(),
     }, { onConflict: 'tmdb_id' });
 }

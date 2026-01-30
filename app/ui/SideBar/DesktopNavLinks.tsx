@@ -6,7 +6,7 @@ import clsx from 'clsx';
 // Importing Material Design Outline icons
 import {
     MdOutlineMenuBook,      // Blogs
-    MdOutlineAddCircle,     // Create
+    MdOutlineExplore,       // Explore (New)
     MdOutlineHome,          // Discover
     MdOutlineSearch,        // Search
     MdOutlineNotifications, // Notifications
@@ -16,7 +16,7 @@ import {
 const links = [
     { name: 'Discover', href: '/discover', icon: MdOutlineHome },
     { name: 'Search', href: '/search', icon: MdOutlineSearch },
-    { name: 'Create', href: '/create', icon: MdOutlineAddCircle },
+    { name: 'Explore', href: '/explore', icon: MdOutlineExplore }, // Renamed from Create
     { name: 'Blogs', href: '/blog', icon: MdOutlineMenuBook },
     { name: 'Saved', href: '/profile/saved', icon: MdOutlineBookmark },
     { name: 'Notifications', href: '/profile/notifications', icon: MdOutlineNotifications },

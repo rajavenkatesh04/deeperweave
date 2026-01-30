@@ -7,7 +7,7 @@ import { motion, LayoutGroup } from 'framer-motion';
 import {
     MdOutlineHome, MdHome,
     MdOutlineSearch, MdSearch,
-    MdOutlineAddCircle, MdAddCircle,
+    MdOutlineExplore, MdExplore, // New Icons
     MdOutlineMenuBook, MdMenuBook
 } from 'react-icons/md';
 
@@ -26,10 +26,10 @@ const links = [
         solidIcon: MdSearch
     },
     {
-        name: 'Create',
-        href: '/create',
-        icon: MdOutlineAddCircle,
-        solidIcon: MdAddCircle
+        name: 'Explore', // Renamed from Create
+        href: '/explore',
+        icon: MdOutlineExplore, // Compass Icon
+        solidIcon: MdExplore
     },
     {
         name: 'Blogs',
@@ -39,11 +39,11 @@ const links = [
     },
 ];
 
-// Optional: specific accent colors for each tab to match the "pop" of the previous component
+// Optional: specific accent colors for each tab
 const ACCENT_COLORS: Record<string, string> = {
     Discover: 'text-purple-600 dark:text-purple-400',
     Search: 'text-blue-600 dark:text-blue-400',
-    Create: 'text-pink-600 dark:text-pink-400',
+    Explore: 'text-teal-600 dark:text-teal-400', // Updated color for Explore
     Blogs: 'text-orange-600 dark:text-orange-400',
 };
 
@@ -51,8 +51,7 @@ export default function MobileNavLinks() {
     const pathname = usePathname();
 
     return (
-        // LayoutGroup enables the shared layout animation across different components if needed,
-        // or just isolates the id for this specific nav to prevent conflicts.
+        // LayoutGroup enables the shared layout animation across different components
         <LayoutGroup id="mobile-nav-links">
             {links.map((link) => {
                 const isActive = pathname === link.href;

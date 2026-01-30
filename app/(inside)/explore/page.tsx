@@ -2,8 +2,8 @@
 import { createClient } from '@/utils/supabase/server';
 import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
 import Link from 'next/link';
-import BlogCard from '@/app/ui/blog/BlogCard'; // Your existing component
-// import ProfileListCard from '@/app/ui/lists/ProfileListCard'; // You'll need this
+import BlogCard from '@/app/ui/blog/BlogCard';
+import { MdConstruction } from 'react-icons/md';
 
 export default async function ExplorePage() {
     const supabase = await createClient();
@@ -15,7 +15,15 @@ export default async function ExplorePage() {
     ]);
 
     return (
-        <main className="p-6 max-w-7xl mx-auto space-y-12">
+        <main className="p-6 max-w-7xl mx-auto space-y-8">
+            {/* --- DISCLAIMER BANNER --- */}
+            <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
+                <MdConstruction className="h-5 w-5 shrink-0" />
+                <p className="text-sm">
+                    <span className="font-bold">Under Development:</span> This page is currently being built. Some features may not work as expected or are subject to change.
+                </p>
+            </div>
+
             <header>
                 <h1 className={`${PlayWriteNewZealandFont.className} text-4xl font-bold mb-2`}>Explore</h1>
                 <p className="text-zinc-500">Curated stories and collections from the community.</p>
