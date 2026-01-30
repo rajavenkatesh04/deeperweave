@@ -11,21 +11,19 @@ import {
     MdOutlineArticle,
     MdOutlineMoreHoriz,
     MdOutlineViewStream,
-    MdOutlineAnalytics,
-    MdHistory // ✨ Import Icon
+    MdHistory
 } from 'react-icons/md';
 
 // --- Configuration ---
 const ICONS: Record<string, React.ElementType> = {
     Podium: MdOutlineLeaderboard,
-    Timeline: MdHistory ,
+    Timeline: MdHistory,
     Lists: MdOutlineFormatListBulleted,
     Posts: MdOutlineArticle,
-    Analytics: MdOutlineTimeline, // ✨ Add Icon
+    Analytics: MdOutlineTimeline,
     More: MdOutlineMoreHoriz,
 };
 
-// ✨ Add Accent Color
 const ACCENT_COLORS: Record<string, string> = {
     Podium: 'text-orange-600 dark:text-orange-400',
     Timeline: 'text-blue-600 dark:text-blue-400',
@@ -58,7 +56,8 @@ export default function TabNavigation({
     }
 
     return (
-        <div className="sticky top-0 z-40 w-full bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-200 dark:border-zinc-800">
+        // FIX: Lowered to z-10 so it stays below modals (which should be z-50 or z-100)
+        <div className="sticky top-0 z-10 w-full bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-200 dark:border-zinc-800">
             <div className="max-w-4xl mx-auto px-2 md:px-4">
                 <LayoutGroup id="profile-tabs">
                     <nav

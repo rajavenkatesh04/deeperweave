@@ -39,9 +39,10 @@ export default async function ProfileLayout({
             />
 
             {canViewContent ? (
-                <div className={`z-40`}>
+                // Removed global z-40 here so it doesn't force high stacking context
+                <div className="relative">
                     <TabNavigation username={profile.username} isOwnProfile={isOwnProfile} />
-                    <div className="">{children}</div>
+                    <div className="z-80">{children}</div>
                 </div>
             ) : (
                 <PrivateProfileScreen />
