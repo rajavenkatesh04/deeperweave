@@ -38,11 +38,127 @@ export interface ProfileSearchResult {
 
 /**
  * =====================================================================
- * 🎬 CINEMATIC DATA (Cache)
- * Stores data fetched from TMDB to avoid rate limits.
+ * 🎬 CINEMATIC DATA (API & Cache)
  * =====================================================================
  */
 
+// Basic search result (used in lists, feeds)
+export interface CinematicSearchResult {
+    id: number;
+    title: string;
+    name?: string;
+    release_date?: string;
+    poster_path: string | null;
+    profile_path?: string | null;
+    backdrop_path?: string | null;
+    overview?: string;
+    media_type: 'movie' | 'tv' | 'person';
+    department?: string;
+    known_for_department?: string;
+}
+
+// Helper for Crew Cards
+export interface CrewMember {
+    id: number;
+    name: string;
+    profile_path: string | null;
+    job: string;
+    department?: string;
+}
+
+// Full Details for Page View
+export interface RichCinematicDetails {
+    id: number;
+    title: string;
+    original_title?: string; // ✨ NEW: For foreign titles
+    overview: string;
+    poster_path: string | null;
+    backdrop_path: string | null;
+    release_date: string;
+    media_type: 'movie' | 'tv';
+    genres: { id: number; name: string }[];
+    runtime?: number;
+    number_of_seasons?: number;
+    status?: string;
+    tagline?: string;
+    vote_average: number;
+    certification: string;
+    keywords: { id: number; name: string }[];
+    social_ids: { imdb_id?: string; instagram_id?: string; twitter_id?: string };
+
+    // Deep Data Fields
+    original_language: string;
+    spoken_languages: string[];
+    production_companies: { id: number; name: string; logo_path: string | null }[];
+    origin_country?: string[];
+
+    // Movie Specifics
+    director?: string;
+    budget?: number;
+    revenue?: number;
+    collection?: { id: number; name: string; poster_path: string | null; backdrop_path: string | null } | null;
+
+    // ✨ UPDATED: Crew is now rich objects (name + image)
+    crew: {
+        writers: CrewMember[];
+        cinematographers: CrewMember[];
+        editors: CrewMember[];
+        composers: CrewMember[];
+        producers: CrewMember[];
+    };
+
+    // TV/Anime Specifics
+    creator?: string;
+    networks?: { name: string; logo_path: string | null }[];
+    type?: string;
+    next_episode_to_air?: { air_date: string; episode_number: number; name: string } | null;
+    last_episode_to_air?: { air_date: string; episode_number: number; name: string } | null;
+    seasons?: {
+        id: number;
+        name: string;
+        episode_count: number;
+        air_date: string;
+        poster_path: string | null;
+        season_number: number;
+    }[];
+
+    cast: { id: number; name: string; profile_path: string | null; character: string }[];
+
+    watch_providers: {
+        flatrate?: { provider_name: string; logo_path: string }[];
+        rent?: { provider_name: string; logo_path: string }[];
+        buy?: { provider_name: string; logo_path: string }[];
+    };
+    recommendations: CinematicSearchResult[];
+    similar: CinematicSearchResult[];
+    videos: { key: string; name: string; type: string }[];
+    images: { backdrops: { file_path: string }[] };
+}
+
+export interface PersonDetails {
+    id: number;
+    name: string;
+    biography: string;
+    birthday: string | null;
+    deathday: string | null;
+    place_of_birth: string | null;
+    profile_path: string | null;
+    known_for_department: string;
+    gender: number;
+    also_known_as: string[];
+    backdrop_path: string | null;
+    social_ids: {
+        instagram_id?: string;
+        twitter_id?: string;
+        imdb_id?: string;
+        facebook_id?: string;
+    };
+    images: { file_path: string }[];
+    known_for: CinematicSearchResult[];
+    backdrops: { file_path: string }[];
+}
+
+// Database Cache Interfaces
 export interface Movie {
     tmdb_id: number; // Primary Key
     title: string;
@@ -50,6 +166,13 @@ export interface Movie {
     director?: string;
     poster_url: string | null;
     backdrop_url?: string | null;
+
+    // ✨ NEW: Deep Data Cache
+    runtime?: number;
+    budget?: number;
+    revenue?: number;
+    original_language?: string;
+    production_companies?: string[]; // Array of Studio Names
 }
 
 export interface Series {
@@ -60,6 +183,12 @@ export interface Series {
     poster_url: string | null;
     backdrop_url?: string | null;
     number_of_seasons?: number;
+
+    // ✨ NEW: Deep Data Cache
+    status?: string;
+    networks?: string[];
+    last_air_date?: string;
+    next_episode_date?: string;
 }
 
 export interface Person {
@@ -67,13 +196,12 @@ export interface Person {
     name: string;
     profile_path: string | null;
     known_for_department?: string;
-    biography?: string; // Optional full bio
+    biography?: string;
 }
 
 /**
  * =====================================================================
  * 🏗️ PROFILE SHOWCASE SYSTEM (Modular Sections)
- * Allows users to create "Top 3 Movies", "Favorite Stars", etc.
  * =====================================================================
  */
 
@@ -82,8 +210,6 @@ export interface SectionItem {
     section_id: string;
     item_type: 'movie' | 'tv' | 'person';
     rank: number;
-
-    // Polymorphic Relations (Only one is populated)
     movie?: Movie | null;
     series?: Series | null;
     person?: Person | null;
@@ -101,7 +227,6 @@ export interface ProfileSection {
 /**
  * =====================================================================
  * 📅 TIMELINE & LOGGING
- * Tracking what users watch, when, and their thoughts.
  * =====================================================================
  */
 
@@ -112,19 +237,13 @@ export interface TimelineEntry {
     rating: number | null;
     notes: string | null;
     created_at: string;
-
-    // Metadata
     is_rewatch: boolean;
     rewatch_count?: number;
-    viewing_context: string | null; // e.g. "Cinema", "Netflix"
-    photo_url: string | null; // User upload
-    post_id: string | null; // Linked review post
-
-    // Content References (Nullable because it's either Movie OR Series)
+    viewing_context: string | null;
+    photo_url: string | null;
+    post_id: string | null;
     movie_id: number | null;
     series_id: number | null;
-
-    // Joined Data
     movies: Movie | null;
     series: Series | null;
     posts: { slug: string } | null;
@@ -140,7 +259,6 @@ export type TimelineCollaboratorWithProfile = TimelineCollaborator & {
     profiles: Pick<UserProfile, 'id' | 'username' | 'profile_pic_url'>;
 };
 
-// Joined type for Sharing features
 export type TimelineEntryWithUser = TimelineEntry & {
     profiles: Pick<UserProfile, 'username' | 'display_name' | 'profile_pic_url'>;
 };
@@ -148,7 +266,6 @@ export type TimelineEntryWithUser = TimelineEntry & {
 /**
  * =====================================================================
  * 📝 POSTS & BLOG
- * Long-form content, reviews, and general updates.
  * =====================================================================
  */
 
@@ -162,24 +279,15 @@ export interface Post {
     banner_url?: string | null;
     created_at: string;
     view_count: number;
-    deleted_at?: string | null; // ✨ ADDED
-
-    // Counters (New DB Columns)
-    likes_count: number;    // ✨ ADDED
-    comments_count: number; // ✨ ADDED
-
-    // Review specific
+    deleted_at?: string | null;
+    likes_count: number;
+    comments_count: number;
     rating?: number;
     has_spoilers: boolean;
     movie_id?: number;
     series_id?: number;
-
-    // Settings
     is_premium: boolean;
     is_nsfw: boolean;
-
-    // ✨ REMOVED: author_username
-    // ✨ REMOVED: author_profile_pic_url
 }
 
 export interface Comment {
@@ -188,15 +296,16 @@ export interface Comment {
     author_id: string;
     content: string;
     created_at: string;
-    deleted_at?: string | null; // ✨ ADDED
+    deleted_at?: string | null;
 }
 
 export type CommentWithAuthor = Comment & {
     author: Pick<UserProfile, 'username' | 'display_name' | 'profile_pic_url'>;
 };
+
 /**
  * =====================================================================
- * ❤️ SOCIAL (Likes, Follows, Notifications)
+ * ❤️ SOCIAL, SAVED & CHAT
  * =====================================================================
  */
 
@@ -223,21 +332,12 @@ export interface Notification {
     created_at: string;
 }
 
-/**
- * =====================================================================
- * 💾 SAVED ITEMS & COLLECTIONS
- * "Watch later", "Favorites", etc.
- * =====================================================================
- */
-
 export type SaveableItemType = 'movie' | 'series' | 'person' | 'post' | 'profile';
 
 export interface SavedItem {
     id: string;
     item_type: SaveableItemType;
     created_at: string;
-
-    // Polymorphic Relations
     movie?: { tmdb_id: number; title: string; poster_url: string | null };
     series?: { tmdb_id: number; title: string; poster_url: string | null };
     person?: { tmdb_id: number; name: string; profile_path: string | null };
@@ -251,13 +351,6 @@ export interface MovieInterest {
     status: 'interested' | 'watched';
     created_at: string;
 }
-
-/**
- * =====================================================================
- * 💬 CHAT SYSTEM
- * Real-time messaging structure.
- * =====================================================================
- */
 
 export interface ChatRoom {
     id: string;
@@ -274,7 +367,7 @@ export interface ChatParticipant {
     user_id: string;
     role: 'admin' | 'member';
     joined_at: string;
-    last_read_at: string; // ✨ ADDED: New pointer column
+    last_read_at: string;
 }
 
 export interface Message {

@@ -1,81 +1,16 @@
 'use server';
 
 import { createClient } from '@/utils/supabase/server';
-// ✨ CRITICAL: Import the Admin Client to bypass RLS for caching
 import { createAdminClient } from '@/utils/supabase/admin';
 import { countries } from '@/lib/data/countries';
+import { RichCinematicDetails, CinematicSearchResult, CrewMember, PersonDetails } from '@/lib/definitions';
+
+// ✨ FIX: Re-export types so existing imports in your app don't break
+export type { RichCinematicDetails, CinematicSearchResult, CrewMember, PersonDetails };
 
 // =====================================================================
-// == TYPE DEFINITIONS
+// == TYPE DEFINITIONS (Internal TMDB Types)
 // =====================================================================
-
-export type CinematicSearchResult = {
-    id: number;
-    title: string;
-    name?: string;
-    release_date?: string;
-    poster_path: string | null;
-    profile_path?: string | null;
-    backdrop_path?: string | null;
-    overview?: string;
-    media_type: 'movie' | 'tv' | 'person';
-    department?: string;
-    known_for_department?: string;
-};
-
-export interface RichCinematicDetails {
-    id: number;
-    title: string;
-    overview: string;
-    poster_path: string | null;
-    backdrop_path: string | null;
-    release_date: string;
-    media_type: 'movie' | 'tv';
-    genres: { id: number; name: string }[];
-    runtime?: number;
-    number_of_seasons?: number;
-    status?: string;
-    tagline?: string;
-    vote_average: number;
-    director?: string;
-    creator?: string;
-    cast: { id: number; name: string; profile_path: string | null; character: string }[];
-    certification: string;
-    keywords: { id: number; name: string }[];
-    social_ids: { imdb_id?: string; instagram_id?: string; twitter_id?: string };
-    watch_providers: {
-        flatrate?: { provider_name: string; logo_path: string }[];
-        rent?: { provider_name: string; logo_path: string }[];
-        buy?: { provider_name: string; logo_path: string }[];
-    };
-    recommendations: CinematicSearchResult[];
-    similar: CinematicSearchResult[];
-    videos: { key: string; name: string; type: string }[];
-    images: { backdrops: { file_path: string }[] };
-}
-
-export interface PersonDetails {
-    id: number;
-    name: string;
-    biography: string;
-    birthday: string | null;
-    deathday: string | null;
-    place_of_birth: string | null;
-    profile_path: string | null;
-    known_for_department: string;
-    gender: number;
-    also_known_as: string[];
-    backdrop_path: string | null;
-    social_ids: {
-        instagram_id?: string;
-        twitter_id?: string;
-        imdb_id?: string;
-        facebook_id?: string;
-    };
-    images: { file_path: string }[];
-    known_for: CinematicSearchResult[];
-    backdrops: { file_path: string }[];
-}
 
 interface TmdbMultiSearchItem {
     id: number;
@@ -414,7 +349,7 @@ export async function searchCinematic(query: string): Promise<CinematicSearchRes
 }
 
 // =====================================================================
-// == PURE FETCH ACTIONS (NO CACHE)
+// == PURE FETCH ACTIONS (NO CACHE) - ✨ UPDATED FOR DEEP DATA
 // =====================================================================
 
 export async function getMovieDetails(movieId: number): Promise<RichCinematicDetails> {
@@ -431,14 +366,30 @@ export async function getMovieDetails(movieId: number): Promise<RichCinematicDet
         const data = await res.json();
 
         const recommendations = (data.recommendations?.results || []) as TmdbMultiSearchItem[];
-        const director = data.credits?.crew?.find((p: any) => p.job === 'Director')?.name || 'N/A';
         const usRelease = data.release_dates?.results?.find((r: any) => r.iso_3166_1 === 'US');
         const certification = usRelease?.release_dates?.[0]?.certification || 'NR';
         const providers = data["watch/providers"]?.results?.IN || data["watch/providers"]?.results?.US || {};
 
+        // ✨ CREW EXTRACTION
+        const crew = data.credits?.crew || [];
+        const getCrew = (job: string): CrewMember[] => crew
+            .filter((p: any) => p.job === job)
+            .map((p: any) => ({
+                id: p.id,
+                name: p.name,
+                profile_path: p.profile_path,
+                job: p.job,
+                department: p.department
+            }));
+
+        // Deduplicate writers
+        const allWriters = [...getCrew('Screenplay'), ...getCrew('Writer'), ...getCrew('Story')];
+        const uniqueWriters = Array.from(new Map(allWriters.map(item => [item.id, item])).values());
+
         return {
             id: data.id,
             title: data.title,
+            original_title: data.original_title,
             media_type: 'movie',
             overview: data.overview,
             poster_path: data.poster_path,
@@ -448,11 +399,30 @@ export async function getMovieDetails(movieId: number): Promise<RichCinematicDet
             runtime: data.runtime,
             tagline: data.tagline,
             vote_average: data.vote_average,
-            director,
-            cast: data.credits?.cast?.slice(0, 12) || [],
             certification,
             keywords: data.keywords?.keywords || [],
             social_ids: data.external_ids || {},
+
+            // Deep Data
+            director: getCrew('Director')[0]?.name || undefined,
+            original_language: data.original_language,
+            spoken_languages: data.spoken_languages?.map((l: any) => l.english_name) || [],
+            budget: data.budget,
+            revenue: data.revenue,
+            production_companies: data.production_companies || [],
+            collection: data.belongs_to_collection,
+            origin_country: data.origin_country || [],
+
+            crew: {
+                writers: uniqueWriters,
+                cinematographers: getCrew('Director of Photography'),
+                editors: getCrew('Editor'),
+                composers: getCrew('Original Music Composer'),
+                producers: getCrew('Producer')
+            },
+
+            cast: data.credits?.cast?.slice(0, 16) || [],
+
             watch_providers: {
                 flatrate: providers.flatrate || [],
                 rent: providers.rent || [],
@@ -464,7 +434,7 @@ export async function getMovieDetails(movieId: number): Promise<RichCinematicDet
             similar: []
         };
     } catch (error) {
-        console.error("TMDB Fetch Error:", error);
+        console.error("TMDB Movie Fetch Error:", error);
         throw new Error("Could not fetch movie details.");
     }
 }
@@ -483,14 +453,35 @@ export async function getSeriesDetails(seriesId: number): Promise<RichCinematicD
         const data = await res.json();
 
         const recommendations = (data.recommendations?.results || []) as TmdbMultiSearchItem[];
-        const creator = data.created_by?.[0]?.name || 'N/A';
+        const creator = data.created_by?.[0]?.name || null;
         const usRating = data.content_ratings?.results?.find((r: any) => r.iso_3166_1 === 'US');
         const certification = usRating?.rating || 'NR';
         const providers = data["watch/providers"]?.results?.IN || data["watch/providers"]?.results?.US || {};
 
+        // ✨ TV CAST FIX: Safe extraction of character
+        const cast = (data.aggregate_credits?.cast || []).slice(0, 16).map((actor: any) => ({
+            id: actor.id,
+            name: actor.name,
+            profile_path: actor.profile_path,
+            character: actor.roles && actor.roles.length > 0 ? actor.roles[0].character : 'Unknown'
+        }));
+
+        // ✨ TV CREW FIX: Safe extraction
+        const rawCrew = data.aggregate_credits?.crew || [];
+        const getTvCrew = (targetJob: string) => rawCrew.filter((p: any) =>
+            p.jobs?.some((j: any) => j.job === targetJob)
+        ).map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            profile_path: p.profile_path,
+            job: targetJob,
+            department: p.department
+        }));
+
         return {
             id: data.id,
             title: data.name,
+            original_title: data.original_name,
             media_type: 'tv',
             overview: data.overview,
             poster_path: data.poster_path,
@@ -502,10 +493,29 @@ export async function getSeriesDetails(seriesId: number): Promise<RichCinematicD
             tagline: data.tagline,
             vote_average: data.vote_average,
             creator,
-            cast: data.aggregate_credits?.cast?.slice(0, 12) || [],
             certification,
             keywords: data.keywords?.results || [],
             social_ids: data.external_ids || {},
+            original_language: data.original_language,
+            spoken_languages: data.spoken_languages?.map((l: any) => l.english_name) || [],
+            production_companies: data.production_companies || [],
+            networks: data.networks || [],
+            type: data.type,
+            origin_country: data.origin_country || [],
+            next_episode_to_air: data.next_episode_to_air,
+            last_episode_to_air: data.last_episode_to_air,
+            seasons: data.seasons?.filter((s: any) => s.season_number > 0) || [],
+
+            crew: {
+                writers: getTvCrew('Writer'),
+                cinematographers: getTvCrew('Director of Photography'),
+                editors: getTvCrew('Editor'),
+                composers: getTvCrew('Original Music Composer'),
+                producers: [...getTvCrew('Executive Producer'), ...getTvCrew('Producer')]
+            },
+
+            cast: cast,
+
             watch_providers: {
                 flatrate: providers.flatrate || [],
                 rent: providers.rent || [],
@@ -532,7 +542,11 @@ export async function getPersonDetails(personId: number): Promise<PersonDetails>
             { next: { revalidate: 3600 } }
         );
 
-        if (!res.ok) throw new Error("Failed to fetch person details");
+        if (!res.ok) {
+            console.error(`TMDB Person Error ${res.status}: ${res.statusText}`);
+            throw new Error(`Failed to fetch person: ${res.status}`);
+        }
+
         const data = await res.json();
 
         const allCast = (data.combined_credits?.cast || []) as TmdbMultiSearchItem[];
@@ -575,7 +589,7 @@ export async function getPersonDetails(personId: number): Promise<PersonDetails>
         };
     } catch (error) {
         console.error("TMDB Person Fetch Error:", error);
-        throw new Error("Could not fetch person details.");
+        throw error;
     }
 }
 
@@ -603,7 +617,13 @@ export async function cacheMovie(movieId: number) {
         director: details.director,
         overview: details.overview,
         genres: details.genres,
-        cast: details.cast
+        cast: details.cast,
+        // ✨ Cache new fields if your DB supports them
+        runtime: details.runtime,
+        budget: details.budget,
+        revenue: details.revenue,
+        original_language: details.original_language,
+        production_companies: details.production_companies.map(c => c.name) // Store names as array
     }, { onConflict: 'tmdb_id' });
 }
 
@@ -625,7 +645,12 @@ export async function cacheSeries(seriesId: number) {
         number_of_seasons: details.number_of_seasons,
         overview: details.overview,
         genres: details.genres,
-        cast: details.cast
+        cast: details.cast,
+        // ✨ Cache new fields
+        status: details.status,
+        networks: details.networks?.map(n => n.name),
+        last_air_date: details.last_episode_to_air?.air_date,
+        next_episode_date: details.next_episode_to_air?.air_date
     }, { onConflict: 'tmdb_id' });
 }
 
