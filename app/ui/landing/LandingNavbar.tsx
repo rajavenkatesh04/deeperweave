@@ -1,11 +1,12 @@
 'use client';
 
 import Link from "next/link";
+import Image from "next/image"; // Added for optimized image loading
 import { useState, useEffect } from "react";
-import { FilmIcon, Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
+import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import { motion, AnimatePresence } from "framer-motion";
 import clsx from "clsx";
-import {PlayWriteNewZealandFont} from "@/app/ui/fonts";
+import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
 
 export default function LandingNavbar() {
     const [scrolled, setScrolled] = useState(false);
@@ -36,39 +37,26 @@ export default function LandingNavbar() {
                     ? "bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-zinc-200 dark:border-zinc-800 py-3 md:py-4"
                     : "bg-transparent border-transparent py-4 md:py-6"
             )}>
-                {/* Safe Area Spacer (for notches) is handled by padding, but we ensure the content stays within bounds */}
+                {/* Safe Area Spacer */}
                 <div className="max-w-7xl mx-auto px-4 md:px-8 flex items-center justify-between">
 
-                    {/* Logo Option 1: Interwoven Frames */}
+                    {/* Logo Section */}
                     <Link href="/" className="flex items-center gap-3 group relative z-50">
-                        <div className="relative h-8 w-8 flex items-center justify-center">
-                            {/* Abstract Woven Logo */}
-                            <svg
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                className="w-8 h-8 text-zinc-900 dark:text-white transition-transform duration-300 group-hover:rotate-90"
-                                strokeWidth={2}
-                            >
-                                <path
-                                    d="M7 4V20M17 4V20M3 8H21M3 16H21"
-                                    className="opacity-30"
-                                    strokeLinecap="round"
-                                />
-                                <path
-                                    d="M7 8H17V16H7z"
-                                    className="group-hover:fill-zinc-900 dark:group-hover:fill-white transition-colors duration-300"
-                                    strokeLinejoin="round"
-                                />
-                            </svg>
-
-                            {/* Glow effect behind */}
-                            <div className="absolute inset-0 bg-zinc-900/20 dark:bg-white/20 blur-lg rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="relative h-8 w-8 flex-shrink-0">
+                            {/* Updated Logo Image */}
+                            <Image
+                                src="https://jyjynjpznlvezjhnuwhi.supabase.co/storage/v1/object/public/website_assests/icon-512x512.png"
+                                alt="Deeper Weave Logo"
+                                width={32}
+                                height={32}
+                                className="rounded-lg object-cover" // Rounded corners for consistency
+                                priority // Load high priority for LCP
+                            />
                         </div>
 
                         <span className={`${PlayWriteNewZealandFont.className} text-lg md:text-xl font-bold tracking-tight text-zinc-900 dark:text-white`}>
-        DeeperWeave
-    </span>
+                            DeeperWeave
+                        </span>
                     </Link>
 
                     {/* Desktop Navigation */}
