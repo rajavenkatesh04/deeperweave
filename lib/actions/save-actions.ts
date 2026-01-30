@@ -6,7 +6,7 @@ import { cacheMovie, cacheSeries, cachePerson } from '@/lib/actions/cinematic-ac
 import { SaveableItemType } from '@/lib/definitions';
 
 export async function toggleSaveItem(
-    itemType: SaveableItemType | 'tv', // Allow 'tv' as input
+    itemType: SaveableItemType | 'tv',
     itemId: string | number,
     path: string
 ) {
@@ -17,32 +17,33 @@ export async function toggleSaveItem(
         return { error: "Unauthorized" };
     }
 
-    // ✨ FIX: Normalize 'tv' -> 'series' immediately
     const normalizedType = itemType === 'tv' ? 'series' : itemType;
     const numericId = Number(itemId);
 
-    // 1. Ensure the item exists in our local database (CACHE ON WRITE)
+    // ✨ CRITICAL: Use the Admin-powered cache helpers
+    // This ensures the item exists in the DB before we try to link to it.
     try {
         if (normalizedType === 'movie') await cacheMovie(numericId);
         else if (normalizedType === 'series') await cacheSeries(numericId);
         else if (normalizedType === 'person') await cachePerson(numericId);
     } catch (e) {
         console.error("Error ensuring item details exist:", e);
+        // We continue anyway; if it fails, the next insert might fail on FK constraint,
+        // but we don't want to crash the UI.
     }
 
     const queryPayload: any = {
         user_id: user.id,
-        item_type: normalizedType, // Store as 'series' in DB
+        item_type: normalizedType,
     };
 
-    // 2. Set the correct foreign key based on normalized type
     if (normalizedType === 'movie') queryPayload.movie_id = numericId;
     else if (normalizedType === 'series') queryPayload.series_id = numericId;
     else if (normalizedType === 'person') queryPayload.person_id = numericId;
     else if (normalizedType === 'post') queryPayload.post_id = String(itemId);
     else if (normalizedType === 'profile') queryPayload.target_user_id = String(itemId);
 
-    // 3. Check if already saved
+    // Check if already saved
     const { data: existing, error: fetchError } = await supabase
         .from('saved_items')
         .select('id')
@@ -53,7 +54,6 @@ export async function toggleSaveItem(
         return { saved: false };
     }
 
-    // 4. Toggle Logic
     if (existing) {
         const { error: deleteError } = await supabase
             .from('saved_items')
@@ -85,7 +85,6 @@ export async function getIsSaved(itemType: SaveableItemType | 'tv', itemId: stri
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return false;
 
-    // ✨ FIX: Normalize here too so the UI button lights up correctly
     const normalizedType = itemType === 'tv' ? 'series' : itemType;
 
     const queryPayload: any = {

@@ -7,9 +7,6 @@ import { redirect } from 'next/navigation';
 import { getUserProfile } from '@/lib/data/user-data';
 import { cacheMovie, cacheSeries } from './cinematic-actions';
 
-// ... (KEEP CONSTANTS AND ZOD SCHEMAS UNCHANGED) ...
-// (Validations constants and TimelineEntrySchema go here)
-
 const MAX_FILE_SIZE_MB = 5;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic'];
@@ -119,7 +116,7 @@ export async function logEntry(prevState: LogEntryState, formData: FormData): Pr
     let movieId: number | undefined = undefined;
     let seriesId: number | undefined = undefined;
 
-    // --- 1. Upsert Cinematic Details (CACHE ON WRITE) ---
+    // --- 1. ✨ CRITICAL: Upsert Cinematic Details (CACHE ON WRITE) ---
     try {
         if (media_type === 'movie') {
             await cacheMovie(cinematicApiId);
@@ -212,9 +209,6 @@ export async function logEntry(prevState: LogEntryState, formData: FormData): Pr
     redirect(`/profile/${userData.profile.username}/timeline`);
     return { message: 'Success' };
 }
-
-// ... (KEEP UPDATE & DELETE FUNCTIONS - THEY DON'T CACHE NEW ITEMS) ...
-// (Copy updateTimelineEntry and deleteTimelineEntry from previous version)
 
 export async function updateTimelineEntry(prevState: UpdateEntryState, formData: FormData): Promise<UpdateEntryState> {
     const supabase = await createClient();

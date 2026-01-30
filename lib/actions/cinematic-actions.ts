@@ -1,6 +1,8 @@
 'use server';
 
 import { createClient } from '@/utils/supabase/server';
+// ✨ CRITICAL: Import the Admin Client to bypass RLS for caching
+import { createAdminClient } from '@/utils/supabase/admin';
 import { countries } from '@/lib/data/countries';
 
 // =====================================================================
@@ -578,20 +580,21 @@ export async function getPersonDetails(personId: number): Promise<PersonDetails>
 }
 
 // =====================================================================
-// == CACHE HELPERS (USE THESE FOR WRITE ACTIONS)
+// == CACHE HELPERS (NOW SECURE VIA ADMIN CLIENT)
 // =====================================================================
 
 export async function cacheMovie(movieId: number) {
-    const supabase = await createClient();
+    const supabaseAdmin = await createAdminClient();
+
     // 1. Check if exists
-    const { data: existing } = await supabase.from('movies').select('tmdb_id').eq('tmdb_id', movieId).maybeSingle();
+    const { data: existing } = await supabaseAdmin.from('movies').select('tmdb_id').eq('tmdb_id', movieId).maybeSingle();
     if (existing) return;
 
     // 2. Fetch
     const details = await getMovieDetails(movieId);
 
-    // 3. Insert
-    await supabase.from('movies').upsert({
+    // 3. Insert using Admin Privileges
+    await supabaseAdmin.from('movies').upsert({
         tmdb_id: details.id,
         title: details.title,
         poster_url: details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : null,
@@ -605,16 +608,14 @@ export async function cacheMovie(movieId: number) {
 }
 
 export async function cacheSeries(seriesId: number) {
-    const supabase = await createClient();
-    // 1. Check if exists
-    const { data: existing } = await supabase.from('series').select('tmdb_id').eq('tmdb_id', seriesId).maybeSingle();
+    const supabaseAdmin = await createAdminClient();
+
+    const { data: existing } = await supabaseAdmin.from('series').select('tmdb_id').eq('tmdb_id', seriesId).maybeSingle();
     if (existing) return;
 
-    // 2. Fetch
     const details = await getSeriesDetails(seriesId);
 
-    // 3. Insert
-    await supabase.from('series').upsert({
+    await supabaseAdmin.from('series').upsert({
         tmdb_id: details.id,
         title: details.title,
         poster_url: details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : null,
@@ -629,20 +630,18 @@ export async function cacheSeries(seriesId: number) {
 }
 
 export async function cachePerson(personId: number) {
-    const supabase = await createClient();
-    // 1. Check if exists AND is fresh
-    const { data: existing } = await supabase.from('people').select('tmdb_id, updated_at').eq('tmdb_id', personId).maybeSingle();
+    const supabaseAdmin = await createAdminClient();
+
+    const { data: existing } = await supabaseAdmin.from('people').select('tmdb_id, updated_at').eq('tmdb_id', personId).maybeSingle();
 
     const ONE_WEEK = 7 * 24 * 60 * 60 * 1000;
     const isStale = !existing || !existing.updated_at || (Date.now() - new Date(existing.updated_at).getTime() > ONE_WEEK);
 
     if (!isStale) return;
 
-    // 2. Fetch
     const details = await getPersonDetails(personId);
 
-    // 3. Insert
-    await supabase.from('people').upsert({
+    await supabaseAdmin.from('people').upsert({
         tmdb_id: details.id,
         name: details.name,
         biography: details.biography,

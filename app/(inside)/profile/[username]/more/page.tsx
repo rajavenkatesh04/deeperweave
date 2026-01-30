@@ -1,7 +1,7 @@
-import { redirect } from "next/navigation";
+import {redirect} from "next/navigation";
 import Link from 'next/link';
-import { getUserProfile } from '@/lib/data/user-data';
-import { geistSans } from "@/app/ui/fonts";
+import {getUserProfile} from '@/lib/data/user-data';
+import {geistSans} from "@/app/ui/fonts";
 import SignOutButton from "@/app/ui/auth/SignOutButton";
 import {
     Cog6ToothIcon,
@@ -30,15 +30,17 @@ function MenuLink({
             className="group flex items-center justify-between p-4 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl hover:border-zinc-300 dark:hover:border-zinc-700 transition-all active:scale-[0.99]"
         >
             <div className="flex items-center gap-4">
-                <div className="p-2.5 bg-zinc-50 dark:bg-zinc-900 rounded-xl text-zinc-500 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors">
-                    <Icon className="w-5 h-5" strokeWidth={1.5} />
+                <div
+                    className="p-2.5 bg-zinc-50 dark:bg-zinc-900 rounded-xl text-zinc-500 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors">
+                    <Icon className="w-5 h-5" strokeWidth={1.5}/>
                 </div>
                 <div>
                     <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{label}</p>
                     {description && <p className="text-xs text-zinc-500 mt-0.5">{description}</p>}
                 </div>
             </div>
-            <ArrowRightIcon className="w-4 h-4 text-zinc-300 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors -translate-x-1 group-hover:translate-x-0" />
+            <ArrowRightIcon
+                className="w-4 h-4 text-zinc-300 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors -translate-x-1 group-hover:translate-x-0"/>
         </Link>
     );
 }
@@ -51,7 +53,8 @@ export default async function MoreMenuPage() {
     }
 
     return (
-        <div className={`w-full animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20 relative z-10 max-w-2xl mx-auto pt-8 px-4 md:px-6 ${geistSans.className}`}>
+        <div
+            className={`w-full animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20 relative z-10 max-w-2xl mx-auto pt-8 px-4 md:px-6 ${geistSans.className}`}>
 
             {/* Header */}
             <div className="mb-10">
@@ -82,7 +85,8 @@ export default async function MoreMenuPage() {
 
                 {/* Legal Section */}
                 <section>
-                    <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-400 mb-4 px-1">Legal & Support</h3>
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-400 mb-4 px-1">Legal &
+                        Support</h3>
                     <div className="space-y-3">
                         <MenuLink
                             href="/policies/privacy"
@@ -100,23 +104,36 @@ export default async function MoreMenuPage() {
                 {/* Session Section */}
                 <section>
                     <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-400 mb-4 px-1">Session</h3>
-                    <div className="p-5 bg-zinc-50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 rounded-2xl">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                            <div>
-                                <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Current Session</p>
-                                <p className="text-xs text-zinc-500 mt-0.5">Logged in as <span className="font-mono text-zinc-700 dark:text-zinc-300">{userData.user.email}</span></p>
-                            </div>
-                            <div className="flex items-center gap-2 px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800/50 rounded-full">
-                                <span className="relative flex h-2 w-2">
-                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                                </span>
-                                <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide pr-1">Active</span>
+                    <div
+                        className="p-5 bg-zinc-50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 rounded-2xl">
+
+                        {/* Top Row: User Info & Minimal Status */}
+                        <div className="flex items-start justify-between mb-6">
+                            <div className="min-w-0">
+                                <div className="flex items-center gap-2 mb-0.5">
+                                    <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Current
+                                        Session</p>
+                                    {/* Minimalist Status Indicator */}
+                                    <div className="flex items-center gap-1.5 ml-1">
+                        <span className="relative flex h-1.5 w-1.5">
+                            <span
+                                className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                        </span>
+                                        <span
+                                            className="text-[10px] font-bold text-emerald-600 dark:text-emerald-500 uppercase tracking-wider">Active</span>
+                                    </div>
+                                </div>
+                                <p className="text-xs text-zinc-500 truncate">
+                                    {userData.user.email}
+                                </p>
                             </div>
                         </div>
 
-                        <SignOutButton className="w-full flex items-center justify-center gap-2 h-11 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 hover:bg-red-50 dark:hover:bg-red-950/20 hover:border-red-200 dark:hover:border-red-900 text-zinc-700 dark:text-zinc-300 hover:text-red-600 dark:hover:text-red-400 rounded-xl text-xs font-bold uppercase tracking-wide transition-all shadow-sm">
-                            <PowerIcon className="w-4 h-4" />
+                        {/* Action: Cleaner Full-Width Button */}
+                        <SignOutButton
+                            className=" w-full flex items-center justify-center gap-2 h-10 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 hover:bg-red-50 dark:hover:bg-red-950/20 hover:border-red-200 dark:hover:border-red-900 text-zinc-600 dark:text-zinc-400 hover:text-red-600 dark:hover:text-red-400 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all shadow-sm active:scale-[0.98]">
+                            <PowerIcon className="w-3.5 h-3.5"/>
                             Sign Out
                         </SignOutButton>
                     </div>

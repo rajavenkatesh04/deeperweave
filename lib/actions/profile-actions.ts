@@ -295,6 +295,7 @@ export async function updateProfile(prevState: EditProfileState, formData: FormD
     }
 
     revalidatePath('/profile', 'layout');
+    revalidatePath(`/profile/${username}`);
     return { message: 'Success' };
 }
 

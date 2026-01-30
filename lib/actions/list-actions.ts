@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation';
 import { cacheMovie, cacheSeries } from '@/lib/actions/cinematic-actions';
 
 // -----------------------------------------------------------------------------
-// SECTION 1: LIST MANAGEMENT (Create, Delete)
+// SECTION 1: LIST MANAGEMENT
 // -----------------------------------------------------------------------------
 
 export async function createList(prevState: any, formData: FormData) {
@@ -56,7 +56,7 @@ export async function deleteList(listId: string) {
 
 
 // -----------------------------------------------------------------------------
-// SECTION 2: ENTRY MANAGEMENT (Add, Remove, Update Items)
+// SECTION 2: ENTRY MANAGEMENT
 // -----------------------------------------------------------------------------
 
 export async function addToList(listId: string, mediaType: 'movie' | 'tv', mediaId: number) {
@@ -74,7 +74,7 @@ export async function addToList(listId: string, mediaType: 'movie' | 'tv', media
 
     if (!list || list.user_id !== user.id) return { error: "Forbidden" };
 
-    // 2. Cache Warm-up (Ensures DB record exists)
+    // 2. ✨ CRITICAL: Cache Warm-up via Admin Client
     try {
         if (mediaType === 'movie') await cacheMovie(mediaId);
         else await cacheSeries(mediaId);
