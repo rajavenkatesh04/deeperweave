@@ -1,7 +1,7 @@
 'use server';
 
-import { countries } from '@/lib/data/countries';
 import { createClient } from '@/utils/supabase/server';
+import { countries } from '@/lib/data/countries';
 
 // =====================================================================
 // == TYPE DEFINITIONS
@@ -412,7 +412,7 @@ export async function searchCinematic(query: string): Promise<CinematicSearchRes
 }
 
 // =====================================================================
-// == DETAILS ACTIONS (PURE FETCH - NO CACHE)
+// == PURE FETCH ACTIONS (NO CACHE)
 // =====================================================================
 
 export async function getMovieDetails(movieId: number): Promise<RichCinematicDetails> {
@@ -575,4 +575,83 @@ export async function getPersonDetails(personId: number): Promise<PersonDetails>
         console.error("TMDB Person Fetch Error:", error);
         throw new Error("Could not fetch person details.");
     }
+}
+
+// =====================================================================
+// == CACHE HELPERS (USE THESE FOR WRITE ACTIONS)
+// =====================================================================
+
+export async function cacheMovie(movieId: number) {
+    const supabase = await createClient();
+    // 1. Check if exists
+    const { data: existing } = await supabase.from('movies').select('tmdb_id').eq('tmdb_id', movieId).maybeSingle();
+    if (existing) return;
+
+    // 2. Fetch
+    const details = await getMovieDetails(movieId);
+
+    // 3. Insert
+    await supabase.from('movies').upsert({
+        tmdb_id: details.id,
+        title: details.title,
+        poster_url: details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : null,
+        backdrop_url: details.backdrop_path ? `https://image.tmdb.org/t/p/original${details.backdrop_path}` : null,
+        release_date: details.release_date,
+        director: details.director,
+        overview: details.overview,
+        genres: details.genres,
+        cast: details.cast
+    }, { onConflict: 'tmdb_id' });
+}
+
+export async function cacheSeries(seriesId: number) {
+    const supabase = await createClient();
+    // 1. Check if exists
+    const { data: existing } = await supabase.from('series').select('tmdb_id').eq('tmdb_id', seriesId).maybeSingle();
+    if (existing) return;
+
+    // 2. Fetch
+    const details = await getSeriesDetails(seriesId);
+
+    // 3. Insert
+    await supabase.from('series').upsert({
+        tmdb_id: details.id,
+        title: details.title,
+        poster_url: details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : null,
+        backdrop_url: details.backdrop_path ? `https://image.tmdb.org/t/p/original${details.backdrop_path}` : null,
+        release_date: details.release_date,
+        creator: details.creator,
+        number_of_seasons: details.number_of_seasons,
+        overview: details.overview,
+        genres: details.genres,
+        cast: details.cast
+    }, { onConflict: 'tmdb_id' });
+}
+
+export async function cachePerson(personId: number) {
+    const supabase = await createClient();
+    // 1. Check if exists AND is fresh
+    const { data: existing } = await supabase.from('people').select('tmdb_id, updated_at').eq('tmdb_id', personId).maybeSingle();
+
+    const ONE_WEEK = 7 * 24 * 60 * 60 * 1000;
+    const isStale = !existing || !existing.updated_at || (Date.now() - new Date(existing.updated_at).getTime() > ONE_WEEK);
+
+    if (!isStale) return;
+
+    // 2. Fetch
+    const details = await getPersonDetails(personId);
+
+    // 3. Insert
+    await supabase.from('people').upsert({
+        tmdb_id: details.id,
+        name: details.name,
+        biography: details.biography,
+        birthday: details.birthday || null,
+        deathday: details.deathday || null,
+        place_of_birth: details.place_of_birth,
+        profile_path: details.profile_path,
+        known_for_department: details.known_for_department,
+        gender: details.gender,
+        updated_at: new Date().toISOString(),
+    }, { onConflict: 'tmdb_id' });
 }

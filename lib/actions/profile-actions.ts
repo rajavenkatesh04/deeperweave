@@ -3,9 +3,10 @@
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
-import {revalidatePath, revalidateTag} from 'next/cache';
+import { revalidatePath } from 'next/cache';
 import { ProfileSearchResult, UserProfile } from '@/lib/definitions';
-import { getMovieDetails, getSeriesDetails, getPersonDetails, RichCinematicDetails, PersonDetails } from './cinematic-actions';
+// ✨ UPDATED: Import cache helpers instead of raw fetchers
+import { cacheMovie, cacheSeries, cachePerson } from './cinematic-actions';
 import { unstable_noStore as noStore } from 'next/cache';
 
 // =====================================================================
@@ -212,7 +213,6 @@ export async function updateProfile(prevState: EditProfileState, formData: FormD
             });
 
             // B. Fetch & Insert Missing Items (Write Logic Here)
-            // This logic is now centralized here to avoid write-storms during browsing
 
             // --- Movies ---
             const movieIds = Array.from(moviesToCache);
@@ -222,22 +222,8 @@ export async function updateProfile(prevState: EditProfileState, formData: FormD
                 const missing = movieIds.filter(id => !existingSet.has(id));
 
                 if (missing.length > 0) {
-                    await Promise.all(missing.map(async (id) => {
-                        try {
-                            const details = await getMovieDetails(id);
-                            await supabase.from('movies').upsert({
-                                tmdb_id: details.id,
-                                title: details.title,
-                                poster_url: details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : null,
-                                backdrop_url: details.backdrop_path ? `https://image.tmdb.org/t/p/original${details.backdrop_path}` : null,
-                                release_date: details.release_date,
-                                director: details.director,
-                                overview: details.overview,
-                                genres: details.genres,
-                                cast: details.cast
-                            });
-                        } catch (e) { console.error(`Failed to cache movie ${id}`, e); }
-                    }));
+                    // Use cacheMovie helper which handles fetching and inserting
+                    await Promise.all(missing.map(id => cacheMovie(id)));
                 }
             }
 
@@ -249,23 +235,7 @@ export async function updateProfile(prevState: EditProfileState, formData: FormD
                 const missing = seriesIds.filter(id => !existingSet.has(id));
 
                 if (missing.length > 0) {
-                    await Promise.all(missing.map(async (id) => {
-                        try {
-                            const details = await getSeriesDetails(id);
-                            await supabase.from('series').upsert({
-                                tmdb_id: details.id,
-                                title: details.title,
-                                poster_url: details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : null,
-                                backdrop_url: details.backdrop_path ? `https://image.tmdb.org/t/p/original${details.backdrop_path}` : null,
-                                release_date: details.release_date,
-                                creator: details.creator,
-                                number_of_seasons: details.number_of_seasons,
-                                overview: details.overview,
-                                genres: details.genres,
-                                cast: details.cast
-                            });
-                        } catch (e) { console.error(`Failed to cache series ${id}`, e); }
-                    }));
+                    await Promise.all(missing.map(id => cacheSeries(id)));
                 }
             }
 
@@ -277,23 +247,7 @@ export async function updateProfile(prevState: EditProfileState, formData: FormD
                 const missing = personIds.filter(id => !existingSet.has(id));
 
                 if (missing.length > 0) {
-                    await Promise.all(missing.map(async (id) => {
-                        try {
-                            const details = await getPersonDetails(id);
-                            await supabase.from('people').upsert({
-                                tmdb_id: details.id,
-                                name: details.name,
-                                biography: details.biography,
-                                birthday: details.birthday || null,
-                                deathday: details.deathday || null,
-                                place_of_birth: details.place_of_birth,
-                                profile_path: details.profile_path,
-                                known_for_department: details.known_for_department,
-                                gender: details.gender,
-                                updated_at: new Date().toISOString(),
-                            });
-                        } catch (e) { console.error(`Failed to cache person ${id}`, e); }
-                    }));
+                    await Promise.all(missing.map(id => cachePerson(id)));
                 }
             }
 

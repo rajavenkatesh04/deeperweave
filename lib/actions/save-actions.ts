@@ -2,7 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
-import { getMovieDetails, getSeriesDetails, getPersonDetails } from '@/lib/actions/cinematic-actions';
+import { cacheMovie, cacheSeries, cachePerson } from '@/lib/actions/cinematic-actions';
 import { SaveableItemType } from '@/lib/definitions';
 
 export async function toggleSaveItem(
@@ -21,11 +21,11 @@ export async function toggleSaveItem(
     const normalizedType = itemType === 'tv' ? 'series' : itemType;
     const numericId = Number(itemId);
 
-    // 1. Ensure the item exists in our local cache (movies/series/people tables)
+    // 1. Ensure the item exists in our local database (CACHE ON WRITE)
     try {
-        if (normalizedType === 'movie') await getMovieDetails(numericId);
-        else if (normalizedType === 'series') await getSeriesDetails(numericId);
-        else if (normalizedType === 'person') await getPersonDetails(numericId);
+        if (normalizedType === 'movie') await cacheMovie(numericId);
+        else if (normalizedType === 'series') await cacheSeries(numericId);
+        else if (normalizedType === 'person') await cachePerson(numericId);
     } catch (e) {
         console.error("Error ensuring item details exist:", e);
     }

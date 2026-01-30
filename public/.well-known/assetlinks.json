@@ -1,0 +1,13 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.deeperweave.app",
+      "sha256_cert_fingerprints": [
+        "YOUR_DEBUG_SHA256_FINGERPRINT_HERE",
+        "88:5F:E0:03:80:80:66:EF:0F:1C:24:54:F8:5C:4C:4D:63:37:E7:1B:94:55:DA:49:41:AA:B8:E2:CC:0D:7D:1B"
+      ]
+    }
+  }
+]
