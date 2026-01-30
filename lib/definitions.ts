@@ -115,6 +115,7 @@ export interface TimelineEntry {
 
     // Metadata
     is_rewatch: boolean;
+    rewatch_count?: number;
     viewing_context: string | null; // e.g. "Cinema", "Netflix"
     photo_url: string | null; // User upload
     post_id: string | null; // Linked review post

@@ -15,7 +15,9 @@ import {
     XMarkIcon,
     QrCodeIcon,
     DocumentTextIcon,
-    PhotoIcon as PhotoSolidIcon
+    PhotoIcon as PhotoSolidIcon,
+    TicketIcon,
+    TvIcon
 } from '@heroicons/react/24/solid';
 import { motion, AnimatePresence } from 'framer-motion';
 import MediaInfoCard from '@/app/ui/blog/MediaInfoCard';
@@ -25,6 +27,51 @@ import { TimelineEntry, UserProfile } from "@/lib/definitions";
 import ImageModal from './ImageModal';
 import UserProfilePopover from './UserProfilePopover';
 import { geistSans } from "@/app/ui/fonts";
+
+// --- HELPER: Platform Badge ---
+
+const PlatformBadge = ({ platform }: { platform: string }) => {
+    // Normalize string to lowercase for matching
+    const p = platform.toLowerCase().trim();
+
+    let config = {
+        bg: 'bg-zinc-100 dark:bg-zinc-800',
+        text: 'text-zinc-600 dark:text-zinc-400',
+        icon: null as React.ReactNode,
+        label: platform
+    };
+
+    // Platform Configuration Map
+    if (p.includes('netflix')) {
+        config = { bg: 'bg-black', text: 'text-[#E50914]', icon: <Image src="/logos/netflix.svg" alt="Netflix" width={50} height={14} className="h-3.5 w-auto object-contain" />, label: 'Netflix' };
+    } else if (p.includes('prime') || p.includes('amazon')) {
+        config = { bg: 'bg-[#00A8E1]', text: 'text-white', icon: <Image src="/logos/prime-video.svg" alt="Prime Video" width={50} height={14} className="h-3.5 w-auto object-contain brightness-0 invert" />, label: 'Prime' };
+    } else if (p.includes('disney')) {
+        config = { bg: 'bg-[#113CCF]', text: 'text-white', icon: <Image src="/logos/disney-plus.svg" alt="Disney+" width={50} height={16} className="h-4 w-auto object-contain" />, label: 'Disney+' };
+    } else if (p.includes('hulu')) {
+        config = { bg: 'bg-[#1CE783]', text: 'text-black', icon: <Image src="/logos/hulu.svg" alt="Hulu" width={50} height={14} className="h-3 w-auto object-contain" />, label: 'Hulu' };
+    } else if (p.includes('max') || p.includes('hbo')) {
+        config = { bg: 'bg-[#002BE7]', text: 'text-white', icon: <Image src="/logos/max.svg" alt="Max" width={50} height={14} className="h-3.5 w-auto object-contain brightness-0 invert" />, label: 'Max' };
+    } else if (p.includes('apple') || p.includes('tv+')) {
+        // ✨ CHANGED: Set to white background with black text
+        config = {
+            bg: 'bg-white',
+            text: 'text-black',
+            icon: <Image src="/logos/apple-tv.svg" alt="Apple TV" width={50} height={14} className="h-3.5 w-auto object-contain" />,
+            label: 'Apple TV'
+        };
+    } else if (p.includes('cinema') || p.includes('theater')) {
+        config = { bg: 'bg-rose-600', text: 'text-white', icon: <TicketIcon className="w-3.5 h-3.5" />, label: 'Cinema' };
+    } else if (p.includes('tv') || p.includes('television')) {
+        config = { bg: 'bg-zinc-800', text: 'text-zinc-300', icon: <TvIcon className="w-3.5 h-3.5" />, label: 'TV' };
+    }
+
+    return (
+        <div className={`inline-flex items-center justify-center gap-1.5 px-2 py-0.5 rounded-sm ${config.bg} shadow-sm border border-black/5 dark:border-white/5`}>
+            {config.icon ? config.icon : <span className={`text-[10px] font-bold uppercase tracking-wide ${config.text}`}>{config.label}</span>}
+        </div>
+    );
+};
 
 // --- ACTION MENU ---
 
@@ -172,21 +219,25 @@ export default function TimelineEntryCard({
     const [selectedCollaborator, setSelectedCollaborator] = useState<Pick<UserProfile, 'id' | 'username' | 'profile_pic_url'> | null>(null);
     const [selectedItem, setSelectedItem] = useState<{ tmdb_id: number; title: string; media_type: 'movie' | 'tv' } | null>(null);
     const [isDownloading, setIsDownloading] = useState(false);
-
-    // Controls the modal to see full notes
     const [showNotesModal, setShowNotesModal] = useState(false);
 
     if (!cinematicItem) return null;
 
-    // Formatter: "Sun, Oct 25"
+    // Readable Date: "Sun, Oct 25, 2023"
     const dateObj = new Date(entry.watched_on);
-    const formattedDate = new Date(entry.watched_on)
-        .toLocaleDateString('en-GB')
-        .replace(/\//g, '-');
+    const formattedDate = dateObj.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+    });
 
     const rating = Number(entry.rating);
     const displayRating = rating % 1 === 0 ? rating.toString() : rating.toFixed(1);
-    const isRewatch = (entry).is_rewatch || false;
+
+    const rewatchCount = (entry as any).rewatch_count || 0;
+    const isRewatch = (entry as any).is_rewatch || rewatchCount > 0;
+
     const releaseYear = (cinematicItem.release_date)?.split('-')[0];
     const safeTitle = cinematicItem.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
 
@@ -232,7 +283,7 @@ export default function TimelineEntryCard({
             >
                 <div className="flex flex-row w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-md overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
 
-                    {/* POSTER (Left side) */}
+                    {/* POSTER */}
                     <div
                         className="relative w-24 min-h-[140px] md:w-32 shrink-0 cursor-pointer bg-zinc-100 dark:bg-zinc-900"
                         onClick={openDetails}
@@ -245,12 +296,12 @@ export default function TimelineEntryCard({
                         />
                     </div>
 
-                    {/* CONTENT (Right side) */}
+                    {/* CONTENT */}
                     <div className="flex-1 flex flex-col p-4 min-w-0 relative">
 
-                        {/* 1. Header: Readable Date & Action Menu */}
+                        {/* Header */}
                         <div className="flex justify-between items-center mb-1">
-                            <span className="text-xs uppercase tracking-wide font-semibold italic">
+                            <span className="text-xs uppercase tracking-wide font-semibold text-zinc-500 dark:text-zinc-500 italic">
                                 {formattedDate}
                             </span>
                             {isOwnProfile && (
@@ -263,7 +314,7 @@ export default function TimelineEntryCard({
                             )}
                         </div>
 
-                        {/* 2. Title + Year (Beside) */}
+                        {/* Title */}
                         <div className="flex items-baseline gap-2 mb-2 pr-6">
                             <h3
                                 className="text-base md:text-lg font-bold leading-tight text-zinc-900 dark:text-zinc-100 cursor-pointer hover:underline decoration-zinc-300 underline-offset-2 truncate"
@@ -279,10 +330,10 @@ export default function TimelineEntryCard({
                             )}
                         </div>
 
-                        {/* 3. METADATA ROW: Rating • Source • Rewatch • Collaborators • Photo */}
+                        {/* Metadata Row */}
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400 mb-2.5">
 
-                            {/* Rating (Clean, Monochrome, No Background) */}
+                            {/* Rating */}
                             {rating > 0 && (
                                 <div className="flex items-center gap-1 font-bold text-zinc-900 dark:text-zinc-100">
                                     <StarIcon className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-600" />
@@ -293,27 +344,31 @@ export default function TimelineEntryCard({
                             {/* Separator */}
                             {(rating > 0 && entry.viewing_context) && <span className="text-zinc-300 dark:text-zinc-700">•</span>}
 
-                            {/* Source */}
+                            {/* Platform Logo/Badge */}
                             {entry.viewing_context && (
-                                <span className="truncate max-w-[100px] font-extrabold">
-                                    {entry.viewing_context}
-                                </span>
+                                <PlatformBadge platform={entry.viewing_context} />
                             )}
 
                             {/* Separator */}
                             {((rating > 0 || entry.viewing_context) && isRewatch) && <span className="text-zinc-300 dark:text-zinc-700">•</span>}
 
-                            {/* Rewatch */}
+                            {/* Rewatch Badge */}
                             {isRewatch && (
-                                <span className="flex items-center gap-0.5 text-zinc-400 dark:text-zinc-500" title="Rewatch">
-                                    <ArrowPathIcon className="w-3 h-3" />
-                                </span>
+                                <div
+                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-500 font-bold uppercase tracking-wider text-[10px]"
+                                    title={`You have rewatched this ${rewatchCount} times`}
+                                >
+                                    <ArrowPathIcon className="w-3 h-3 stroke-[3]" />
+                                    <span>
+                                        {rewatchCount > 0 ? `Rewatch ${rewatchCount}` : 'Rewatch'}
+                                    </span>
+                                </div>
                             )}
 
-                            {/* Separator (if Collabs exist) */}
+                            {/* Separator */}
                             {((rating > 0 || entry.viewing_context || isRewatch) && entry.timeline_collaborators.length > 0) && <span className="text-zinc-300 dark:text-zinc-700">•</span>}
 
-                            {/* Collaborators (Color, Sharp) */}
+                            {/* Collaborators */}
                             {entry.timeline_collaborators.length > 0 && (
                                 <div className="flex -space-x-1">
                                     {entry.timeline_collaborators.slice(0, 3).map(collab => (
@@ -332,10 +387,10 @@ export default function TimelineEntryCard({
                                 </div>
                             )}
 
-                            {/* Separator (if Photo exists) */}
+                            {/* Separator */}
                             {((rating > 0 || entry.viewing_context || isRewatch || entry.timeline_collaborators.length > 0) && entry.photo_url) && <span className="text-zinc-300 dark:text-zinc-700">•</span>}
 
-                            {/* Photo Icon */}
+                            {/* Photo */}
                             {entry.photo_url && (
                                 <button
                                     onClick={(e) => { e.stopPropagation(); setSelectedPhotoUrl(entry.photo_url); }}
@@ -346,7 +401,7 @@ export default function TimelineEntryCard({
                             )}
                         </div>
 
-                        {/* 4. Notes Preview (Clickable) */}
+                        {/* Notes Preview */}
                         {entry.notes && (
                             <div
                                 className="mb-2 group/notes cursor-pointer"
@@ -359,7 +414,7 @@ export default function TimelineEntryCard({
                             </div>
                         )}
 
-                        {/* 5. Footer: Review Link (if exists) */}
+                        {/* Review Link */}
                         {entry.posts?.slug && (
                             <div className="mt-auto pt-1">
                                 <Link href={`/blog/${entry.posts.slug}`} className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
@@ -383,13 +438,10 @@ export default function TimelineEntryCard({
                         exit={{ opacity: 0 }}
                         className="fixed inset-0 z-[80] flex items-center justify-center p-4 sm:p-6"
                     >
-                        {/* Backdrop with Blur */}
                         <div
                             className="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm"
                             onClick={() => setShowNotesModal(false)}
                         />
-
-                        {/* Modal Content */}
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95, y: 10 }}
                             animate={{
@@ -402,9 +454,7 @@ export default function TimelineEntryCard({
                             className="relative w-full max-w-lg bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-2xl flex flex-col max-h-[85vh] overflow-hidden"
                             onClick={(e) => e.stopPropagation()}
                         >
-                            {/* 1. Header: Context (Poster + Title + Rating) */}
                             <div className="shrink-0 flex items-start gap-4 p-5 border-b border-zinc-100 dark:border-zinc-900 bg-zinc-50/50 dark:bg-zinc-900/20">
-                                {/* Mini Poster */}
                                 <div className="relative w-12 h-16 shrink-0 rounded-sm overflow-hidden shadow-sm border border-zinc-200 dark:border-zinc-800">
                                     <Image
                                         src={cinematicItem.poster_url || '/placeholder-poster.png'}
@@ -413,16 +463,12 @@ export default function TimelineEntryCard({
                                         className="object-cover"
                                     />
                                 </div>
-
-                                {/* Meta Info */}
                                 <div className="flex-1 min-w-0 pt-0.5">
                                     <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100 leading-tight truncate pr-8">
                                         {cinematicItem.title}
                                     </h3>
-
                                     <div className="flex items-center gap-2 mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">
                                         <span className="font-medium">{formattedDate}</span>
-
                                         {rating > 0 && (
                                             <>
                                                 <span className="text-zinc-300 dark:text-zinc-700">•</span>
@@ -434,8 +480,6 @@ export default function TimelineEntryCard({
                                         )}
                                     </div>
                                 </div>
-
-                                {/* Close Button */}
                                 <button
                                     onClick={() => setShowNotesModal(false)}
                                     className="absolute top-4 right-4 p-1 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors rounded-md hover:bg-zinc-200/50 dark:hover:bg-zinc-800"
@@ -443,15 +487,11 @@ export default function TimelineEntryCard({
                                     <XMarkIcon className="w-5 h-5" />
                                 </button>
                             </div>
-
-                            {/* 2. Body: The Notes (Scrollable) */}
                             <div className="overflow-y-auto p-5 custom-scrollbar">
                                 <div className={`${geistSans.className} text-base leading-relaxed text-zinc-800 dark:text-zinc-300 whitespace-pre-wrap`}>
                                     {entry.notes}
                                 </div>
                             </div>
-
-                            {/* 3. Footer: Subtle fade/padding (Optional, purely aesthetic) */}
                             <div className="shrink-0 h-4 bg-gradient-to-t from-white dark:from-zinc-950 to-transparent pointer-events-none" />
                         </motion.div>
                     </motion.div>
