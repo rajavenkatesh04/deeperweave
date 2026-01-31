@@ -8,8 +8,8 @@ import {
     MdVerified,
     MdRateReview,
     MdExplicit,
-    MdClose,
-    MdBugReport
+    MdBugReport,
+    MdTerminal
 } from 'react-icons/md';
 import { UserRole } from '@/lib/definitions';
 import { DM_Serif_Display, Inter } from 'next/font/google';
@@ -34,6 +34,19 @@ type BadgeConfigData = {
 };
 
 const BADGE_CONFIG: Record<string, BadgeConfigData> = {
+    developer: {
+        title: "Core Developer",
+        description: "A master architect with direct access to the Deeperweave source code. They build the reality you experience.",
+        icon: <MdTerminal className="w-full h-full" />,
+        colors: {
+            triggerBg: "bg-amber-100 dark:bg-amber-900/30",
+            triggerText: "text-amber-700 dark:text-amber-400",
+            triggerBorder: "border-amber-200 dark:border-amber-800",
+            modalGlow: "from-amber-500/30 to-transparent",
+            modalIconText: "text-amber-600 dark:text-amber-400",
+            shimmer: "from-amber-400 via-amber-200 to-amber-400"
+        }
+    },
     staff: {
         title: "Staff Member",
         description: "An official architect of the Deeperweave platform. This user helps build, maintain, and curate the experience.",
@@ -119,6 +132,18 @@ function InteractiveBadge({ type, config }: { type: string, config: BadgeConfigD
     const [isOpen, setIsOpen] = useState(false);
     const isBoxyStyle = type === 'nsfw';
     const isVerified = type === 'verified';
+    const isDeveloper = type === 'developer';
+
+    // Helper to determine shimmer color based on the config string
+    const getShimmerColor = () => {
+        if (!config.colors.shimmer) return 'transparent';
+        if (config.colors.shimmer.includes('zinc')) return 'rgba(161, 161, 170, 0.2)';
+        if (config.colors.shimmer.includes('emerald')) return 'rgba(52, 211, 153, 0.2)';
+        if (config.colors.shimmer.includes('indigo')) return 'rgba(129, 140, 248, 0.2)';
+        if (config.colors.shimmer.includes('purple')) return 'rgba(168, 85, 247, 0.2)';
+        if (config.colors.shimmer.includes('amber')) return 'rgba(251, 191, 36, 0.2)';
+        return 'rgba(251, 113, 133, 0.2)';
+    };
 
     return (
         <>
@@ -145,11 +170,7 @@ function InteractiveBadge({ type, config }: { type: string, config: BadgeConfigD
                         <div
                             className={`absolute inset-0`}
                             style={{
-                                background: `linear-gradient(90deg, transparent, ${config.colors.shimmer.includes('zinc') ? 'rgba(161, 161, 170, 0.2)' :
-                                    config.colors.shimmer.includes('emerald') ? 'rgba(52, 211, 153, 0.2)' :
-                                        config.colors.shimmer.includes('indigo') ? 'rgba(129, 140, 248, 0.2)' :
-                                            config.colors.shimmer.includes('purple') ? 'rgba(168, 85, 247, 0.2)' :
-                                                'rgba(251, 113, 133, 0.2)'}, transparent)`,
+                                background: `linear-gradient(90deg, transparent, ${getShimmerColor()}, transparent)`,
                                 animation: 'shimmer 3s linear infinite'
                             }}
                         />
@@ -183,8 +204,8 @@ function InteractiveBadge({ type, config }: { type: string, config: BadgeConfigD
                         <div className={`relative w-3.5 h-3.5 ${config.colors.triggerText} group-hover:scale-110 transition-transform duration-300`}>
                             {config.icon}
                         </div>
-                        <span className={`relative text-[10px] font-bold uppercase tracking-widest ${config.colors.triggerText}`}>
-                            {type === 'staff' ? 'Staff' : type}
+                        <span className={`relative text-[10px] font-bold uppercase tracking-widest ${config.colors.triggerText} ${isDeveloper ? 'font-mono' : ''}`}>
+                            {type === 'staff' ? 'Staff' : type === 'developer' ? 'Dev' : type}
                         </span>
                     </>
                 )}
@@ -193,16 +214,17 @@ function InteractiveBadge({ type, config }: { type: string, config: BadgeConfigD
             {/* --- Sleek Modal --- */}
             <Transition appear show={isOpen} as={Fragment}>
                 <Dialog as="div" className={`relative z-[100] ${inter.className}`} onClose={() => setIsOpen(false)}>
+                    {/* Backdrop with heavy blur for focus */}
                     <Transition.Child
                         as={Fragment}
                         enter="ease-out duration-500"
                         enterFrom="opacity-0 backdrop-blur-none"
-                        enterTo="opacity-100 backdrop-blur-md"
+                        enterTo="opacity-100 backdrop-blur-xl"
                         leave="ease-in duration-300"
-                        leaveFrom="opacity-100 backdrop-blur-md"
+                        leaveFrom="opacity-100 backdrop-blur-xl"
                         leaveTo="opacity-0 backdrop-blur-none"
                     >
-                        <div className="fixed inset-0 bg-zinc-900/20 dark:bg-black/60 transition-all" />
+                        <div className="fixed inset-0 bg-zinc-900/40 dark:bg-black/80 transition-all" />
                     </Transition.Child>
 
                     <div className="fixed inset-0 overflow-y-auto">
@@ -219,12 +241,7 @@ function InteractiveBadge({ type, config }: { type: string, config: BadgeConfigD
                                 <Dialog.Panel className="w-full max-w-sm relative transform overflow-hidden rounded-3xl bg-white/80 dark:bg-zinc-900/90 backdrop-blur-xl p-8 text-left align-middle shadow-[0_20px_50px_-12px_rgba(0,0,0,0.15)] dark:shadow-black/50 transition-all border border-white/50 dark:border-white/10 ring-1 ring-black/5">
                                     <div className={`absolute top-0 inset-x-0 h-40 bg-gradient-to-b ${config.colors.modalGlow} opacity-40 pointer-events-none`} />
 
-                                    <button
-                                        onClick={() => setIsOpen(false)}
-                                        className="absolute top-4 right-4 p-2 rounded-full text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all z-10"
-                                    >
-                                        <MdClose className="w-5 h-5" />
-                                    </button>
+                                    {/* Close Button Removed as per request (Redundant) */}
 
                                     <div className="relative flex flex-col items-center text-center pt-4">
                                         <div className="relative mb-6">
@@ -270,6 +287,7 @@ function InteractiveBadge({ type, config }: { type: string, config: BadgeConfigD
 export default function UserBadge({ role, isNsfw }: { role: UserRole, isNsfw?: boolean }) {
     const activeBadges = [];
 
+    // Prioritize developer if that is the role, but always allow NSFW
     if (isNsfw && BADGE_CONFIG.nsfw) {
         activeBadges.push({ type: 'nsfw', config: BADGE_CONFIG.nsfw });
     }

@@ -235,10 +235,10 @@ export default function SettingsFormPage({
                         <ToggleRow
                             type="checkbox"
                             variant="danger" // Pass the danger variant here
-                            label="Include 18+ Content"
+                            label="Include NSFW Content"
                             description={
                                 isOver18
-                                    ? "Show mature content in feeds."
+                                    ? "Allows explicit content like adult movies etc."
                                     : <span className="flex items-center gap-1 text-zinc-400"><LockClosedIcon className="w-3 h-3" /> Age verification (18+) required.</span>
                             }
                             icon={isNsfw ? ExclamationTriangleIcon : EyeSlashIcon}
