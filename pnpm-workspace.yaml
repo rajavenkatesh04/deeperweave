@@ -1,0 +1,8 @@
+ignoredBuiltDependencies:
+  - '@firebase/util'
+  - '@parcel/watcher'
+  - '@tailwindcss/oxide'
+  - protobufjs
+  - sharp
+  - supabase
+  - unrs-resolver

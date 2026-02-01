@@ -1,0 +1,14 @@
+diff --git a/android/build.gradle b/android/build.gradle
+index 8324fe467e729c3ede8f1a5b8f47e591b812d606..be3f05317b5b9d76c44be71bdbd318843c39f5c6 100644
+--- a/android/build.gradle
++++ b/android/build.gradle
+@@ -43,8 +43,7 @@ android {
+     buildTypes {
+         release {
+             minifyEnabled false
+-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+-        }
++proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'        }
+     }
+     lintOptions {
+         abortOnError = false

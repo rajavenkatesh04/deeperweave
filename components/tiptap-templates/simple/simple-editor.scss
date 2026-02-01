@@ -1,0 +1,106 @@
+//
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
+
+body {
+  --tt-toolbar-height: 44px;
+  --tt-theme-text: var(--tt-gray-light-900);
+
+  .dark & {
+    --tt-theme-text: var(--tt-gray-dark-900);
+  }
+}
+
+body {
+  font-family: "Inter", sans-serif;
+  color: var(--tt-theme-text);
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+  padding: 0;
+  overscroll-behavior-y: none;
+}
+
+html,
+body {
+  overscroll-behavior-x: none;
+}
+
+html,
+body,
+#root,
+#app {
+  height: 100%;
+  background-color: var(--tt-bg-color);
+}
+
+::-webkit-scrollbar {
+  width: 0.25rem;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--tt-scrollbar-color) transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--tt-scrollbar-color);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tiptap.ProseMirror {
+  font-family: "DM Sans", sans-serif;
+
+  /* ✨ ADDED: Image & Media Handling for Desktop/Mobile */
+  img {
+    display: block;
+    max-width: 100%;    /* Prevents overflow on desktop & scales on mobile */
+    height: auto;       /* Maintains aspect ratio */
+    margin: 1.5rem 0;   /* Adds breathing room */
+    border-radius: 0.5rem;
+
+    &.ProseMirror-selectednode {
+      outline: 3px solid #6366f1; /* Indigo-500 highlight when clicked */
+      outline-offset: 2px;
+    }
+  }
+
+  /* Handles YouTube embeds if you add them later */
+  iframe {
+    max-width: 100%;
+    border-radius: 0.5rem;
+  }
+}
+
+/* ✨ FIX: Add this rule to contain the sticky toolbar */
+.simple-editor-wrapper {
+  position: relative;
+}
+
+.simple-editor-content {
+  max-width: 648px;
+  width: 100%;
+  margin: 0 auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.simple-editor-content .tiptap.ProseMirror.simple-editor {
+  flex: 1;
+  padding: calc(1.5rem + var(--tt-toolbar-height)) 1.5rem 30vh;
+}
+
+.tiptap-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background-color: var(--tt-bg-color, white);
+  border-bottom: 1px solid var(--tt-border-color);
+  overflow-x: auto;
+  white-space: nowrap;
+}
