@@ -5,9 +5,9 @@ import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { ProfileSearchResult, UserProfile } from '@/lib/definitions';
-// ✨ UPDATED: Import cache helpers instead of raw fetchers
 import { cacheMovie, cacheSeries, cachePerson } from './cinematic-actions';
 import { unstable_noStore as noStore } from 'next/cache';
+import {getPodiumData} from "@/lib/data/user-data";
 
 // =====================================================================
 // 1. ONBOARDING ACTIONS
@@ -508,4 +508,17 @@ export async function deleteMyAccount(
     await supabase.auth.signOut();
     revalidatePath('/', 'layout');
     redirect('/delete-success');
+}
+
+
+export async function fetchPodiumSections(username: string) {
+    // This calls your existing database function
+    const data = await getPodiumData(username);
+
+    if (!data || !data.sections) {
+        return [];
+    }
+
+    // We return only the sections because that's what the UI needs
+    return data.sections;
 }

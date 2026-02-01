@@ -10,6 +10,9 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import TimelineEntryCard from './TimelineEntryCard';
 import { TimelineEntry } from "@/lib/definitions";
+import { useTimeline } from '@/hooks/api/use-timeline';
+// ✨ Import your Skeleton
+import { TimelineSkeletonList } from '@/app/ui/skeletons';
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -22,34 +25,36 @@ const containerVariants = {
 };
 
 export default function TimelineDisplay({
-                                            timelineEntries,
-                                            isOwnProfile,
-                                            username
+                                            username,
+                                            isOwnProfile
                                         }: {
-    timelineEntries: TimelineEntry[];
-    isOwnProfile: boolean;
     username: string;
+    isOwnProfile: boolean;
+    // We removed 'initialEntries' because we want the client to fetch it for speed
 }) {
+    // 1. USE THE HOOK
+    const { data: timelineEntries, isLoading } = useTimeline(username);
+
+    const entries = timelineEntries || [];
     const INITIAL_ITEMS = 10;
     const ITEMS_PER_PAGE = 10;
     const [visibleCount, setVisibleCount] = useState(INITIAL_ITEMS);
 
-    const visibleEntries = timelineEntries.slice(0, visibleCount);
-    const hasMore = visibleCount < timelineEntries.length;
+    const visibleEntries = entries.slice(0, visibleCount);
+    const hasMore = visibleCount < entries.length;
 
     const loadMore = () => {
-        setVisibleCount((prev) => Math.min(prev + ITEMS_PER_PAGE, timelineEntries.length));
+        setVisibleCount((prev) => Math.min(prev + ITEMS_PER_PAGE, entries.length));
     };
 
     return (
-        // 1. APPLIED REFERENCE WRAPPER CLASSES HERE FOR EXACT ALIGNMENT
         <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20 relative z-10 max-w-4xl mx-auto pt-8 px-4 md:px-6">
 
-            {/* --- COMPACT HEADER SECTION --- */}
+            {/* --- HEADER --- */}
             <div className="max-w-4xl flex items-center justify-between mb-6">
                 <div className="flex items-baseline gap-3">
                     <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
-                        Watch History ({timelineEntries.length})
+                        Watch History {entries.length > 0 && `(${entries.length})`}
                     </h2>
                 </div>
 
@@ -64,10 +69,12 @@ export default function TimelineDisplay({
                 )}
             </div>
 
-            {/* --- CONTENT SECTION --- */}
-            {timelineEntries.length > 0 ? (
+            {/* --- LOADING STATE (The "Snappy" Fix) --- */}
+            {isLoading ? (
+                <TimelineSkeletonList />
+            ) : entries.length > 0 ? (
+                // --- DATA CONTENT ---
                 <div className="flex flex-col items-center">
-                    {/* Inner wrapper for cards to keep them readable (not too wide), but centered in the 7xl container */}
                     <div className="w-full max-w-4xl">
                         <motion.div variants={containerVariants} initial="hidden" animate="visible">
                             <AnimatePresence>
@@ -83,7 +90,6 @@ export default function TimelineDisplay({
                             </AnimatePresence>
                         </motion.div>
 
-                        {/* --- LOAD MORE BUTTON --- */}
                         {hasMore && (
                             <div className="flex justify-center mt-12 mb-8 relative z-20">
                                 <motion.button
@@ -95,7 +101,7 @@ export default function TimelineDisplay({
                                     <span className="text-xs font-bold uppercase tracking-widest">Expand Log</span>
                                     <ChevronDownIcon className="w-4 h-4 text-zinc-400 group-hover:translate-y-1 transition-transform" />
                                     <span className="text-[10px] font-mono text-zinc-400 ml-2">
-                                        [{timelineEntries.length - visibleCount} REMAINING]
+                                        [{entries.length - visibleCount} REMAINING]
                                     </span>
                                 </motion.button>
                             </div>
@@ -103,7 +109,7 @@ export default function TimelineDisplay({
                     </div>
                 </div>
             ) : (
-                /* --- EMPTY STATE (Matched to ProfileListsPage Style) --- */
+                /* --- EMPTY STATE --- */
                 <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl bg-zinc-50/50 dark:bg-zinc-900/20">
                     <div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-4 text-zinc-400">
                         <ArchiveBoxXMarkIcon className="w-8 h-8" strokeWidth={1.5} />

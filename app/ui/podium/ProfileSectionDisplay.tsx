@@ -1,13 +1,72 @@
 'use client';
 
-import ProfileItemCard from './ProfileItemCard';
-import { UnifiedProfileItem } from './ProfileItemCard';
+import { useProfileSections } from '@/hooks/api/use-profile-home';
+import ProfileItemCard, { UnifiedProfileItem } from './ProfileItemCard';
+import Link from 'next/link';
+import { MdOutlineLeaderboard, MdAdd, MdOutlineSentimentDissatisfied } from 'react-icons/md';
+import {PodiumSkeleton} from "@/app/ui/skeletons";
 
-export default function ProfileSectionDisplay({ sections }: { sections: any[] }) {
-    if (!sections || sections.length === 0) return null;
+export default function ProfileSectionDisplay({
+                                                  username,
+                                                  isOwnProfile
+                                              }: {
+    username: string;
+    isOwnProfile: boolean;
+}) {
+    // 1. USE THE HOOK
+    // This handles caching. If you visited before, 'sections' is available INSTANTLY.
+    const { data: sections, isLoading } = useProfileSections(username);
 
+    // 2. LOADING STATE (Only shows on the very first visit)
+    if (isLoading) {
+        return (
+            <div className="flex flex-col items-center justify-center">
+                <PodiumSkeleton />
+                <p className="text-zinc-400 text-sm">Loading Podium...</p>
+            </div>
+        );
+    }
+
+    // 3. EMPTY STATE (Moved from page.tsx to here)
+    if (!sections || sections.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-full mb-6 border border-zinc-100 dark:border-zinc-800">
+                    {isOwnProfile ? (
+                        <MdOutlineLeaderboard className="w-8 h-8 text-zinc-400" />
+                    ) : (
+                        <MdOutlineSentimentDissatisfied className="w-8 h-8 text-zinc-400" />
+                    )}
+                </div>
+
+                <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mb-2">
+                    {isOwnProfile ? "The Podium is Empty" : "No Ranks Yet"}
+                </h3>
+
+                <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-sm mb-8 leading-relaxed">
+                    {isOwnProfile
+                        ? "Start building your personal hall of fame. Add movies, shows, or people to showcase your taste."
+                        : `${username} hasn't added any sections to their podium yet.`
+                    }
+                </p>
+
+                {/* Button ONLY shows if it is your own profile */}
+                {isOwnProfile && (
+                    <Link
+                        href="/profile/edit"
+                        className="group flex items-center gap-2 px-6 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-full text-sm font-bold transition-all hover:bg-zinc-800 dark:hover:bg-white hover:scale-105"
+                    >
+                        <MdAdd className="w-4 h-4" />
+                        <span>Customize Podium</span>
+                    </Link>
+                )}
+            </div>
+        );
+    }
+
+    // 4. DATA CONTENT
     return (
-        <div className="flex flex-col gap-24 md:gap-32">
+        <div className="flex flex-col gap-18 md:gap-32">
             {sections.map((section, idx) => (
                 <section key={section.id} className="max-w-5xl mx-auto md:px-8 w-full">
 
@@ -18,43 +77,34 @@ export default function ProfileSectionDisplay({ sections }: { sections: any[] })
                                 <div className="flex items-center gap-6 w-full">
                                     <h2
                                         className="
-                                            /* 2. REFINED TYPOGRAPHY */
-                                            text-3xl md:text-5xl lg:text-6xl
-                                            font-sans font-bold tracking-tighter whitespace-nowrap pb-1
-
-                                            /* 3. PUNCHIER METALLIC GRADIENT */
-                                            /* Light: Deep Black -> Medium Grey -> Deep Black */
-                                            /* Dark: Pure White -> Silver -> Steel Grey */
-                                            bg-gradient-to-br
-                                            from-black via-zinc-600 to-black
-                                            dark:from-white dark:via-zinc-300 dark:to-zinc-500
-
-                                            bg-clip-text text-transparent
-                                            leading-tight
-                                        "
+    text-3xl md:text-5xl lg:text-6xl
+    font-serif font-semibold tracking-tight
+    text-zinc-900 dark:text-zinc-100
+    leading-tight
+  "
                                     >
                                         {section.title}
                                     </h2>
 
-                                    {/* Dotted Line */}
-                                    <div className="flex-grow border-t-2 border-dotted border-zinc-300 dark:border-zinc-700 self-center mt-3 opacity-60" />
+                                    <div className="flex-grow h-px bg-zinc-300/60 dark:bg-zinc-700/60 mt-4" />
                                 </div>
                             </div>
 
-                            {/* Numbering: Adjusted color for better contrast/elegance */}
-                            <span className="
-                                text-5xl md:text-7xl font-black tracking-tighter
-                                text-zinc-200 dark:text-zinc-800
-                                italic leading-none select-none
-                            ">
-                                {String(idx + 1).padStart(2, '0')}
-                            </span>
+                            <span
+                                className="
+    text-6xl md:text-8xl font-black tracking-tighter italic
+    text-zinc-200 dark:text-zinc-800
+    opacity-30 select-none leading-none
+  "
+                            >
+  {String(idx + 1).padStart(2, '0')}
+</span>
+
                         </div>
                     </div>
 
-                    {/* --- GRID (Strict 3 Columns) --- */}
-                    {/* Centered justify-items ensures cards don't stretch weirdly if content is low */}
-                    <div className="grid grid-cols-3 gap-4 md:gap-8 lg:gap-10 justify-items-center">
+                    {/* --- GRID --- */}
+                    <div className="grid grid-cols-3 gap-2.5 md:gap-8 lg:gap-10 justify-items-center">
                         {section.items.map((itemRow: any) => {
                             const uiItem = normalizeItem(itemRow);
                             if (!uiItem) return null;
@@ -82,7 +132,6 @@ function normalizeItem(itemRow: any): UnifiedProfileItem | null {
     return {
         id: data.tmdb_id,
         title: data.title || data.name,
-        // Kept w500 for optimal loading
         image_url: (data.poster_url || data.profile_path)
             ? `https://image.tmdb.org/t/p/w500${data.poster_url || data.profile_path}`
             : null,

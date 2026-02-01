@@ -4,6 +4,8 @@ import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { cacheMovie, cacheSeries } from '@/lib/actions/cinematic-actions';
+import {getProfileByUsername} from "@/lib/data/user-data";
+import {getPublicListsByUserId} from "@/lib/data/lists-data";
 
 // -----------------------------------------------------------------------------
 // SECTION 1: LIST MANAGEMENT
@@ -123,4 +125,11 @@ export async function updateListEntryNote(entryId: string, note: string) {
 
     revalidatePath('/lists/[id]/edit');
     revalidatePath('/lists/[id]');
+}
+
+
+export async function fetchUserLists(username: string) {
+    const profile = await getProfileByUsername(username);
+    if (!profile) return [];
+    return await getPublicListsByUserId(profile.id);
 }

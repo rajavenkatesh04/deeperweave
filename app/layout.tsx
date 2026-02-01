@@ -5,6 +5,7 @@ import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
 import {googleSansCode, interFont} from "@/app/ui/fonts";
 import NativeNavigation from "@/app/ui/android-app/NativeNavigation";
+import Providers from "@/app/providers";
 
 export const metadata: Metadata = {
     title: {
@@ -42,7 +43,9 @@ export default function RootLayout({
             {/* ⚠️ NEW: Logic for the back button lives here */}
             <NativeNavigation />
 
-            {children}
+            <Providers>
+                {children}
+            </Providers>
             <Toaster richColors position="top-right" />
             <Analytics />
         </ThemeProvider>

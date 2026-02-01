@@ -310,59 +310,47 @@ export async function getFollowing(userId: string): Promise<UserProfile[]> {
  * Call revalidateTag(`home-${username}`) in your actions to refresh this.
  */
 export async function getPodiumData(username: string) {
-    const getCachedData = unstable_cache(
-        async () => {
-            // We use the standard client here because unstable_cache
-            // does not have access to request cookies/headers.
-            const supabase = createSupabaseClient(
-                process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
-            );
+    // 1. We use the standard client directly
+    const supabase = await createClient(); // Ensure this import is from '@/utils/supabase/server'
 
-            // 1. Fetch Profile
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('username', username)
-                .single();
+    // 2. Fetch Profile
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('username', username)
+        .single();
 
-            if (!profile) return null;
+    if (!profile) return null;
 
-            // 2. Fetch Sections
-            const { data: sectionsData, error } = await supabase
-                .from('profile_sections')
-                .select(`
-                    *,
-                    items:section_items(
-                        *,
-                        movie:movies(*),
-                        series:series(*),
-                        person:people(*)
-                    )
-                `)
-                .eq('user_id', profile.id)
-                .order('rank', { ascending: true });
+    // 3. Fetch Sections
+    const { data: sectionsData, error } = await supabase
+        .from('profile_sections')
+        .select(`
+            *,
+            items:section_items(
+                *,
+                movie:movies(*),
+                series:series(*),
+                person:people(*)
+            )
+        `)
+        .eq('user_id', profile.id)
+        .order('rank', { ascending: true });
 
-            if (error || !sectionsData) return { profile, sections: [] };
+    if (error || !sectionsData) return { profile, sections: [] };
 
-            // 3. Process Data (Sort and Flatten)
-            const sections = sectionsData.map((sec: any) => ({
-                ...sec,
-                items: (sec.items || [])
-                    .sort((a: any, b: any) => a.rank - b.rank)
-                    .map((item: any) => ({
-                        ...item,
-                        movie: Array.isArray(item.movie) ? item.movie[0] : item.movie,
-                        series: Array.isArray(item.series) ? item.series[0] : item.series,
-                        person: Array.isArray(item.person) ? item.person[0] : item.person,
-                    }))
-            }));
+    // 4. Process Data (Sort and Flatten)
+    const sections = sectionsData.map((sec: any) => ({
+        ...sec,
+        items: (sec.items || [])
+            .sort((a: any, b: any) => a.rank - b.rank)
+            .map((item: any) => ({
+                ...item,
+                movie: Array.isArray(item.movie) ? item.movie[0] : item.movie,
+                series: Array.isArray(item.series) ? item.series[0] : item.series,
+                person: Array.isArray(item.person) ? item.person[0] : item.person,
+            }))
+    }));
 
-            return { profile, sections };
-        },
-        [`podium-${username}`], // Cache Key
-        { tags: [`podium-${username}`] } // Cache Tag (for invalidation)
-    );
-
-    return getCachedData();
+    return { profile, sections };
 }

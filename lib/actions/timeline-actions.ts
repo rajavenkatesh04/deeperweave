@@ -4,8 +4,9 @@ import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { getUserProfile } from '@/lib/data/user-data';
+import {getProfileByUsername, getUserProfile} from '@/lib/data/user-data';
 import { cacheMovie, cacheSeries } from './cinematic-actions';
+import {getTimelineEntriesByUserId} from "@/lib/data/timeline-data";
 
 const MAX_FILE_SIZE_MB = 5;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
@@ -391,4 +392,16 @@ export async function deleteTimelineEntry(entryId: string): Promise<DeleteTimeli
 
     revalidatePath(`/profile/${userData.profile.username}/timeline`);
     return { message: 'Entry deleted successfully!', success: true };
+}
+
+
+export async function fetchUserTimeline(username: string) {
+    const profile = await getProfileByUsername(username);
+
+    if (!profile) {
+        return [];
+    }
+
+    // Reuse your existing data logic
+    return await getTimelineEntriesByUserId(profile.id);
 }
