@@ -27,7 +27,7 @@ export default function LandingPageClient() {
                                 Start Archiving....
                             </h2>
                             <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed px-4">
-                                Join thousands of cinephiles tracking their journey through film.....
+                                Join thousands of cinephiles tracking their journey through film.
                             </p>
                         </div>
 
