@@ -1,10 +1,10 @@
 'use client';
 
-import {useProfileHome} from '@/hooks/api/use-profile-home';
+import { useProfileHome } from '@/hooks/api/use-profile-home';
 import ProfileItemCard, { UnifiedProfileItem } from './ProfileItemCard';
 import Link from 'next/link';
 import { MdOutlineLeaderboard, MdAdd, MdOutlineSentimentDissatisfied } from 'react-icons/md';
-import {PodiumSkeleton} from "@/app/ui/skeletons";
+import { PodiumSkeleton } from "@/app/ui/skeletons";
 
 export default function ProfileSectionDisplay({
                                                   username,
@@ -13,11 +13,8 @@ export default function ProfileSectionDisplay({
     username: string;
     isOwnProfile: boolean;
 }) {
-    // 1. USE THE HOOK
-    // This handles caching. If you visited before, 'sections' is available INSTANTLY.
     const { data: sections, isLoading } = useProfileHome(username);
 
-    // 2. LOADING STATE (Only shows on the very first visit)
     if (isLoading) {
         return (
             <div className="flex flex-col items-center justify-center">
@@ -27,7 +24,6 @@ export default function ProfileSectionDisplay({
         );
     }
 
-    // 3. EMPTY STATE (Moved from page.tsx to here)
     if (!sections || sections.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -50,7 +46,6 @@ export default function ProfileSectionDisplay({
                     }
                 </p>
 
-                {/* Button ONLY shows if it is your own profile */}
                 {isOwnProfile && (
                     <Link
                         href="/profile/edit"
@@ -64,48 +59,38 @@ export default function ProfileSectionDisplay({
         );
     }
 
-    // 4. DATA CONTENT
     return (
         <div className="flex flex-col gap-18 md:gap-32">
             {sections.map((section, idx) => (
                 <section key={section.id} className="max-w-5xl mx-auto md:px-8 w-full">
 
-                    {/* --- HEADER SECTION --- */}
+                    {/* --- HEADER --- */}
                     <div className="mb-10 md:mb-12">
                         <div className="flex items-baseline gap-4 md:gap-8">
                             <div className="flex flex-col w-full">
                                 <div className="flex items-center gap-6 w-full">
-                                    <h2
-                                        className="
-    text-3xl md:text-5xl lg:text-6xl
-    font-thin font-semibold tracking-tight
-    text-zinc-900 dark:text-zinc-100
-    leading-tight
-  "
-                                    >
+                                    <h2 className="text-3xl md:text-5xl lg:text-6xl font-thin font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 leading-tight">
                                         {section.title}
                                     </h2>
-
                                     <div className="flex-grow h-px bg-zinc-300/60 dark:bg-zinc-700/60 mt-4" />
                                 </div>
                             </div>
-
-                            <span
-                                className="
-    text-6xl md:text-8xl font-black tracking-tighter font-thin font-semibold tracking-tighter opacity-30 select-none leading-none">
+                            <span className="text-5xl md:text-8xl font-black tracking-tighter opacity-30 select-none leading-none">
                                 {String(idx + 1).padStart(2, '0')}
                             </span>
-
                         </div>
                     </div>
 
                     {/* --- GRID --- */}
                     <div className="grid grid-cols-3 gap-2.5 md:gap-8 lg:gap-10 justify-items-center">
                         {section.items.map((itemRow: any) => {
+                            // 1. Normalize the data
                             const uiItem = normalizeItem(itemRow);
                             if (!uiItem) return null;
+
                             return (
                                 <div key={itemRow.id} className="w-full">
+                                    {/* 2. Pass to Card */}
                                     <ProfileItemCard
                                         item={uiItem}
                                         rank={itemRow.rank}
@@ -120,13 +105,26 @@ export default function ProfileSectionDisplay({
     );
 }
 
+// ... (Imports and component code remain the same until normalizeItem) ...
+
 function normalizeItem(itemRow: any): UnifiedProfileItem | null {
     const type = itemRow.item_type;
-    const data = itemRow.movie || itemRow.series || itemRow.person;
+
+    // 1. Extract Data
+    // Supabase quirk: joined data might be an object OR an array of 1 object.
+    // We check both.
+    let data = itemRow.movie || itemRow.series || itemRow.person;
+
+    if (Array.isArray(data)) {
+        data = data[0];
+    }
+
     if (!data) return null;
 
     return {
-        id: data.tmdb_id,
+        id: itemRow.id,
+        // 2. Explicitly map tmdb_id.
+        tmdbId: data.tmdb_id,
         title: data.title || data.name,
         image_url: (data.poster_url || data.profile_path)
             ? `https://image.tmdb.org/t/p/w500${data.poster_url || data.profile_path}`
