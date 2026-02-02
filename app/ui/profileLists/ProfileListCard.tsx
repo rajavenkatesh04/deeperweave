@@ -1,32 +1,57 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom'; // 1. IMPORT PORTAL
 import Link from 'next/link';
 import Image from 'next/image';
 import { ListSummary } from '@/lib/data/lists-data';
-import { FolderIcon, ChevronRightIcon, EllipsisHorizontalIcon, TrashIcon, PencilIcon, ShareIcon } from '@heroicons/react/24/outline';
+import {
+    FolderIcon,
+    ChevronRightIcon,
+    EllipsisHorizontalIcon,
+    TrashIcon,
+    PencilIcon,
+    ShareIcon,
+    XMarkIcon
+} from '@heroicons/react/24/outline';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { deleteList } from '@/lib/actions/list-actions';
 
-// --- ACTION MENU ---
-function ActionMenu({ list }: { list: ListSummary }) {
-    const [isOpen, setIsOpen] = useState(false);
-    const dropdownRef = useRef<HTMLDivElement>(null);
-
+// --- SEPARATE PORTAL MODAL COMPONENT ---
+function ListActionModal({
+                             list,
+                             isOpen,
+                             onClose
+                         }: {
+    list: ListSummary;
+    isOpen: boolean;
+    onClose: () => void;
+}) {
+    // 2. SCROLL LOCKING
     useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setIsOpen(false);
-            }
-        };
-        if (isOpen) document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        if (isOpen) {
+            document.body.style.overflow = 'hidden'; // Freeze scroll
+        } else {
+            document.body.style.overflow = ''; // Unfreeze
+        }
+        return () => { document.body.style.overflow = ''; };
     }, [isOpen]);
 
-    const handleDelete = async () => {
+    // Prevent hydration errors by ensuring we only render on client
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+    if (!mounted) return null;
+
+    const stopProp = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+    };
+
+    const handleDelete = async (e: React.MouseEvent) => {
+        stopProp(e);
         if (!confirm('Are you sure you want to delete this list?')) return;
-        setIsOpen(false);
+        onClose();
         toast.promise(deleteList(list.id), {
             loading: 'Deleting list...',
             success: 'List deleted',
@@ -34,72 +59,101 @@ function ActionMenu({ list }: { list: ListSummary }) {
         });
     };
 
-    const handleShare = () => {
+    const handleShare = (e: React.MouseEvent) => {
+        stopProp(e);
         navigator.clipboard.writeText(`${window.location.origin}/lists/${list.id}`);
         toast.success('Link copied to clipboard');
-        setIsOpen(false);
+        onClose();
     };
 
-    return (
-        <div className="relative z-20 shrink-0 ml-auto" ref={dropdownRef}>
-            <button
-                onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setIsOpen(!isOpen);
-                }}
-                className="p-1 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800"
-            >
-                <EllipsisHorizontalIcon className="w-5 h-5" />
-            </button>
-
-            <AnimatePresence>
-                {isOpen && (
+    // 3. RENDER VIA PORTAL (Outside of Card DOM)
+    return createPortal(
+        <AnimatePresence>
+            {isOpen && (
+                <>
+                    {/* Backdrop */}
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: 5, x: 0 }}
-                        animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: 5 }}
-                        className="absolute right-0 top-8 w-32 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-md shadow-lg py-1 ring-1 ring-black/5 origin-top-right"
-                        onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                        }}
-                    >
-                        <button
-                            onClick={handleShare}
-                            className="flex w-full items-center gap-2 px-3 py-2 text-[11px] font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={(e) => { stopProp(e); onClose(); }}
+                        className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm"
+                    />
+
+                    {/* Modal Content */}
+                    <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 pointer-events-none">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                            onClick={stopProp} // Re-enable pointer events
+                            className="w-full max-w-sm bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl overflow-hidden pointer-events-auto"
                         >
-                            <ShareIcon className="w-3.5 h-3.5" /> Share
-                        </button>
-                        <Link
-                            href={`/lists/${list.id}/edit`}
-                            className="flex w-full items-center gap-2 px-3 py-2 text-[11px] font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors"
-                            onClick={() => setIsOpen(false)}
-                        >
-                            <PencilIcon className="w-3.5 h-3.5" /> Edit
-                        </Link>
-                        <div className="h-px bg-zinc-100 dark:bg-zinc-800 my-1" />
-                        <button
-                            onClick={handleDelete}
-                            className="flex w-full items-center gap-2 px-3 py-2 text-[11px] font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
-                        >
-                            <TrashIcon className="w-3.5 h-3.5" /> Delete
-                        </button>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </div>
+                            {/* Header */}
+                            <div className="flex items-center justify-between p-4 border-b border-zinc-100 dark:border-zinc-800">
+                                <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Manage List</h3>
+                                <button
+                                    onClick={(e) => { stopProp(e); onClose(); }}
+                                    className="p-1 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 bg-zinc-100 dark:bg-zinc-900 rounded-full transition-colors"
+                                >
+                                    <XMarkIcon className="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            {/* Options */}
+                            <div className="p-2 space-y-1">
+                                <button
+                                    onClick={handleShare}
+                                    className="flex w-full items-center gap-3 px-3 py-3 text-sm font-medium text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900 rounded-xl transition-colors text-left"
+                                >
+                                    <div className="p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg">
+                                        <ShareIcon className="w-4 h-4" />
+                                    </div>
+                                    Share Link
+                                </button>
+
+                                <Link
+                                    href={`/lists/${list.id}/edit`}
+                                    onClick={(e) => { e.stopPropagation(); onClose(); }}
+                                    className="flex w-full items-center gap-3 px-3 py-3 text-sm font-medium text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900 rounded-xl transition-colors"
+                                >
+                                    <div className="p-2 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 rounded-lg">
+                                        <PencilIcon className="w-4 h-4" />
+                                    </div>
+                                    Edit List
+                                </Link>
+
+                                <button
+                                    onClick={handleDelete}
+                                    className="flex w-full items-center gap-3 px-3 py-3 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition-colors text-left"
+                                >
+                                    <div className="p-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg">
+                                        <TrashIcon className="w-4 h-4" />
+                                    </div>
+                                    Delete List
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                </>
+            )}
+        </AnimatePresence>,
+        document.body // 4. RENDER INTO BODY
     );
 }
 
+// --- MAIN CARD COMPONENT ---
 export default function ProfileListCard({ list, isOwner }: { list: ListSummary, isOwner?: boolean }) {
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+
     return (
-        <Link
-            href={`/lists/${list.id}`}
-            className="group relative flex w-full h-32 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden hover:shadow-md transition-all duration-300 hover:border-zinc-300 dark:hover:border-zinc-700 hover:-translate-y-0.5"
-        >
-            {/* --- LEFT: Compact Poster Stack --- */}
-            <div className="relative w-24 sm:w-32 shrink-0 bg-zinc-100 dark:bg-zinc-950/50 flex items-center justify-center border-r border-zinc-100 dark:border-zinc-800 overflow-hidden">
+        <div className="group relative flex w-full h-32 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden hover:shadow-md transition-all duration-300 hover:border-zinc-300 dark:hover:border-zinc-700 hover:-translate-y-0.5 cursor-pointer">
+
+            {/* Stretched Link for Card Click */}
+            <Link href={`/lists/${list.id}`} className="absolute inset-0 z-0" />
+
+            {/* Left: Poster Stack */}
+            <div className="relative w-24 sm:w-32 shrink-0 bg-zinc-100 dark:bg-zinc-950/50 flex items-center justify-center border-r border-zinc-100 dark:border-zinc-800 overflow-hidden z-10 pointer-events-none">
                 {list.preview_items && list.preview_items.length > 0 ? (
                     <div className="relative w-14 h-20 sm:w-16 sm:h-24">
                         {list.preview_items.slice(0, 3).map((item, i) => (
@@ -134,10 +188,8 @@ export default function ProfileListCard({ list, isOwner }: { list: ListSummary, 
                 )}
             </div>
 
-            {/* --- RIGHT: Content Info --- */}
-            <div className="flex flex-1 flex-col p-3 sm:p-4 min-w-0 relative">
-
-                {/* Header Row with Action Menu */}
+            {/* Right: Info */}
+            <div className="flex flex-1 flex-col p-3 sm:p-4 min-w-0 relative z-10 pointer-events-none">
                 <div className="flex items-start justify-between gap-2">
                     <div className="flex flex-col gap-1 min-w-0">
                         <h3 className="font-bold text-sm sm:text-base text-zinc-900 dark:text-zinc-100 leading-tight line-clamp-1 group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition-colors">
@@ -150,11 +202,20 @@ export default function ProfileListCard({ list, isOwner }: { list: ListSummary, 
                         )}
                     </div>
 
-                    {/* Only show Action Menu if Owner */}
-                    {isOwner && <ActionMenu list={list} />}
+                    {isOwner && (
+                        <button
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setIsMenuOpen(true);
+                            }}
+                            className="pointer-events-auto p-1 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 relative z-20"
+                        >
+                            <EllipsisHorizontalIcon className="w-5 h-5" />
+                        </button>
+                    )}
                 </div>
 
-                {/* Footer */}
                 <div className="flex items-center justify-between mt-auto pt-2">
                     <span className="text-[10px] sm:text-xs font-medium text-zinc-500 bg-zinc-100 dark:bg-zinc-800/50 px-2 py-0.5 rounded-full">
                         {list.item_count} items
@@ -166,6 +227,13 @@ export default function ProfileListCard({ list, isOwner }: { list: ListSummary, 
                     </div>
                 </div>
             </div>
-        </Link>
+
+            {/* Modal is now rendered outside via Portal */}
+            <ListActionModal
+                list={list}
+                isOpen={isMenuOpen}
+                onClose={() => setIsMenuOpen(false)}
+            />
+        </div>
     );
 }

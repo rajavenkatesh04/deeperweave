@@ -4,6 +4,7 @@ import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { cacheMovie, cacheSeries, cachePerson } from '@/lib/actions/cinematic-actions';
 import { SaveableItemType } from '@/lib/definitions';
+import {getProfileByUsername} from "@/lib/data/user-data";
 
 export async function toggleSaveItem(
     itemType: SaveableItemType | 'tv',

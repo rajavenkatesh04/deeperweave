@@ -4,10 +4,11 @@ import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { getUserProfile } from '@/lib/data/user-data';
+import {getProfileByUsername, getUserProfile} from '@/lib/data/user-data';
 import { v4 as uuidv4 } from 'uuid';
 import { getMovieDetails, getSeriesDetails } from './cinematic-actions';
 import { createNotification, deleteNotification } from "@/lib/actions/notification-actions";
+import {getPostsByUserId} from "@/lib/data/blog-data";
 
 // =====================================================================
 // == NEW ACTION: For Tiptap content image upload
@@ -430,4 +431,16 @@ export async function deletePost(postId: string) {
     // TypeScript is now happy because we guarded against null profile at the top
     revalidatePath(`/profile/${userData.profile.username}/posts`);
     return { success: true };
+}
+
+
+// ✨ NEW: Bridge Action
+export async function fetchUserPosts(username: string) {
+    const profile = await getProfileByUsername(username);
+
+    if (!profile) {
+        return [];
+    }
+
+    return await getPostsByUserId(profile.id);
 }

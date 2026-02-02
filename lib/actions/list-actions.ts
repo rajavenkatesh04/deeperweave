@@ -127,9 +127,14 @@ export async function updateListEntryNote(entryId: string, note: string) {
     revalidatePath('/lists/[id]');
 }
 
-
+// ✨ NEW: Bridge Action for TanStack Query
 export async function fetchUserLists(username: string) {
     const profile = await getProfileByUsername(username);
-    if (!profile) return [];
+
+    if (!profile) {
+        return [];
+    }
+
+    // Reuse your existing data logic
     return await getPublicListsByUserId(profile.id);
 }

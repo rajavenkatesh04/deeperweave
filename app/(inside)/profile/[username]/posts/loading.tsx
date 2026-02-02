@@ -3,7 +3,7 @@ import { PostCardSkeleton } from "@/app/ui/skeletons";
 export default function Loading() {
     return (
         // Matches the container in ProfilePostsPage: max-w-7xl, pt-8, px-4 md:px-6
-        <div className="w-full max-w-7xl mx-auto pt-8 px-4 md:px-6 pb-20 relative z-10">
+        <div className="w-full max-w-4xl mx-auto pt-8 px-4 md:px-3 pb-20">
 
             {/* --- Header Skeleton --- */}
             <div className="flex items-center justify-between mb-6">
