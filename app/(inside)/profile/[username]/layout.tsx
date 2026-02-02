@@ -25,7 +25,7 @@ export default async function ProfileLayout({
     const { data: { user: viewer } } = await supabase.auth.getUser();
 
     // Logic Checks
-    const isOwnProfile = viewer?.id === profile.id; // Safe to compare IDs here since we fetched profile anyway
+    const isOwnProfile = viewer?.id === profile.id;
     const isPrivate = profile.visibility === 'private';
     const isFollowing = followStatus === 'accepted';
     const canViewContent = !isPrivate || isFollowing || isOwnProfile;
@@ -47,7 +47,7 @@ export default async function ProfileLayout({
                     {/* Notice we pass 'isOwnProfile' to TabNavigation.
                         This prevents TabNavigation from fetching anything.
                     */}
-                    <TabNavigation username={profile.username} isOwnProfile={isOwnProfile} />
+                    <TabNavigation username={profile.username}/>
                     <div className="">{children}</div>
                 </div>
             ) : (

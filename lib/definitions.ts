@@ -55,6 +55,8 @@ export interface CinematicSearchResult {
     media_type: 'movie' | 'tv' | 'person';
     department?: string;
     known_for_department?: string;
+    vote_count?: number;
+    vote_average?: number;
 }
 
 // Helper for Crew Cards

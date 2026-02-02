@@ -3,7 +3,7 @@
 import { cache } from 'react';
 import { createClient } from '@/utils/supabase/server';
 import { countries } from '@/lib/data/countries';
-import { CinematicSearchResult } from '@/lib/actions/cinematic-actions'; // Import shared type
+import { CinematicSearchResult } from '@/lib/actions/cinematic-actions';
 
 // =====================================================================
 // == INTERNAL HELPERS
@@ -22,6 +22,7 @@ interface TmdbMultiSearchItem {
     first_air_date?: string;
     profile_path?: string | null;
     known_for_department?: string;
+    vote_average?: number;
 }
 
 interface TmdbMultiSearchResponse {
@@ -35,7 +36,6 @@ export type RegionSpecificSection = {
 };
 
 const normalizeTmdbItem = (item: TmdbMultiSearchItem, forcedMediaType: 'movie' | 'tv' | null = null): CinematicSearchResult | null => {
-    // If the API doesn't provide media_type, use the forced one
     const media_type = (item.media_type as 'movie' | 'tv' | 'person') || forcedMediaType;
 
     if (media_type === 'person') {
@@ -54,17 +54,21 @@ const normalizeTmdbItem = (item: TmdbMultiSearchItem, forcedMediaType: 'movie' |
 
     if (!item.poster_path) return null;
 
+    const title = item.title || item.name || 'Unknown';
+    const date = item.release_date || item.first_air_date;
+
     return {
         id: item.id,
-        // ✨ LOGIC FIX: If we know it's a movie (forcedMediaType), use title.
-        title: media_type === 'movie' ? (item.title || 'Unknown') : (item.name || 'Unknown'),
+        title: title,
         name: item.name,
-        release_date: media_type === 'movie' ? item.release_date : item.first_air_date,
+        release_date: date,
         poster_path: item.poster_path,
         profile_path: null,
         backdrop_path: item.backdrop_path,
         overview: item.overview,
-        media_type: media_type || 'movie' // Fallback to movie if still unknown, but forcedMediaType handles most cases
+        media_type: media_type || 'movie',
+        vote_count: item.vote_count,
+        vote_average: item.vote_average
     };
 };
 
@@ -108,20 +112,16 @@ function getDateWindow(daysBack: number) {
     const past = new Date();
     past.setDate(today.getDate() - daysBack);
     return {
-        gte: past.toISOString().split('T')[0],
+        gte: past.toISOString().split('T')[0], // YYYY-MM-DD
         lte: today.toISOString().split('T')[0]
     };
 }
 
-// ✨ THE BUG FIX IS HERE
 async function fetchTmdbList(endpoint: string, params: Record<string, string> = {}): Promise<CinematicSearchResult[]> {
     const TMDB_API_KEY = process.env.TMDB_API_KEY;
     if (!TMDB_API_KEY) return [];
 
     let forcedMediaType: 'movie' | 'tv' | null = null;
-
-    // 🛠️ FIX: Use .includes() instead of .startsWith()
-    // This catches '/discover/movie', '/movie/popular', etc.
     if (endpoint.includes('/movie')) forcedMediaType = 'movie';
     else if (endpoint.includes('/tv')) forcedMediaType = 'tv';
 
@@ -215,42 +215,111 @@ export async function discoverMedia(filters: DiscoverFilters) {
 export async function getRegionalDiscoverSections(): Promise<RegionSpecificSection[]> {
     const { country, countryName } = await getUserRegionProfile();
     const sections: RegionSpecificSection[] = [];
-    const recentWindow = getDateWindow(45);
+
+    // 60-Day Window for "Just Released" sections
+    const justReleasedWindow = getDateWindow(60);
 
     if (country === 'IN') {
-        // Bollywood, Tollywood, Kollywood logic...
-        const [bollywood, tollywood, kollywood, topTrending] = await Promise.all([
+        const [
+            // --- 1. JUST RELEASED (Last 60 Days) ---
+            newBollywood, // Hindi
+            newTollywood, // Telugu
+            newKollywood, // Tamil
+            newMollywood, // Malayalam
+            newSandalwood, // Kannada
+
+            // --- 2. TRENDING & CURATED ---
+            topTrending,
+            criticsChoice,
+            panIndianAction
+        ] = await Promise.all([
+            // 1. Hindi (Bollywood) - Just Released
             discoverMedia({
                 type: 'movie',
-                sort_by: 'popularity.desc',
+                sort_by: 'release_date.desc', // Sort by newest first
                 with_original_language: 'hi',
                 region: 'IN',
-                release_date_gte: recentWindow.gte,
-                release_date_lte: recentWindow.lte
+                release_date_gte: justReleasedWindow.gte,
+                release_date_lte: justReleasedWindow.lte
             }),
+            // 2. Telugu (Tollywood) - Just Released
             discoverMedia({
                 type: 'movie',
-                sort_by: 'popularity.desc',
+                sort_by: 'release_date.desc',
                 with_original_language: 'te',
                 region: 'IN',
-                release_date_gte: recentWindow.gte,
-                release_date_lte: recentWindow.lte
+                release_date_gte: justReleasedWindow.gte,
+                release_date_lte: justReleasedWindow.lte
             }),
+            // 3. Tamil (Kollywood) - Just Released
             discoverMedia({
                 type: 'movie',
-                sort_by: 'popularity.desc',
+                sort_by: 'release_date.desc',
                 with_original_language: 'ta',
                 region: 'IN',
-                release_date_gte: recentWindow.gte,
-                release_date_lte: recentWindow.lte
+                release_date_gte: justReleasedWindow.gte,
+                release_date_lte: justReleasedWindow.lte
             }),
-            fetchTmdbList('/trending/all/day', { region: 'IN' })
+            // 4. Malayalam (Mollywood) - Just Released
+            discoverMedia({
+                type: 'movie',
+                sort_by: 'release_date.desc',
+                with_original_language: 'ml',
+                region: 'IN',
+                release_date_gte: justReleasedWindow.gte,
+                release_date_lte: justReleasedWindow.lte
+            }),
+            // 5. Kannada (Sandalwood) - Just Released
+            discoverMedia({
+                type: 'movie',
+                sort_by: 'release_date.desc',
+                with_original_language: 'kn',
+                region: 'IN',
+                release_date_gte: justReleasedWindow.gte,
+                release_date_lte: justReleasedWindow.lte
+            }),
+
+            // 6. Trending (Overall)
+            fetchTmdbList('/trending/all/day', { region: 'IN' }),
+
+            // 7. Critics' Choice (High Rated, broader window)
+            discoverMedia({
+                type: 'movie',
+                sort_by: 'vote_average.desc',
+                region: 'IN',
+                release_date_gte: `${new Date().getFullYear()}-01-01`,
+            }),
+
+            // 8. Desi Action
+            discoverMedia({
+                type: 'movie',
+                with_genres: '28',
+                region: 'IN',
+                sort_by: 'popularity.desc',
+                release_date_gte: getDateWindow(90).gte
+            }),
         ]);
 
-        sections.push({ title: 'Trending Now in India', items: topTrending, href: '/discover/trending' });
-        sections.push({ title: 'New in Bollywood (Hindi)', items: bollywood, href: '/discover/movies' });
-        sections.push({ title: 'Just Released (Telugu)', items: tollywood, href: '/discover/movies' });
-        sections.push({ title: 'Just Released (Tamil)', items: kollywood, href: '/discover/movies' });
+        // --- ORDERING THE SECTIONS ---
+
+        // 1. Hero: What's everyone talking about?
+        sections.push({ title: 'Trending in India', items: topTrending, href: '/discover/trending' });
+
+        // 2. JUST RELEASED BLOCKS (The new experience)
+        if (newBollywood.length > 0) sections.push({ title: 'Just Released: Bollywood (Hindi)', items: newBollywood, href: '/discover/movies?lang=hi' });
+        if (newTollywood.length > 0) sections.push({ title: 'Just Released: Tollywood (Telugu)', items: newTollywood, href: '/discover/movies?lang=te' });
+        if (newKollywood.length > 0) sections.push({ title: 'Just Released: Kollywood (Tamil)', items: newKollywood, href: '/discover/movies?lang=ta' });
+        if (newMollywood.length > 0) sections.push({ title: 'Just Released: Mollywood (Malayalam)', items: newMollywood, href: '/discover/movies?lang=ml' });
+        if (newSandalwood.length > 0) sections.push({ title: 'Just Released: Sandalwood (Kannada)', items: newSandalwood, href: '/discover/movies?lang=kn' });
+
+        // 3. Special Collections
+        sections.push({ title: 'High Octane Indian Action', items: panIndianAction, href: '/discover/movies?genre=action' });
+
+        // 4. Hidden Gems
+        const gems = criticsChoice.filter(m => m.vote_count !== undefined && m.vote_count > 20).slice(0, 10);
+        if (gems.length > 0) {
+            sections.push({ title: `Critically Acclaimed (${new Date().getFullYear()})`, items: gems, href: '/discover/top-rated' });
+        }
     }
     else if (country === 'KR') {
         const [kMovies, kDramas] = await Promise.all([
@@ -259,16 +328,16 @@ export async function getRegionalDiscoverSections(): Promise<RegionSpecificSecti
                 sort_by: 'popularity.desc',
                 with_original_language: 'ko',
                 region: 'KR',
-                release_date_gte: recentWindow.gte,
-                release_date_lte: recentWindow.lte
+                release_date_gte: justReleasedWindow.gte,
+                release_date_lte: justReleasedWindow.lte
             }),
             discoverMedia({
                 type: 'tv',
                 sort_by: 'popularity.desc',
                 with_original_language: 'ko',
                 region: 'KR',
-                release_date_gte: recentWindow.gte,
-                release_date_lte: recentWindow.lte
+                release_date_gte: justReleasedWindow.gte,
+                release_date_lte: justReleasedWindow.lte
             }),
         ]);
         sections.push({ title: 'New Korean Movies', items: kMovies, href: '/discover/movies' });
@@ -280,15 +349,15 @@ export async function getRegionalDiscoverSections(): Promise<RegionSpecificSecti
                 type: 'tv',
                 with_genres: '16',
                 region: 'JP',
-                release_date_gte: recentWindow.gte,
-                release_date_lte: recentWindow.lte
+                release_date_gte: justReleasedWindow.gte,
+                release_date_lte: justReleasedWindow.lte
             }),
             discoverMedia({
                 type: 'movie',
                 with_original_language: 'ja',
                 region: 'JP',
-                release_date_gte: recentWindow.gte,
-                release_date_lte: recentWindow.lte
+                release_date_gte: justReleasedWindow.gte,
+                release_date_lte: justReleasedWindow.lte
             }),
         ]);
         sections.push({ title: 'Airing Anime', items: anime, href: '/discover/anime' });
