@@ -15,7 +15,7 @@ export default function PortraitGallery({ images }: { images: ImageType[] }) {
     const [touchEnd, setTouchEnd] = useState<number | null>(null);
     const [mounted, setMounted] = useState(false); // ✨ STATE ADDED
 
-    // --- Navigation Logic ---
+    // --- SideBar Logic ---
     const closeModal = useCallback(() => setSelectedIndex(null), []);
 
     const nextImage = useCallback((e?: React.MouseEvent | KeyboardEvent) => {

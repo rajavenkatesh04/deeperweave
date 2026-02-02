@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { ArrowLeftIcon, ArrowUpRightIcon } from '@heroicons/react/24/solid';
 import { BelanosimaFont, geistSans, googleSansCode } from '@/app/ui/fonts';
 
-// --- Navigation Items ---
+// --- SideBar Items ---
 const SECTIONS = [
     { id: 'intro', label: '01. Introduction' },
     { id: 'collection', label: '02. Data Collection' },

@@ -59,7 +59,7 @@ export default function LandingNavbar() {
                         </span>
                     </Link>
 
-                    {/* Desktop Navigation */}
+                    {/* Desktop SideBar */}
                     <div className="hidden md:flex items-center gap-8">
                         {['Discover', 'Features', 'Community'].map((item) => (
                             <Link

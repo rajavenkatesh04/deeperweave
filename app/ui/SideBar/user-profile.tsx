@@ -3,17 +3,13 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { PowerIcon } from '@heroicons/react/24/outline';
-import { UserProfile as Profile } from '@/lib/definitions';
+import { UserProfile as ProfileDefinition } from '@/lib/definitions';
 import SignOutButton from '@/app/ui/auth/SignOutButton';
 
-interface UserProps {
-    profile: Profile | null;
-    email: string | undefined;
-}
+export default function UserProfile({ profile }: { profile: ProfileDefinition | null }) {
 
-export default function UserProfile({ user }: { user: UserProps }) {
-    // Guest State
-    if (!user.profile) {
+    // Guest State (Not Logged In)
+    if (!profile) {
         return (
             <Link href="/auth/login" className="flex items-center h-14 px-2 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors group">
                 <div className="shrink-0 w-10 h-10 flex items-center justify-center bg-zinc-200 dark:bg-zinc-800 rounded-full mr-3">
@@ -26,6 +22,7 @@ export default function UserProfile({ user }: { user: UserProps }) {
         );
     }
 
+    // Logged In State
     return (
         <div className="relative w-full h-14 group/user">
 
@@ -34,7 +31,7 @@ export default function UserProfile({ user }: { user: UserProps }) {
                 {/* Avatar */}
                 <div className="shrink-0 relative h-10 w-10 mr-3">
                     <Image
-                        src={user.profile.profile_pic_url || '/placeholder-user.jpg'}
+                        src={profile.profile_pic_url || '/placeholder-user.jpg'}
                         alt="Profile"
                         className="rounded-full object-cover border border-zinc-200 dark:border-zinc-700"
                         fill
@@ -43,10 +40,10 @@ export default function UserProfile({ user }: { user: UserProps }) {
                 {/* Text Details */}
                 <div className="flex flex-col opacity-0 -translate-x-4 group-hover/sidebar:opacity-100 group-hover/sidebar:translate-x-0 transition-all duration-300 delay-200">
                     <p className="truncate text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                        {user.profile.display_name}
+                        {profile.display_name}
                     </p>
                     <p className="truncate text-xs text-zinc-500">
-                        @{user.profile.username}
+                        @{profile.username}
                     </p>
                 </div>
             </div>
@@ -56,13 +53,13 @@ export default function UserProfile({ user }: { user: UserProps }) {
 
                 {/* LEFT HALF: Profile Link */}
                 <Link
-                    href={`/profile/${user.profile.username}`}
+                    href={`/profile/${profile.username}`}
                     className="flex-1 h-full flex items-center justify-center bg-zinc-50 dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors group/left"
                     title="View Profile"
                 >
                     <div className="relative w-6 h-6">
                         <Image
-                            src={user.profile.profile_pic_url || '/placeholder-user.jpg'}
+                            src={profile.profile_pic_url || '/placeholder-user.jpg'}
                             alt="Profile"
                             className="rounded-full object-cover opacity-80 group-hover/left:opacity-100"
                             fill

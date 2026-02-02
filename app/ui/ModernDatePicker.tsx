@@ -106,7 +106,7 @@ export default function ModernDatePicker({ value, onChange, label, required }: D
                 </button>
             </div>
 
-            {/* Navigation */}
+            {/* SideBar */}
             <div className="flex items-center justify-between mb-4">
                 {view === 'days' ? (
                     <button type="button" onClick={handlePrevMonth} className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-md">

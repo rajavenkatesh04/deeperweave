@@ -4,6 +4,7 @@ import { usePosts } from '@/hooks/api/use-posts';
 import ProfileBlogCard from './ProfileBlogCard';
 import Link from 'next/link';
 import { PencilSquareIcon, ArchiveBoxXMarkIcon } from '@heroicons/react/24/outline';
+import {PostCardSkeleton} from "@/app/ui/skeletons";
 export default function PostsDisplay({
                                          username,
                                          isOwnProfile
@@ -17,11 +18,22 @@ export default function PostsDisplay({
     // 2. LOADING STATE
     if (isLoading) {
         return (
-            <div className="w-full max-w-2xl mx-auto pt-8 px-4 pb-20">
-                {/* Fallback if you haven't created ProfilePostsSkeletonGrid yet */}
-                <div className="space-y-6">
-                    {[1, 2, 3].map((i) => (
-                        <div key={i} className="h-64 bg-zinc-100 dark:bg-zinc-900 rounded-xl animate-pulse border border-zinc-200 dark:border-zinc-800" />
+            <div className="w-full max-w-4xl mx-auto pt-8 px-4 md:px-3 pb-20">
+
+                {/* --- Header Skeleton --- */}
+                <div className="flex items-center justify-between mb-6">
+                    {/* Title Skeleton: "Posts (X)" */}
+                    <div className="h-7 w-32 bg-zinc-200 dark:bg-zinc-800 rounded-md animate-pulse" />
+
+                    {/* Button Skeleton: "New Post" */}
+                    <div className="h-8 w-24 bg-zinc-200 dark:bg-zinc-800 rounded-full animate-pulse" />
+                </div>
+
+                {/* --- Grid Skeleton --- */}
+                {/* Matches: grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3 */}
+                <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                    {[1, 2, 3, 4, 5, 6].map((i) => (
+                        <PostCardSkeleton key={i} />
                     ))}
                 </div>
             </div>

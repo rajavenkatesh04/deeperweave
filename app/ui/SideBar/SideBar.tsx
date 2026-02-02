@@ -6,7 +6,8 @@ import MobileNavLinks from '@/app/ui/SideBar/MobileNavLinks';
 import UserProfile from "@/app/ui/SideBar/user-profile";
 import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
 
-export default async function Navigation() {
+export default async function SideBar() {
+    // 1. Fetch Profile Data (One DB call for the entire layout shell)
     const userData = await getUserProfile();
     const profile = userData?.profile ?? null;
 
@@ -15,7 +16,7 @@ export default async function Navigation() {
             {/* ====== DESKTOP SIDEBAR ====== */}
             <aside className="hidden h-[100dvh] fixed top-0 left-0 flex-col border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-black md:flex md:w-20 md:hover:w-72 transition-[width] duration-500 ease-in-out overflow-hidden group/sidebar z-50 shadow-xl">
 
-                {/* Texture Background */}
+                {/* Texture Background (Static optimization: Pure CSS/SVG) */}
                 <div className="absolute inset-0 opacity-[0.03] pointer-events-none z-0"
                      style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
                 />
@@ -23,7 +24,6 @@ export default async function Navigation() {
                 {/* Logo Section */}
                 <div className="relative z-10 flex-none h-24 flex items-center px-5 border-b border-zinc-200 dark:border-zinc-800 whitespace-nowrap overflow-hidden">
                     <Link href="/" className="flex items-center gap-4 group/logo">
-                        {/* Fixed Logo Image - Pinned Position */}
                         <div className="relative h-10 w-10 flex-shrink-0">
                             <Image
                                 src="https://jyjynjpznlvezjhnuwhi.supabase.co/storage/v1/object/public/website_assests/icon-512x512.png"
@@ -34,8 +34,6 @@ export default async function Navigation() {
                                 priority
                             />
                         </div>
-
-                        {/* Text - Animates based on Sidebar hover */}
                         <div className="flex flex-col opacity-0 -translate-x-4 group-hover/sidebar:opacity-100 group-hover/sidebar:translate-x-0 transition-all duration-300 ease-out delay-200">
                             <p className={`${PlayWriteNewZealandFont.className} text-xl font-bold text-zinc-900 dark:text-zinc-100 leading-none`}>
                                 DeeperWeave
@@ -49,9 +47,9 @@ export default async function Navigation() {
                     <DesktopNavLinks />
                 </div>
 
-                {/* User Profile */}
+                {/* User Profile (Removed Email Prop) */}
                 <div className="relative z-10 flex-none p-3 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 backdrop-blur-sm whitespace-nowrap overflow-hidden">
-                    <UserProfile user={{ profile, email: userData?.user?.email }} />
+                    <UserProfile profile={profile} />
                 </div>
             </aside>
 
@@ -60,7 +58,7 @@ export default async function Navigation() {
                 <div className="flex h-full items-center justify-around px-2">
                     <MobileNavLinks />
                     <Link
-                        href={profile ? "/profile" : "/auth/login"}
+                        href={profile?.username ? `/profile/${profile.username}` : "/auth/login"}
                         className="flex flex-col items-center justify-center w-16 h-full gap-1 group"
                     >
                         <div className="relative h-6 w-6 overflow-hidden bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-sm rotate-45 group-hover:rotate-0 transition-transform duration-300">

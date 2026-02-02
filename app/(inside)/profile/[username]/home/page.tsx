@@ -1,35 +1,16 @@
-import ProfileSectionDisplay from '@/app/ui/podium/ProfileSectionDisplay';
-import {getProfileByUsername} from '@/lib/data/user-data';
-import {createClient} from '@/utils/supabase/server';
-import {notFound} from 'next/navigation';
+import { createClient } from '@/utils/supabase/server';
+import ProfileSectionDisplay from "@/app/ui/podium/ProfileSectionDisplay";
 import {PlayWriteNewZealandFont} from "@/app/ui/fonts";
-import {Metadata} from "next";
 
-type Props = {
-    params: Promise<{ username: string }>
-}
-
-export async function generateMetadata({params}: Props): Promise<Metadata> {
-    const {username} = await params;
-    return {
-        title: `${username}'s Profile`,
-        description: `Profile of ${username} on DeeperWeave.`,
-    };
-}
-
-export default async function ProfileHomePage({params}: { params: Promise<{ username: string }> }) {
-    const {username} = await params;
+export default async function ProfileHomePage({ params }: { params: Promise<{ username: string }> }) {
+    const { username } = await params;
     const supabase = await createClient();
 
-    // 1. FAST Check: Only fetch basic profile info (not the heavy sections)
-    // This confirms the user exists without blocking the UI for long.
-    const profile = await getProfileByUsername(username);
-    if (!profile) notFound();
+    // ⚡️ OPTIMIZED: Auth check from Token (Zero DB Latency)
+    const { data: { user } } = await supabase.auth.getUser();
+    const isOwnProfile = user?.user_metadata?.username === username;
 
-    // 2. Determine if viewing own profile
-    const {data: {user: viewer}} = await supabase.auth.getUser();
-    const isOwnProfile = viewer?.id === profile.id;
-
+    // 🚀 RENDER: Client Component fetches data via TanStack
     return (
         <div className="w-full min-h-[50vh] animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24">
 

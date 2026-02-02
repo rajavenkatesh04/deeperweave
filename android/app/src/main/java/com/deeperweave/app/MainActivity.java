@@ -13,7 +13,7 @@ public class MainActivity extends BridgeActivity {
         // 1. Force the Status Bar to be solid BLACK (not transparent)
         getWindow().setStatusBarColor(Color.BLACK);
 
-        // 2. Force the Navigation Bar (bottom) to be solid BLACK
+        // 2. Force the SideBar Bar (bottom) to be solid BLACK
         getWindow().setNavigationBarColor(Color.BLACK);
 
         // 3. The "Anti-Notch" Force Field

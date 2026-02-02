@@ -114,7 +114,7 @@ function ModernDatePicker({ value, onChange }: { value: string; onChange: (date:
     const CalendarContent = () => (
         <div className="p-4 w-full md:w-72 bg-white dark:bg-zinc-900 md:border md:border-zinc-200 md:dark:border-zinc-800 rounded-sm shadow-xl flex flex-col max-h-[400px]">
 
-            {/* Header Navigation */}
+            {/* Header SideBar */}
             <div className="flex items-center justify-between mb-4 border-b border-zinc-100 dark:border-zinc-800 pb-2 shrink-0">
                 {view === 'days' ? (
                     <button type="button" onClick={handlePrevMonth} className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-sm">

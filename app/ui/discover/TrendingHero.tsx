@@ -159,7 +159,7 @@ export default function TrendingHero({ items }: { items: CinematicSearchResult[]
                     </div>
                 </div>
 
-                {/* Navigation Buttons */}
+                {/* SideBar Buttons */}
                 <div className="flex gap-2">
                     <button
                         onClick={(e) => {
