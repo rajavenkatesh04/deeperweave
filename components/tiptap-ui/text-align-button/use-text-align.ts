@@ -5,7 +5,7 @@ import type { ChainedCommands } from "@tiptap/react"
 import { type Editor } from "@tiptap/react"
 
 // --- Hooks ---
-import { useTiptapEditor } from "@/hooks/use-tiptap-editor"
+import { useTiptapEditor } from "@/hooks/others/use-tiptap-editor"
 
 // --- Lib ---
 import {

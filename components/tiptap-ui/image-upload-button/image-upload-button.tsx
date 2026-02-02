@@ -6,7 +6,7 @@ import * as React from "react"
 import { parseShortcutKeys } from "@/lib/tiptap-utils"
 
 // --- Hooks ---
-import { useTiptapEditor } from "@/hooks/use-tiptap-editor"
+import { useTiptapEditor } from "@/hooks/others/use-tiptap-editor"
 
 // --- Tiptap UI ---
 import type { UseImageUploadConfig } from "@/components/tiptap-ui/image-upload-button"

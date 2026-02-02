@@ -204,6 +204,15 @@ export default function ProfileHeader({
                                     >
                                         <BellIcon className="w-5 h-5" />
                                     </Link>
+
+                                    {/* Saved Button (Square-ish) */}
+                                    <Link
+                                        href="/profile/saved"
+                                        className="flex items-center justify-center px-4 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg text-zinc-900 dark:text-zinc-100 transition-colors"
+                                        title="Notifications"
+                                    >
+                                        <BellIcon className="w-5 h-5" />
+                                    </Link>
                                 </div>
                             ) : (
                                 <FollowButton profileId={profile.id} isPrivate={isPrivate} initialFollowStatus={initialFollowStatus} />

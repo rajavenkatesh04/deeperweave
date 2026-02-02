@@ -114,10 +114,10 @@ export default function TimelineDisplay({
                     <div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-4 text-zinc-400">
                         <ArchiveBoxXMarkIcon className="w-8 h-8" strokeWidth={1.5} />
                     </div>
-                    <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Log Empty</h3>
+                    <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">TimeLine Empty</h3>
                     <p className="text-xs text-zinc-500 mt-1 max-w-xs text-center">
                         {isOwnProfile
-                            ? "No cinematic data recorded. The timeline awaits its first entry."
+                            ? "No watch history recorded."
                             : `${username} hasn't logged any watch history yet.`}
                     </p>
                     {isOwnProfile && (
@@ -125,7 +125,7 @@ export default function TimelineDisplay({
                             href={`/profile/${username}/timeline/create`}
                             className="mt-6 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline"
                         >
-                            Initialize Log &rarr;
+                            Log first film? &rarr;
                         </Link>
                     )}
                 </div>

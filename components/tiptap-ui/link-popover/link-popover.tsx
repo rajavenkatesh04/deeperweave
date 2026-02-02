@@ -4,8 +4,8 @@ import * as React from "react"
 import type { Editor } from "@tiptap/react"
 
 // --- Hooks ---
-import { useIsMobile } from "@/hooks/use-mobile"
-import { useTiptapEditor } from "@/hooks/use-tiptap-editor"
+import { useIsMobile } from "@/hooks/others/use-mobile"
+import { useTiptapEditor } from "@/hooks/others/use-tiptap-editor"
 
 // --- Icons ---
 import { CornerDownLeftIcon } from "@/components/tiptap-icons/corner-down-left-icon"

@@ -62,7 +62,7 @@ import { HighlighterIcon } from "@/components/tiptap-icons/highlighter-icon"
 import { LinkIcon } from "@/components/tiptap-icons/link-icon"
 
 // --- Hooks ---
-import { useIsMobile } from "@/hooks/use-mobile"
+import { useIsMobile } from "@/hooks/others/use-mobile"
 
 // --- Components ---
 import { ThemeToggle } from "@/components/tiptap-templates/simple/theme-toggle"

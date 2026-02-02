@@ -1,6 +1,6 @@
 'use client';
 
-import { useProfileSections } from '@/hooks/api/use-profile-home';
+import {useProfileHome} from '@/hooks/api/use-profile-home';
 import ProfileItemCard, { UnifiedProfileItem } from './ProfileItemCard';
 import Link from 'next/link';
 import { MdOutlineLeaderboard, MdAdd, MdOutlineSentimentDissatisfied } from 'react-icons/md';
@@ -15,7 +15,7 @@ export default function ProfileSectionDisplay({
 }) {
     // 1. USE THE HOOK
     // This handles caching. If you visited before, 'sections' is available INSTANTLY.
-    const { data: sections, isLoading } = useProfileSections(username);
+    const { data: sections, isLoading } = useProfileHome(username);
 
     // 2. LOADING STATE (Only shows on the very first visit)
     if (isLoading) {
@@ -78,7 +78,7 @@ export default function ProfileSectionDisplay({
                                     <h2
                                         className="
     text-3xl md:text-5xl lg:text-6xl
-    font-serif font-semibold tracking-tight
+    font-thin font-semibold tracking-tight
     text-zinc-900 dark:text-zinc-100
     leading-tight
   "
@@ -92,7 +92,7 @@ export default function ProfileSectionDisplay({
 
                             <span
                                 className="
-    text-6xl md:text-8xl font-black tracking-tighter italic
+    text-6xl md:text-8xl font-black tracking-tighter font-thin font-semibold tracking-tighter
     text-zinc-200 dark:text-zinc-800
     opacity-30 select-none leading-none
   "
