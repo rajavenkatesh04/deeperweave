@@ -43,7 +43,7 @@ export default function PostsDisplay({
     // 3. EMPTY STATE
     if (!posts || posts.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl bg-zinc-50/50 dark:bg-zinc-900/20 max-w-2xl mx-auto mt-8 mx-4">
+            <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl bg-zinc-50/50 dark:bg-zinc-900/20 max-w-4xl mx-auto mt-8 mx-4">
                 <div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-4 text-zinc-400">
                     <ArchiveBoxXMarkIcon className="w-8 h-8" strokeWidth={1.5} />
                 </div>
@@ -67,7 +67,7 @@ export default function PostsDisplay({
 
     // 4. DATA CONTENT
     return (
-        <div className="w-full max-w-2xl mx-auto pt-8 px-4 pb-20">
+        <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20 relative z-10 max-w-4xl mx-auto pt-8 px-4 md:px-6">
             {/* --- Header Section --- */}
             <div className="flex items-center justify-between mb-8">
                 <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
@@ -86,7 +86,7 @@ export default function PostsDisplay({
             </div>
 
             {/* List */}
-            <div className="space-y-8">
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
                 {posts.map((post: any) => (
                     <ProfileBlogCard key={post.id} post={post} isOwner={isOwnProfile}/>
                 ))}

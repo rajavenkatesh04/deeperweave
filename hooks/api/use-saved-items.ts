@@ -76,7 +76,7 @@ export function useSavedItems(userId: string) {
     return useQuery({
         queryKey: ['saved-items', userId],
         queryFn: () => fetchSavedItems(userId),
-        staleTime: 5 * 60 * 1000,
+        staleTime: Infinity,
         enabled: !!userId,
     });
 }

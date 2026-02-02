@@ -10,10 +10,12 @@ import {
     CalendarIcon,
     CheckIcon,
     DocumentDuplicateIcon,
-    BellIcon // ✨ Added Import
+    BellIcon,
+    BookmarkIcon
 } from '@heroicons/react/24/outline';
 import { geistSans } from "@/app/ui/fonts";
 import UserBadge from "@/app/ui/user/UserBadge";
+import { MdOutlineMoreHoriz } from "react-icons/md";
 
 // --- SUB-COMPONENTS ---
 
@@ -61,6 +63,17 @@ const ActionButton = ({ children, onClick, href }: { children: React.ReactNode, 
     }
     return <button onClick={onClick} className={className}>{children}</button>;
 };
+
+// Reusable Icon Button for Notifications, Saved, More (Used in both Mobile and Desktop)
+const IconAction = ({ href, icon: Icon, label }: { href: string, icon: any, label: string }) => (
+    <Link
+        href={href}
+        className="flex items-center justify-center px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg text-zinc-900 dark:text-zinc-100 transition-colors"
+        title={label}
+    >
+        <Icon className="w-5 h-5" />
+    </Link>
+);
 
 // --- MAIN COMPONENT ---
 
@@ -133,15 +146,21 @@ export default function ProfileHeader({
                     {/* --- DETAILS SECTION --- */}
                     <div className="flex-1 mt-4 md:mt-0 flex flex-col gap-3">
 
-                        {/* Name & Actions */}
+                        {/* Name & Actions (Desktop) */}
                         <div className="flex flex-col md:flex-row md:items-center gap-3">
                             <h2 className="text-xl md:text-2xl font-bold truncate mr-2">
                                 {profile.display_name}
                             </h2>
 
+                            {/* --- DESKTOP ACTIONS --- */}
                             <div className="hidden md:flex gap-2">
                                 {isOwnProfile ? (
-                                    <ActionButton href="/profile/edit">Edit profile</ActionButton>
+                                    <>
+                                        <ActionButton href="/profile/edit">Edit profile</ActionButton>
+                                        <IconAction href="/profile/notifications" icon={BellIcon} label="Notifications" />
+                                        <IconAction href="/profile/saved" icon={BookmarkIcon} label="Saved" />
+                                        <IconAction href="/profile/more" icon={MdOutlineMoreHoriz} label="More" />
+                                    </>
                                 ) : (
                                     <div className="w-28">
                                         <FollowButton profileId={profile.id} isPrivate={isPrivate} initialFollowStatus={initialFollowStatus} />
@@ -187,7 +206,7 @@ export default function ProfileHeader({
                             </div>
                         </div>
 
-                        {/* Mobile Action Button */}
+                        {/* --- MOBILE ACTIONS --- */}
                         <div className="md:hidden mt-2">
                             {isOwnProfile ? (
                                 <div className="flex gap-2 w-full">
@@ -195,24 +214,9 @@ export default function ProfileHeader({
                                     <div className="flex-1">
                                         <ActionButton href="/profile/edit">Edit profile</ActionButton>
                                     </div>
-
-                                    {/* Notifications Button (Square-ish) */}
-                                    <Link
-                                        href="/profile/notifications"
-                                        className="flex items-center justify-center px-4 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg text-zinc-900 dark:text-zinc-100 transition-colors"
-                                        title="Notifications"
-                                    >
-                                        <BellIcon className="w-5 h-5" />
-                                    </Link>
-
-                                    {/* Saved Button (Square-ish) */}
-                                    <Link
-                                        href="/profile/saved"
-                                        className="flex items-center justify-center px-4 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg text-zinc-900 dark:text-zinc-100 transition-colors"
-                                        title="Notifications"
-                                    >
-                                        <BellIcon className="w-5 h-5" />
-                                    </Link>
+                                    <IconAction href="/profile/notifications" icon={BellIcon} label="Notifications" />
+                                    <IconAction href="/profile/saved" icon={BookmarkIcon} label="Saved" />
+                                    <IconAction href="/profile/more" icon={MdOutlineMoreHoriz} label="More" />
                                 </div>
                             ) : (
                                 <FollowButton profileId={profile.id} isPrivate={isPrivate} initialFollowStatus={initialFollowStatus} />

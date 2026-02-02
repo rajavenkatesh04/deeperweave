@@ -92,13 +92,9 @@ export default function ProfileSectionDisplay({
 
                             <span
                                 className="
-    text-6xl md:text-8xl font-black tracking-tighter font-thin font-semibold tracking-tighter
-    text-zinc-200 dark:text-zinc-800
-    opacity-30 select-none leading-none
-  "
-                            >
-  {String(idx + 1).padStart(2, '0')}
-</span>
+    text-6xl md:text-8xl font-black tracking-tighter font-thin font-semibold tracking-tighter opacity-30 select-none leading-none">
+                                {String(idx + 1).padStart(2, '0')}
+                            </span>
 
                         </div>
                     </div>
