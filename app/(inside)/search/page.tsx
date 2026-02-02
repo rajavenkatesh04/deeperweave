@@ -3,11 +3,8 @@
 import { useState, useEffect, useTransition } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
-import clsx from 'clsx';
-
-// ✨ IMPORTS
 import { ProfileSearchResult } from '@/lib/definitions';
-import { CinematicSearchResult, searchCinematic } from '@/lib/actions/cinematic-actions';
+import { CinematicSearchResult } from '@/lib/actions/cinematic-actions';
 import { searchProfiles } from '@/lib/actions/profile-actions';
 
 // ✨ UI Components
@@ -23,6 +20,7 @@ import {
     UserIcon,
     ArrowPathIcon
 } from '@heroicons/react/24/outline';
+import {searchCinematic} from "@/lib/actions/discovery-actions";
 
 // --- SEARCH LOGIC COMPONENT ---
 function SearchContent() {
