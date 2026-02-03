@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { CinematicSearchResult } from '@/lib/actions/cinematic-actions';
 import { FilmIcon, TvIcon, StarIcon } from '@heroicons/react/24/outline';
+import {CinematicSearchResult} from "@/lib/definitions";
 
 export default function CinematicResultCard({ media }: { media: CinematicSearchResult }) {
     const isPerson = media.media_type === 'person';

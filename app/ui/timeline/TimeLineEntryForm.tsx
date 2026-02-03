@@ -7,12 +7,11 @@ import Link from 'next/link';
 import { logEntry, type LogEntryState } from '@/lib/actions/timeline-actions';
 import {
     searchCinematic,
-    type CinematicSearchResult,
     getSeriesDetails,
     getMovieDetails
 } from '@/lib/actions/cinematic-actions';
 import { searchProfiles } from '@/lib/actions/profile-actions';
-import { type ProfileSearchResult } from '@/lib/definitions';
+import {CinematicSearchResult, type ProfileSearchResult} from '@/lib/definitions';
 import { geistSans } from "@/app/ui/fonts";
 import {
     XMarkIcon,

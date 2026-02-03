@@ -4,11 +4,7 @@ import { cache } from 'react';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { countries } from '@/lib/data/countries';
-import { RichCinematicDetails, CinematicSearchResult, CrewMember, PersonDetails } from '@/lib/definitions';
-
-// Re-export types so existing imports in your app don't break
-export type { RichCinematicDetails, CinematicSearchResult, CrewMember, PersonDetails };
-
+import {CinematicSearchResult, CrewMember, PersonDetails, RichCinematicDetails} from '@/lib/definitions';
 // =====================================================================
 // == TYPE DEFINITIONS (Internal TMDB Types)
 // =====================================================================

@@ -3,8 +3,8 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-// Ensure your CinematicSearchResult type definition includes 'person' in the media_type union
-import { CinematicSearchResult } from '@/lib/actions/cinematic-actions';
+import {CinematicSearchResult} from "@/lib/definitions";
+
 
 export default function PosterCard({ item }: { item: CinematicSearchResult }) {
     const isPerson = item.media_type === 'person';

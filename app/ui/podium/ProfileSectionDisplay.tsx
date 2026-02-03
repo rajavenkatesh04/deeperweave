@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useProfileHome } from '@/hooks/api/use-profile-home';
 import ProfileItemCard, { UnifiedProfileItem } from './ProfileItemCard';
 import ContentGuard from '@/app/ui/shared/ContentGuard'; // 🛡️ IMPORT
 import { createClient } from '@/utils/supabase/client'; // 🛡️ IMPORT
-import { MdOutlineLeaderboard, MdAdd, MdOutlineSentimentDissatisfied } from 'react-icons/md';
+import { MdOutlineLeaderboard, MdAdd, MdOutlineSentimentDissatisfied, MdShare } from 'react-icons/md';
 import { PodiumSkeleton } from "@/app/ui/skeletons";
+import { toPng } from 'html-to-image';
 
 export default function ProfileSectionDisplay({
                                                   username,
@@ -18,6 +19,9 @@ export default function ProfileSectionDisplay({
 }) {
     const { data: sections, isLoading } = useProfileHome(username);
     const [isSFW, setIsSFW] = useState(true); // Default to Safe
+
+    // Reference to the element we want to snapshot
+    const podiumRef = useRef<HTMLDivElement>(null);
 
     // ✨ OPTIMIZED: Fetch Preference from Metadata (No DB Call)
     useEffect(() => {
@@ -31,6 +35,31 @@ export default function ProfileSectionDisplay({
         };
         fetchPreference();
     }, []);
+
+    // 📸 Share Logic
+    const handleShare = useCallback(async () => {
+        if (!podiumRef.current) return;
+
+        try {
+            // "pixelRatio: 2" ensures high quality (Retina) output
+            const dataUrl = await toPng(podiumRef.current, {
+                cacheBust: true,
+                pixelRatio: 2,
+                backgroundColor: '#09090b', // Zinc-950 (Dark mode background)
+                style: {
+                    padding: '40px', // Force padding in the image
+                    borderRadius: '12px',
+                }
+            });
+
+            const link = document.createElement('a');
+            link.download = `${username}-podium.png`;
+            link.href = dataUrl;
+            link.click();
+        } catch (err) {
+            console.error('Oops, something went wrong!', err);
+        }
+    }, [username]);
 
     if (isLoading) {
         return (
@@ -77,54 +106,72 @@ export default function ProfileSectionDisplay({
     }
 
     return (
-        <div className="flex flex-col gap-18 md:gap-32">
-            {sections.map((section, idx) => (
-                <section key={section.id} className="max-w-5xl mx-auto md:px-8 w-full">
+        <div className="flex flex-col gap-10">
+            {/* Top Bar with Share Button */}
+            <div className="flex justify-end px-4 md:px-0">
+                <button
+                    onClick={handleShare}
+                    className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                >
+                    <MdShare className="w-4 h-4" />
+                    <span>Share Snapshot</span>
+                </button>
+            </div>
 
-                    {/* --- HEADER --- */}
-                    <div className="mb-10 md:mb-12">
-                        <div className="flex items-baseline gap-4 md:gap-8">
-                            <div className="flex flex-col w-full">
-                                <div className="flex items-center gap-6 w-full">
-                                    <h2 className="text-3xl md:text-5xl lg:text-6xl font-thin font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 leading-tight">
-                                        {section.title}
-                                    </h2>
-                                    <div className="flex-grow h-px bg-zinc-300/60 dark:bg-zinc-700/60 mt-4" />
+            {/* CAPTURE ZONE: The Ref goes here */}
+            {/* Added container styling to ensure the image looks framed */}
+            <div
+                ref={podiumRef}
+                className="flex flex-col gap-18 md:gap-32 bg-white dark:bg-black md:p-8 rounded-xl"
+            >
+                {sections.map((section, idx) => (
+                    <section key={section.id} className="max-w-5xl mx-auto md:px-8 w-full">
+
+                        {/* --- HEADER --- */}
+                        <div className="mb-10 md:mb-12">
+                            <div className="flex items-baseline gap-4 md:gap-8">
+                                <div className="flex flex-col w-full">
+                                    <div className="flex items-center gap-6 w-full">
+                                        <h2 className="text-3xl md:text-5xl lg:text-6xl font-thin font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 leading-tight">
+                                            {section.title}
+                                        </h2>
+                                        <div className="flex-grow h-px bg-zinc-300/60 dark:bg-zinc-700/60 mt-4" />
+                                    </div>
                                 </div>
-                            </div>
-                            <span className="text-5xl md:text-8xl font-black tracking-tighter opacity-30 select-none leading-none">
+                                <span className="text-5xl md:text-8xl font-black tracking-tighter opacity-30 select-none leading-none">
                                 {String(idx + 1).padStart(2, '0')}
                             </span>
+                            </div>
                         </div>
-                    </div>
 
-                    {/* --- GRID --- */}
-                    <div className="grid grid-cols-3 gap-2.5 md:gap-8 lg:gap-10 justify-items-center">
-                        {section.items.map((itemRow: any) => {
-                            // 1. Normalize (includes adult flag now)
-                            const uiItem = normalizeItem(itemRow);
-                            if (!uiItem) return null;
+                        {/* --- GRID --- */}
+                        <div className="grid grid-cols-3 gap-2.5 md:gap-8 lg:gap-10 justify-items-center">
+                            {section.items.map((itemRow: any) => {
+                                // 1. Normalize (includes adult flag now)
+                                const uiItem = normalizeItem(itemRow);
+                                if (!uiItem) return null;
 
-                            return (
-                                <div key={itemRow.id} className="w-full relative group/card">
-                                    {/* 2. 🛡️ CONTENT GUARD */}
-                                    <ContentGuard isAdult={uiItem.adult} isSFW={isSFW}>
-                                        <ProfileItemCard
-                                            item={uiItem}
-                                            rank={itemRow.rank}
-                                        />
-                                    </ContentGuard>
+                                return (
+                                    <div key={itemRow.id} className="w-full relative group/card">
+                                        {/* 2. 🛡️ CONTENT GUARD */}
+                                        <ContentGuard isAdult={uiItem.adult} isSFW={isSFW}>
+                                            <ProfileItemCard
+                                                item={uiItem}
+                                                rank={itemRow.rank}
+                                            />
+                                        </ContentGuard>
 
-                                    {/* Explicit Indicator */}
-                                    {uiItem.adult && (
-                                        <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-600 shadow-sm pointer-events-none z-20 opacity-50" />
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-                </section>
-            ))}
+                                        {/* Explicit Indicator */}
+                                        {uiItem.adult && (
+                                            <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-600 shadow-sm pointer-events-none z-20 opacity-50" />
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </section>
+                ))}
+            </div>
         </div>
     );
 }

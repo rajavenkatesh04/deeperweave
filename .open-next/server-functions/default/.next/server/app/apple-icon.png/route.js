@@ -1,0 +1,7 @@
+var R=require("../../chunks/[turbopack]_runtime.js")("server/app/apple-icon.png/route.js")
+R.c("server/chunks/[externals]_next_dist_a6d89067._.js")
+R.c("server/chunks/[root-of-the-server]__dc08b839._.js")
+R.c("server/chunks/5b3f9_next_dist_esm_build_templates_app-route_916894f0.js")
+R.c("server/chunks/_next-internal_server_app_apple-icon_png_route_actions_40001896.js")
+R.m(86156)
+module.exports=R.m(86156).exports

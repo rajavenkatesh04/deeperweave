@@ -4,13 +4,14 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CinematicSearchResult } from '@/lib/actions/cinematic-actions';
+
 import {
     ChevronLeftIcon,
     ChevronRightIcon,
     StarIcon
 } from '@heroicons/react/24/solid';
 import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
+import {CinematicSearchResult} from "@/lib/definitions";
 
 const AUTO_SCROLL_INTERVAL = 8000;
 

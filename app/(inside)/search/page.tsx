@@ -3,8 +3,7 @@
 import { useState, useEffect, useTransition } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
-import { ProfileSearchResult } from '@/lib/definitions';
-import { CinematicSearchResult } from '@/lib/actions/cinematic-actions';
+import {CinematicSearchResult, ProfileSearchResult} from '@/lib/definitions';
 import { searchProfiles } from '@/lib/actions/profile-actions';
 
 // ✨ UI Components

@@ -2,10 +2,10 @@
 
 import { useRef } from 'react';
 import Link from 'next/link';
-import { CinematicSearchResult } from '@/lib/actions/cinematic-actions';
 import PosterCard from './PosterCard';
 import { ArrowLongRightIcon, Square2StackIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { geistSans } from "@/app/ui/fonts";
+import {CinematicSearchResult} from "@/lib/definitions";
 
 export default function CinematicRow({ title, items, href }: {
     title: string;

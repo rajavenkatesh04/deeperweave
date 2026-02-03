@@ -323,7 +323,6 @@ export default function CreateBlogPage() {
                             value={content}
                             onChange={handleEditorChange}
                             placeholder="Start writing your blog post..."
-
                         />
                     </div>
                     <input type="hidden" name="content_html" value={content} />

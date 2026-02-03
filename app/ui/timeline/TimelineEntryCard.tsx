@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react'; // Added useRef, useEffect
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -23,12 +23,15 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { deleteTimelineEntry } from '@/lib/actions/timeline-actions';
-import { TimelineEntry, UserProfile } from "@/lib/definitions";
+import { TimelineEntry, UserProfile, TimelineEntryWithUser } from "@/lib/definitions";
 import { geistSans } from "@/app/ui/fonts";
 import MediaInfoCard from '@/app/ui/blog/MediaInfoCard';
 import ImageModal from './ImageModal';
 import UserProfilePopover from './UserProfilePopover';
-import ContentGuard from '@/app/ui/shared/ContentGuard'; // 🛡️ IMPORT
+import ContentGuard from '@/app/ui/shared/ContentGuard';
+import { toPng } from 'html-to-image'; // 📸 IMPORT
+import StoryImageWithNotes from './StoryImageWithNotes'; // 📸 IMPORT
+import StoryImageNoNotes from './StoryImageNoNotes'; // 📸 IMPORT
 
 // --- HELPER: Platform Badge ---
 const PlatformBadge = ({ platform }: { platform: string }) => {
@@ -288,15 +291,55 @@ export default function TimelineEntryCard({
     const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null);
     const [selectedCollaborator, setSelectedCollaborator] = useState<Pick<UserProfile, 'id' | 'username' | 'profile_pic_url'> | null>(null);
     const [selectedItem, setSelectedItem] = useState<{ tmdb_id: number; title: string; media_type: 'movie' | 'tv' } | null>(null);
+
+    // 📸 NEW STATE FOR GENERATION
     const [isDownloading, setIsDownloading] = useState(false);
+    const [shareMode, setShareMode] = useState<'notes' | 'clean' | null>(null);
+    const hiddenShareRef = useRef<HTMLDivElement>(null);
 
     // Portal States
     const [showMenu, setShowMenu] = useState(false);
     const [showNotes, setShowNotes] = useState(false);
 
-    // ✨ SAFETY CHECKS (Using plural 'movies')
-    // Ensure you added 'adult' boolean to your Movie/Series interface in definitions.ts!
+    // ✨ SAFETY CHECKS
     const isExplicit = entry.movies?.adult === true || entry.series?.adult === true;
+
+    // 📸 EFFECT: Trigger download when shareMode is set and component renders
+    useEffect(() => {
+        if (!shareMode || !hiddenShareRef.current) return;
+
+        const generateImage = async () => {
+            setIsDownloading(true);
+            try {
+                // Small delay to ensure images inside the hidden div are ready
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                const dataUrl = await toPng(hiddenShareRef.current!, {
+                    cacheBust: true,
+                    pixelRatio: 1, // 1080x1920 is already large, 1x is sufficient
+                    width: 1080,
+                    height: 1920,
+                    backgroundColor: '#09090b',
+                });
+
+                const safeTitle = cinematicItem?.title.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'story';
+                const link = document.createElement('a');
+                link.download = `${safeTitle}_${shareMode}.png`;
+                link.href = dataUrl;
+                link.click();
+                toast.success('Image saved');
+            } catch (err) {
+                console.error(err);
+                toast.error('Failed to generate image');
+            } finally {
+                setIsDownloading(false);
+                setShareMode(null); // Reset
+            }
+        };
+
+        generateImage();
+    }, [shareMode, cinematicItem?.title]);
+
 
     if (!cinematicItem) return null;
 
@@ -308,31 +351,10 @@ export default function TimelineEntryCard({
     const rewatchCount = (entry as any).rewatch_count || 0;
     const isRewatch = (entry as any).is_rewatch || rewatchCount > 0;
     const releaseYear = (cinematicItem.release_date)?.split('-')[0];
-    const safeTitle = cinematicItem.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
 
-    const handleDownloadShareImage = async (mode: 'notes' | 'clean') => {
-        setIsDownloading(true);
-        toast.loading('Generating share image...');
-        try {
-            const response = await fetch(`/api/timeline/share/${entry.id}?mode=${mode}`);
-            if (!response.ok) throw new Error('Failed.');
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${safeTitle}_${mode}.png`;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            window.URL.revokeObjectURL(url);
-            toast.dismiss();
-            toast.success('Image saved');
-        } catch (error) {
-            console.error(error);
-            toast.error('Error generating image.');
-        } finally {
-            setIsDownloading(false);
-        }
+    // 📸 BUTTON HANDLER
+    const handleDownloadShareImage = (mode: 'notes' | 'clean') => {
+        setShareMode(mode);
     };
 
     const openDetails = () => setSelectedItem({
@@ -515,6 +537,30 @@ export default function TimelineEntryCard({
 
             {selectedPhotoUrl && <ImageModal imageUrl={selectedPhotoUrl} onClose={() => setSelectedPhotoUrl(null)} />}
             {selectedCollaborator && <UserProfilePopover user={selectedCollaborator} onClose={() => setSelectedCollaborator(null)} />}
+
+            {/* 📸 HIDDEN RENDER LAYER (GHOST ELEMENT) */}
+            {/* This renders OFF-SCREEN only when generation is active */}
+            {shareMode && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: '-9999px', // Hide off-screen
+                        width: '1080px', // Exact Story dimensions
+                        height: '1920px',
+                        zIndex: -1,
+                        background: '#09090b',
+                    }}
+                >
+                    <div ref={hiddenShareRef} style={{ width: '100%', height: '100%' }}>
+                        {shareMode === 'clean' ? (
+                            <StoryImageNoNotes entry={entry as TimelineEntryWithUser} />
+                        ) : (
+                            <StoryImageWithNotes entry={entry as TimelineEntryWithUser} />
+                        )}
+                    </div>
+                </div>
+            )}
         </>
     );
 }

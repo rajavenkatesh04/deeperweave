@@ -3,7 +3,7 @@
 import { cache } from 'react';
 import { createClient } from '@/utils/supabase/server';
 import { countries } from '@/lib/data/countries';
-import { CinematicSearchResult } from '@/lib/actions/cinematic-actions';
+import {CinematicSearchResult} from "@/lib/definitions";
 
 // =====================================================================
 // == INTERNAL HELPERS

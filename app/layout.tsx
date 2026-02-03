@@ -14,6 +14,10 @@ export const metadata: Metadata = {
     },
     description: 'Track Movies, Write blogs, Discover Content.',
     metadataBase: new URL('https://DeeperWeave.com/'),
+    openGraph: {
+        // Point to your Vercel helper
+        images: ['https://my-image-helper.vercel.app/api/og?username=raja'],
+    },
 };
 
 // ⚠️ NEW: This tells mobile phones to let us draw behind the notch/status bar

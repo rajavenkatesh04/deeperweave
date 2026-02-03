@@ -8,13 +8,11 @@ import { toast } from 'sonner';
 // 1. IMPORT THIS
 import { useQueryClient } from '@tanstack/react-query';
 import { Reorder, useDragControls } from 'framer-motion';
-import { UserProfile, ProfileSection } from '@/lib/definitions';
+import {UserProfile, ProfileSection, CinematicSearchResult} from '@/lib/definitions';
 import { updateProfile, EditProfileState, checkUsernameAvailability } from '@/lib/actions/profile-actions';
-import { searchCinematic, type CinematicSearchResult } from '@/lib/actions/cinematic-actions';
+import { searchCinematic } from '@/lib/actions/cinematic-actions';
 import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
 import LoadingSpinner from '@/app/ui/loading-spinner';
-
-// ... (Keep existing Icons and Types exactly the same) ...
 import {
     MdSearch, MdOutlineMovie, MdOutlineTv, MdOutlinePerson, MdOutlineViewList,
     MdAdd, MdClose, MdArrowBack, MdOutlineDelete, MdKeyboardArrowUp,
