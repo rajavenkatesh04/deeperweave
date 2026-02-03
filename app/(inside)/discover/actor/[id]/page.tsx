@@ -4,19 +4,20 @@ import { getPersonDetails } from '@/lib/actions/cinematic-actions';
 import { getIsSaved } from '@/lib/actions/save-actions';
 import SaveButton from '@/app/ui/save/SaveButton';
 import CinematicRow from '@/app/ui/discover/CinematicRow';
-import { BriefcaseIcon, GlobeAltIcon, ArrowUpRightIcon, IdentificationIcon } from '@heroicons/react/24/outline';
+import { ArrowUpRightIcon } from '@heroicons/react/24/outline';
 import { BackdropGallery, ShareButton } from '@/app/(inside)/discover/[media_type]/[id]/media-interactive';
 import BackButton from '@/app/(inside)/discover/[media_type]/[id]/BackButton';
 import PortraitGallery from '@/app/ui/discover/PortraitGallery';
 
 export const dynamic = 'force-dynamic';
 
-function CastingStat({ label, value }: { label: string; value: string | number | null | undefined }) {
-    const displayValue = value || "N/A";
+// Redesigned simple info block
+function InfoBlock({ label, value, className = "" }: { label: string; value: React.ReactNode; className?: string }) {
+    if (!value) return null;
     return (
-        <div className="flex flex-col border-b border-zinc-200 dark:border-zinc-800 py-3 last:border-0 group hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors px-2 -mx-2 rounded-md">
-            <span className="text-[10px] uppercase tracking-widest text-zinc-400 mb-1 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-colors font-bold">{label}</span>
-            <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100 font-mono break-words">{displayValue}</span>
+        <div className={`flex flex-col ${className}`}>
+            <span className="text-[11px] uppercase tracking-widest text-zinc-500 dark:text-zinc-500 font-semibold mb-1.5">{label}</span>
+            <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100 leading-relaxed">{value}</span>
         </div>
     );
 }
@@ -61,6 +62,9 @@ export default async function ActorDetailPage({ params }: { params: Promise<{ id
     const genderMap: Record<number, string> = { 0: 'N/A', 1: 'Female', 2: 'Male', 3: 'Non-binary' };
     const genderLabel = genderMap[details.gender] || 'N/A';
 
+    // Format birthday for better readability
+    const formattedBirthday = details.birthday ? new Date(details.birthday).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : null;
+
     return (
         <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
             <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 sticky top-0 z-50 backdrop-blur-sm bg-opacity-90 dark:bg-opacity-90">
@@ -79,7 +83,10 @@ export default async function ActorDetailPage({ params }: { params: Promise<{ id
             <main className="pb-24">
                 <div className={`relative z-10 max-w-7xl mx-auto px-6 ${hasBackdrop ? '-mt-48' : 'mt-8'}`}>
                     <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 mb-24">
+
+                        {/* LEFT COLUMN: Image & Personal Data */}
                         <div className="lg:col-span-2 space-y-8">
+                            {/* Profile Image */}
                             <div className="relative group">
                                 <div className="absolute top-2 left-2 w-full h-full bg-zinc-900/5 dark:bg-white/5 rounded-sm -z-10 transition-transform group-hover:translate-x-1 group-hover:translate-y-1" />
                                 <div className="relative aspect-[2/3] w-full bg-zinc-200 dark:bg-zinc-900 rounded-sm overflow-hidden border-4 border-white dark:border-zinc-800 shadow-xl">
@@ -94,44 +101,50 @@ export default async function ActorDetailPage({ params }: { params: Promise<{ id
                                 </div>
                             </div>
 
-                            <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg border border-zinc-200 dark:border-zinc-800 shadow-sm relative overflow-hidden">
-                                <div className="absolute -top-6 -right-6 w-20 h-20 bg-zinc-100 dark:bg-zinc-800 rounded-full blur-2xl opacity-50 pointer-events-none" />
-                                <div className="flex items-center gap-2 mb-6 pb-2 border-b border-zinc-100 dark:border-zinc-800"><BriefcaseIcon className="w-4 h-4 text-zinc-400" /><span className="text-xs font-bold uppercase tracking-widest text-zinc-500">Personal Data</span></div>
-                                <div className="space-y-1">
-                                    <CastingStat label="Department" value={details.known_for_department} />
-                                    <CastingStat label="Gender" value={genderLabel} />
-                                    <CastingStat label="Birth Date" value={details.birthday} />
-                                    <CastingStat label="Age" value={age} />
-
-                                    <div className="pt-4 mt-2 border-t border-zinc-100 dark:border-zinc-800">
-                                        <p className="text-[10px] uppercase tracking-widest text-zinc-400 mb-2 font-bold">Origin</p>
-                                        <div className="flex items-start gap-2 text-sm text-zinc-700 dark:text-zinc-300 leading-snug"><GlobeAltIcon className="w-4 h-4 shrink-0 mt-0.5 text-zinc-400" /><span className="font-medium">{details.place_of_birth || "N/A"}</span></div>
-                                    </div>
-
-                                    {details.also_known_as && details.also_known_as.length > 0 && (
-                                        <div className="pt-4 mt-2 border-t border-zinc-100 dark:border-zinc-800">
-                                            <p className="text-[10px] uppercase tracking-widest text-zinc-400 mb-2 font-bold flex items-center gap-1"><IdentificationIcon className="w-3 h-3" /> Aliases</p>
-                                            <div className="flex flex-wrap gap-1">
-                                                {details.also_known_as.slice(0, 3).map((alias, i) => (<span key={i} className="text-xs px-2 py-1 bg-zinc-100 dark:bg-zinc-800 rounded text-zinc-600 dark:text-zinc-400">{alias}</span>))}
-                                                {details.also_known_as.length > 3 && <span className="text-xs px-2 py-1 text-zinc-400">+{details.also_known_as.length - 3}</span>}
-                                            </div>
-                                        </div>
-                                    )}
+                            {/* Redesigned Personal Data Section */}
+                            <div className="space-y-6 pt-4">
+                                {/* Grid for short stats */}
+                                <div className="grid grid-cols-2 gap-y-6 gap-x-4">
+                                    <InfoBlock label="Known For" value={details.known_for_department} />
+                                    <InfoBlock label="Gender" value={genderLabel} />
+                                    <InfoBlock label="Age" value={age} />
+                                    {details.birthday && <InfoBlock label="Birth Date" value={formattedBirthday} />}
                                 </div>
-                            </div>
 
-                            <div className="flex flex-wrap gap-2">
-                                {details.social_ids?.instagram_id && <SocialTag href={`https://instagram.com/${details.social_ids.instagram_id}`} label="IG" />}
-                                {details.social_ids?.twitter_id && <SocialTag href={`https://twitter.com/${details.social_ids.twitter_id}`} label="TW" />}
-                                {details.social_ids?.imdb_id && <SocialTag href={`https://www.imdb.com/name/${details.social_ids.imdb_id}`} label="IMDb" />}
-                                {details.social_ids?.facebook_id && <SocialTag href={`https://facebook.com/${details.social_ids.facebook_id}`} label="FB" />}
+                                {/* Full width items */}
+                                <InfoBlock
+                                    label="Place of Birth"
+                                    value={details.place_of_birth}
+                                />
+
+                                {details.also_known_as && details.also_known_as.length > 0 && (
+                                    <div className="pt-2">
+                                        <span className="text-[11px] uppercase tracking-widest text-zinc-500 dark:text-zinc-500 font-semibold mb-2 block">Also Known As</span>
+                                        <div className="flex flex-wrap gap-2">
+                                            {details.also_known_as.slice(0, 5).map((alias, i) => (
+                                                <span key={i} className="text-xs px-2.5 py-1 bg-zinc-100 dark:bg-zinc-900 rounded-md text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800">
+                                                    {alias}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Socials */}
+                                <div className="pt-6 border-t border-zinc-200 dark:border-zinc-800 flex flex-wrap gap-2">
+                                    {details.social_ids?.instagram_id && <SocialTag href={`https://instagram.com/${details.social_ids.instagram_id}`} label="IG" />}
+                                    {details.social_ids?.twitter_id && <SocialTag href={`https://twitter.com/${details.social_ids.twitter_id}`} label="TW" />}
+                                    {details.social_ids?.imdb_id && <SocialTag href={`https://www.imdb.com/name/${details.social_ids.imdb_id}`} label="IMDb" />}
+                                    {details.social_ids?.facebook_id && <SocialTag href={`https://facebook.com/${details.social_ids.facebook_id}`} label="FB" />}
+                                </div>
                             </div>
                         </div>
 
+                        {/* RIGHT COLUMN: Bio & Content */}
                         <div className={`lg:col-span-3 space-y-10 ${hasBackdrop ? 'lg:mt-56' : 'lg:mt-0'}`}>
                             <div className="space-y-3">
                                 <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-light tracking-tight text-zinc-900 dark:text-zinc-100 leading-tight">{details.name}</h1>
-                                {details.deathday && <p className="text-base md:text-lg text-zinc-500 dark:text-zinc-400 font-light">{details.birthday} – {details.deathday}</p>}
+                                {details.deathday && <p className="text-base md:text-lg text-zinc-500 dark:text-zinc-400 font-light">{formattedBirthday} – {new Date(details.deathday).getFullYear()}</p>}
                             </div>
                             <div className="space-y-4 pt-8 border-t border-zinc-200 dark:border-zinc-800">
                                 <h2 className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Biography</h2>
@@ -141,7 +154,13 @@ export default async function ActorDetailPage({ params }: { params: Promise<{ id
                     </div>
 
                     {details.known_for && details.known_for.length > 0 && <div className="mb-24 -mx-6 md:-mx-12"><CinematicRow title="Known For" items={details.known_for} href={`/search?query=${details.name}`} /></div>}
-                    {details.images && details.images.length > 0 && <div className="mb-12"><h2 className="text-2xl font-light mb-6">Gallery</h2><PortraitGallery images={details.images} /></div>}
+
+                    {/* Gallery Section - Removed Heading */}
+                    {details.images && details.images.length > 0 && (
+                        <div className="mb-12">
+                            <PortraitGallery images={details.images} />
+                        </div>
+                    )}
                 </div>
             </main>
         </div>

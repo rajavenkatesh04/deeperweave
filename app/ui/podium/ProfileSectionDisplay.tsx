@@ -105,26 +105,27 @@ export default function ProfileSectionDisplay({
     );
 }
 
-// ... (Imports and component code remain the same until normalizeItem) ...
+// ... (Imports and Component remain the same) ...
 
+// ✨ ROBUST FIX: Handle Arrays, Missing Data, and ID Extraction
 function normalizeItem(itemRow: any): UnifiedProfileItem | null {
     const type = itemRow.item_type;
 
-    // 1. Extract Data
-    // Supabase quirk: joined data might be an object OR an array of 1 object.
-    // We check both.
-    let data = itemRow.movie || itemRow.series || itemRow.person;
+    // 1. Extract Joined Data
+    // Supabase might return an object OR an array of 1 object. We handle both.
+    const rawData = itemRow.movie || itemRow.series || itemRow.person;
+    const data = Array.isArray(rawData) ? rawData[0] : rawData;
 
-    if (Array.isArray(data)) {
-        data = data[0];
-    }
-
+    // 2. Safety Check: If the linked movie/person was deleted, data might be null
     if (!data) return null;
 
     return {
-        id: itemRow.id,
-        // 2. Explicitly map tmdb_id.
+        id: itemRow.id, // Keep Database ID for keys
+
+        // 3. ✨ EXTRACT TMDB ID
+        // Since we fetched (*), this column is guaranteed to exist if the record exists.
         tmdbId: data.tmdb_id,
+
         title: data.title || data.name,
         image_url: (data.poster_url || data.profile_path)
             ? `https://image.tmdb.org/t/p/w500${data.poster_url || data.profile_path}`

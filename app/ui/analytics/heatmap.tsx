@@ -15,10 +15,15 @@ export default function CinematicHeatmap({ entries }: HeatmapProps) {
     // 1. Determine available years from data
     const years = useMemo(() => {
         const uniqueYears = Array.from(new Set(entries.map(e => new Date(e.watched_on).getFullYear())));
+        // Sorts Descending: [2025, 2024, 2023...]
         return uniqueYears.length > 0 ? uniqueYears.sort((a, b) => b - a) : [new Date().getFullYear()];
     }, [entries]);
 
-    const [selectedYear, setSelectedYear] = useState(years[years.length - 1]); // Default to latest year
+    // CHANGE THIS LINE:
+    // Old: const [selectedYear, setSelectedYear] = useState(years[years.length - 1]);
+    // New: Default to index 0 (the latest year because of the sort above)
+    const [selectedYear, setSelectedYear] = useState(years[0]);
+
     const [isExpanded, setIsExpanded] = useState(false);
 
     // 2. Process data by Month

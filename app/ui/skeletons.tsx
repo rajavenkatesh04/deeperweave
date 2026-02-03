@@ -57,7 +57,7 @@ export function TimelineEntrySkeleton() {
 
 export function TimelineSkeletonList() {
     return (
-        <div className="w-full max-w-3xl mx-auto pb-20">
+        <div className="w-full max-w-4xl mx-auto pb-20">
             <TimelineEntrySkeleton />
             <TimelineEntrySkeleton />
             <TimelineEntrySkeleton />
