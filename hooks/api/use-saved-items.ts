@@ -10,22 +10,21 @@ export interface SavedItemDisplay {
         title: string;
         image_url: string | null;
         subtitle: string | null;
+        adult: boolean; // 👈 ADDED THIS
     };
 }
 
 const fetchSavedItems = async (userId: string) => {
     const supabase = createClient();
 
-    // 1. Fetch with "Forgiving" Joins (Removed strict !name tags)
-    // Supabase will automatically find the Foreign Key connection.
     const { data, error } = await supabase
         .from('saved_items')
         .select(`
-      *,
-      movie:movies(*),
-      series:series(*),
-      person:people(*)
-    `)
+            *,
+            movie:movies(*),
+            series:series(*),
+            person:people(*)
+        `)
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
@@ -45,29 +44,39 @@ const fetchSavedItems = async (userId: string) => {
         let image_url = null;
         let subtitle = 'N/A';
         let tmdb_id = 0;
+        let adult = false; // 👈 Default to false
 
         if (movie) {
             title = movie.title;
             image_url = movie.poster_url;
             subtitle = movie.release_date ? movie.release_date.split('-')[0] : 'Film';
             tmdb_id = movie.tmdb_id;
+            adult = movie.adult; // 👈 Extract from DB
         } else if (series) {
             title = series.title;
             image_url = series.poster_url;
             subtitle = series.release_date ? series.release_date.split('-')[0] : 'TV';
             tmdb_id = series.tmdb_id;
+            adult = series.adult; // 👈 Extract from DB (Anime/Hentai often have this)
         } else if (person) {
             title = person.name;
             image_url = person.profile_path;
             subtitle = 'Star';
             tmdb_id = person.tmdb_id;
+            adult = person.adult; // 👈 Extract from DB (Adult actors)
         }
 
         return {
             id: item.id,
             item_type: item.item_type,
             created_at: item.created_at,
-            details: { tmdb_id, title, image_url, subtitle }
+            details: {
+                tmdb_id,
+                title,
+                image_url,
+                subtitle,
+                adult // 👈 Pass it to the UI
+            }
         };
     });
 };

@@ -1,39 +1,61 @@
-// app/(inside)/explore/page.tsx
-import { PlayWriteNewZealandFont } from "@/app/ui/fonts";
-import { MdConstruction } from 'react-icons/md';
-import Link from 'next/link';
+import { Suspense } from 'react';
+import { getTrendingPeople, getGenreCollections } from '@/lib/actions/explore-actions';
+import { Metadata } from 'next';
+import TrendingStars from "@/app/ui/explore/TrendingStars";
+import ExploreHero from "@/app/ui/explore/ExploreHero";
+import GenreShowcase from "@/app/ui/explore/GenreShowcase";
 
-export default function ExplorePage() {
+export const metadata: Metadata = {
+    title: 'Explore | Deeperweave',
+    description: 'Curated collections, trending stars, and cinematic vibes.',
+};
+
+export default async function ExplorePage() {
+    // Parallel Fetching
+    const [people, genreSections] = await Promise.all([
+        getTrendingPeople(),
+        getGenreCollections(),
+    ]);
+
     return (
-        <main className="flex flex-col items-center justify-center min-h-[80vh] px-4 text-center">
-            <div className="space-y-8 max-w-lg mx-auto">
-                {/* Animated Icon */}
-                <div className="mx-auto w-24 h-24 bg-zinc-100 dark:bg-zinc-900 rounded-3xl flex items-center justify-center -rotate-6 hover:rotate-0 transition-transform duration-300">
-                    <MdConstruction className="w-12 h-12 text-zinc-900 dark:text-white" />
+        <main className="min-h-screen md:ml-14 bg-white dark:bg-black text-black dark:text-white">
+
+            {/* 1. HERO: House of Deeperweave (Editorial) */}
+            {/* Hardcoded or Fetched "Special Lists" */}
+            <ExploreHero />
+
+            <div className="m-1 md:px-12 space-y-16 mt-12">
+
+                {/* 2. TRENDING STARS (Horizontal Circles) */}
+                <section>
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Trending Stars</h2>
+                        <span className="text-xs font-bold uppercase tracking-widest text-zinc-500">People watching</span>
+                    </div>
+                    <TrendingStars people={people} />
+                </section>
+
+                {/* 3. VIBES & GENRES (Vertical List of Horizontal Rows) */}
+                <div className="space-y-12">
+                    {genreSections.map((section) => (
+                        <GenreShowcase
+                            key={section.title}
+                            title={section.title}
+                            items={section.items}
+                            href={section.href}
+                        />
+                    ))}
                 </div>
 
-                {/* Text Content */}
-                <div className="space-y-4">
-                    <h1 className={`${PlayWriteNewZealandFont.className} text-5xl md:text-7xl font-bold`}>
-                        Explore
-                    </h1>
-                    <h2 className="text-xl font-medium text-zinc-900 dark:text-white">
-                        Under Construction
-                    </h2>
-                    <p className="text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                        We are crafting a new way to discover curated stories and community collections.
-                        Check back soon for the launch.
+                {/* 4. CALL TO ACTION (Community) */}
+                <div className="rounded-3xl bg-zinc-100 dark:bg-zinc-900 m-2 p-6 md:p-12 text-center">
+                    <h3 className="text-2xl font-bold mb-4">Curate Your Own World</h3>
+                    <p className="text-zinc-500 dark:text-zinc-400 max-w-lg mx-auto mb-8">
+                        Create custom lists, rank your favorites, and share your taste with the community.
                     </p>
-                </div>
-
-                {/* Action Button */}
-                <div className="pt-2">
-                    <Link
-                        href="/"
-                        className="inline-flex h-12 items-center justify-center rounded-full bg-zinc-900 px-8 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
-                    >
-                        Return Home
-                    </Link>
+                    <button className="px-6 py-3    bg-black dark:bg-white text-white dark:text-black font-bold rounded-full hover:scale-105 transition-transform">
+                        Start a List
+                    </button>
                 </div>
             </div>
         </main>

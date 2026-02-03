@@ -70,6 +70,7 @@ export interface CrewMember {
 
 // Full Details for Page View
 export interface RichCinematicDetails {
+    adult: boolean;
     id: number;
     title: string;
     original_title?: string; // ✨ NEW: For foreign titles
@@ -140,6 +141,7 @@ export interface RichCinematicDetails {
 export interface PersonDetails {
     id: number;
     name: string;
+    adult:boolean;
     biography: string;
     birthday: string | null;
     deathday: string | null;

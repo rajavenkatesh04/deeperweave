@@ -4,9 +4,11 @@ import Link from 'next/link';
 import { getMovieDetails, getSeriesDetails } from '@/lib/actions/cinematic-actions';
 import { getIsSaved } from '@/lib/actions/save-actions';
 import { getUserProfile } from '@/lib/data/user-data';
-import { getCinematicEngagement } from '@/lib/data/timeline-data'; // ✨ RESTORED IMPORT
+import { getCinematicEngagement } from '@/lib/data/timeline-data';
+import { createClient } from '@/utils/supabase/server';
 import SaveButton from '@/app/ui/save/SaveButton';
 import CinematicRow from '@/app/ui/discover/CinematicRow';
+import ContentGuard from '@/app/ui/shared/ContentGuard';
 import { PlusIcon, FilmIcon, StarIcon, HashtagIcon, CurrencyDollarIcon, LanguageIcon, BuildingOffice2Icon, TvIcon, GlobeAltIcon, ClockIcon, UserGroupIcon } from '@heroicons/react/24/solid';
 import { ShareButton, TrailerButton, BackdropGallery, CastCrewSwitcher } from './media-interactive';
 import BackButton from './BackButton';
@@ -23,8 +25,21 @@ export default async function SimpleDetailPage({
 
     if (isNaN(numericId) || (media_type !== 'movie' && media_type !== 'tv')) notFound();
 
-    const userResult = await getUserProfile();
+    // 1. Parallel Data Fetching
+    // ✨ FIX: Added 'await' here because createClient is async in Next.js 15+
+    const supabase = await createClient();
+
+    const [userResult, authResult] = await Promise.all([
+        getUserProfile(),
+        supabase.auth.getUser()
+    ]);
+
     const currentUser = userResult?.profile;
+    const sessionUser = authResult.data.user;
+
+    // 2. Determine Safety Preferences
+    const userPreference = sessionUser?.user_metadata?.content_preference || 'sfw';
+    const isSFW = userPreference === 'sfw';
 
     const [details, isSaved, engagement] = await Promise.all([
         (media_type === 'movie' ? getMovieDetails(numericId) : getSeriesDetails(numericId)).catch((e) => {
@@ -32,12 +47,14 @@ export default async function SimpleDetailPage({
             return null;
         }),
         getIsSaved(media_type as 'movie' | 'series', numericId),
-        // ✨ RESTORED: Fetch Shared Activity
         currentUser ? getCinematicEngagement(currentUser.id, media_type as 'movie' | 'tv', numericId) : null
     ]);
 
     if (!details) notFound();
 
+    const isExplicit = details.adult;
+
+    // --- Helpers ---
     const title = details.title;
     const showOriginalTitle = details.original_title && details.original_title !== title;
     const releaseDate = details.release_date;
@@ -76,10 +93,12 @@ export default async function SimpleDetailPage({
                 </div>
             </header>
 
-            <BackdropGallery
-                images={details.images?.backdrops || []}
-                fallbackPath={details.backdrop_path}
-            />
+            <ContentGuard isAdult={isExplicit} isSFW={isSFW}>
+                <BackdropGallery
+                    images={details.images?.backdrops || []}
+                    fallbackPath={details.backdrop_path}
+                />
+            </ContentGuard>
 
             {!hasBackdrop && <div className="h-10 w-full" />}
 
@@ -87,18 +106,21 @@ export default async function SimpleDetailPage({
                 <div className={`relative z-10 max-w-7xl mx-auto px-6 ${hasBackdrop ? '-mt-48' : 'mt-8'}`}>
 
                     <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 mb-16">
-                        {/* LEFT: Poster */}
                         <div className="lg:col-span-2 space-y-6">
-                            <div className="relative aspect-[2/3] w-full max-w-md mx-auto overflow-hidden bg-zinc-200 dark:bg-zinc-900 shadow-2xl group border-4 border-white dark:border-zinc-800 rounded-sm">
-                                {details.poster_path ? (
-                                    <>
-                                        <Image src={`https://image.tmdb.org/t/p/w500${details.poster_path}`} alt={title} fill className="object-cover transition-transform duration-700 ease-in-out group-hover:scale-105" priority />
-                                        <div className="absolute inset-0 bg-zinc-900/0 group-hover:bg-zinc-900/10 transition-colors duration-700 ease-in-out" />
-                                    </>
-                                ) : (
-                                    <div className="flex items-center justify-center w-full h-full"><FilmIcon className="w-16 h-16 text-zinc-400" /></div>
-                                )}
-                            </div>
+
+                            <ContentGuard isAdult={isExplicit} isSFW={isSFW}>
+                                <div className="relative aspect-[2/3] w-full max-w-md mx-auto overflow-hidden bg-zinc-200 dark:bg-zinc-900 shadow-2xl group border-4 border-white dark:border-zinc-800 rounded-sm">
+                                    {details.poster_path ? (
+                                        <>
+                                            <Image src={`https://image.tmdb.org/t/p/w500${details.poster_path}`} alt={title} fill className="object-cover transition-transform duration-700 ease-in-out group-hover:scale-105" priority />
+                                            <div className="absolute inset-0 bg-zinc-900/0 group-hover:bg-zinc-900/10 transition-colors duration-700 ease-in-out" />
+                                        </>
+                                    ) : (
+                                        <div className="flex items-center justify-center w-full h-full"><FilmIcon className="w-16 h-16 text-zinc-400" /></div>
+                                    )}
+                                </div>
+                            </ContentGuard>
+
                             {providers.length > 0 && (
                                 <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
                                     <p className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-3">Streaming On</p>
@@ -113,13 +135,13 @@ export default async function SimpleDetailPage({
                             )}
                         </div>
 
-                        {/* RIGHT: Info */}
                         <div className={`lg:col-span-3 space-y-8 ${hasBackdrop ? 'lg:mt-56' : 'lg:mt-0'}`}>
                             <div className="space-y-3">
                                 <div className="flex items-center gap-3 flex-wrap">
                                     {details.certification && details.certification !== 'NR' && <span className="px-2 py-1 border border-zinc-400 dark:border-zinc-600 text-xs font-bold rounded">{details.certification}</span>}
                                     {details.status && <span className={`text-xs font-bold px-2 py-1 rounded ${details.status === 'Ended' || details.status === 'Released' ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400' : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'}`}>{details.status}</span>}
                                     {details.type && <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs font-bold rounded">{details.type}</span>}
+                                    {isExplicit && <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-bold rounded">EXPLICIT</span>}
                                 </div>
                                 <div>
                                     <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-light tracking-tight text-zinc-900 dark:text-zinc-100 leading-tight">{title}</h1>
@@ -144,7 +166,6 @@ export default async function SimpleDetailPage({
                                 )}
                             </div>
 
-                            {/* ✨ RESTORED: SHARED ACTIVITY */}
                             {engagement && (engagement.watchCount > 0 || engagement.friendEntries.length > 0) && (
                                 <div className="py-6 border-y border-zinc-100 dark:border-zinc-900 space-y-4 animate-in fade-in slide-in-from-bottom-4">
                                     {engagement.watchCount > 0 && (

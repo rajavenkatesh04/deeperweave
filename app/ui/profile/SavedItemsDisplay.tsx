@@ -1,19 +1,35 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
     FilmIcon,
     TvIcon,
     UserIcon,
-    ArchiveBoxIcon
+    ArchiveBoxIcon,
+    EyeSlashIcon
 } from '@heroicons/react/24/outline';
 import { geistSans } from "@/app/ui/fonts";
 import { useSavedItems } from '@/hooks/api/use-saved-items';
 import LoadingSpinner from '@/app/ui/loading-spinner';
+import ContentGuard from '@/app/ui/shared/ContentGuard'; // 🛡️ IMPORT
+import { createClient } from '@/utils/supabase/client'; // 🛡️ IMPORT (Client version)
 
 export default function SavedItemsDisplay({ userId }: { userId: string }) {
     const { data: savedItems, isLoading, isError } = useSavedItems(userId);
+    const [isSFW, setIsSFW] = useState(true); // Default to safe while loading
+
+    // ✨ FETCH PREFERENCE ON MOUNT
+    useEffect(() => {
+        const fetchPreference = async () => {
+            const supabase = createClient();
+            const { data: { user } } = await supabase.auth.getUser();
+            const pref = user?.user_metadata?.content_preference || 'sfw';
+            setIsSFW(pref === 'sfw');
+        };
+        fetchPreference();
+    }, []);
 
     if (isLoading) {
         return (
@@ -40,16 +56,16 @@ export default function SavedItemsDisplay({ userId }: { userId: string }) {
     const seriesCount = savedItems.filter(i => i.item_type === 'series' || i.item_type === 'tv').length;
     const personCount = savedItems.filter(i => i.item_type === 'person').length;
 
+
     return (
         <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20 relative z-10 max-w-4xl mx-auto pt-8 px-4 md:px-6">
-            {/* --- Header Section (More Menu Style) --- */}
+            {/* --- Header Section --- */}
             <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
                     <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Saved Library</h2>
                     <p className="text-sm text-zinc-500 mt-1">Private Collection &bull; {savedItems.length} Items</p>
                 </div>
 
-                {/* Stat Pills - Clean Look */}
                 <div className="flex flex-wrap gap-2">
                     <StatPill icon={FilmIcon} label="Movies" count={movieCount} />
                     <StatPill icon={TvIcon} label="TV Shows" count={seriesCount} />
@@ -61,8 +77,6 @@ export default function SavedItemsDisplay({ userId }: { userId: string }) {
             <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {savedItems.map((item) => {
                     const { details } = item;
-
-                    // --- YOUR ORIGINAL CARD LOGIC START ---
 
                     // Badge Logic
                     let badgeLabel = 'TV';
@@ -85,24 +99,32 @@ export default function SavedItemsDisplay({ userId }: { userId: string }) {
                         ? (details.image_url.startsWith('http') ? details.image_url : `https://image.tmdb.org/t/p/w500${details.image_url}`)
                         : null;
 
+                    // ✨ CHECK ADULT FLAG
+                    // (Ensure your 'details' object in DB actually has this field, or cast as any if using mixed types)
+                    const isExplicit = (details as any).adult === true;
+
                     return (
                         <div key={item.id} className="group relative w-full h-full">
                             <Link href={href} className="block w-full h-full">
                                 {/* --- POSTER CONTAINER --- */}
                                 <div className="relative aspect-[2/3] w-full rounded-sm overflow-hidden bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-2xl group-hover:border-zinc-400 dark:group-hover:border-zinc-100">
-                                    {image ? (
-                                        <Image
-                                            src={image}
-                                            alt={details.title}
-                                            fill
-                                            className="object-cover transition-transform duration-700 ease-out group-hover:scale-105 group-hover:saturate-100 grayscale-[0.1] group-hover:grayscale-0"
-                                            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"
-                                        />
-                                    ) : (
-                                        <div className="w-full h-full flex flex-col items-center justify-center text-zinc-400 bg-zinc-100 dark:bg-zinc-900">
-                                            <span className="text-[10px] uppercase font-bold tracking-widest">No Image</span>
-                                        </div>
-                                    )}
+
+                                    {/* 🛡️ CONTENT GUARD WRAPPER */}
+                                    <ContentGuard isAdult={isExplicit} isSFW={isSFW}>
+                                        {image ? (
+                                            <Image
+                                                src={image}
+                                                alt={details.title}
+                                                fill
+                                                className="object-cover transition-transform duration-700 ease-out group-hover:scale-105 group-hover:saturate-100 grayscale-[0.1] group-hover:grayscale-0"
+                                                sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex flex-col items-center justify-center text-zinc-400 bg-zinc-100 dark:bg-zinc-900">
+                                                <span className="text-[10px] uppercase font-bold tracking-widest">No Image</span>
+                                            </div>
+                                        )}
+                                    </ContentGuard>
 
                                     {/* Badge */}
                                     <div className="absolute top-0 left-0 p-2 z-10">
@@ -110,6 +132,13 @@ export default function SavedItemsDisplay({ userId }: { userId: string }) {
                                             {badgeLabel}
                                         </div>
                                     </div>
+
+                                    {/* Explicit Indicator (Visible even if guarded) */}
+                                    {isExplicit && (
+                                        <div className="absolute top-0 right-0 p-2 z-10 pointer-events-none">
+                                            <div className="w-2 h-2 rounded-full bg-red-600 shadow-sm ring-1 ring-white/20"></div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* --- INFO SECTION --- */}
@@ -126,7 +155,6 @@ export default function SavedItemsDisplay({ userId }: { userId: string }) {
                             </Link>
                         </div>
                     );
-                    // --- YOUR ORIGINAL CARD LOGIC END ---
                 })}
             </div>
         </div>

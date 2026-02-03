@@ -134,7 +134,7 @@ function getDateWindow(daysBack: number) {
 }
 
 // ✨ THE BUG FIX IS HERE
-async function fetchTmdbList(endpoint: string, params: Record<string, string> = {}): Promise<CinematicSearchResult[]> {
+export async function fetchTmdbList(endpoint: string, params: Record<string, string> = {}): Promise<CinematicSearchResult[]> {
     const TMDB_API_KEY = process.env.TMDB_API_KEY;
     if (!TMDB_API_KEY) {
         console.error("TMDB API Key is not configured on the server.");
@@ -203,13 +203,15 @@ export type DiscoverFilters = {
     page?: number;
     release_date_gte?: string;
     release_date_lte?: string;
+    'vote_count.gte'?: string;
 };
 
 export async function discoverMedia(filters: DiscoverFilters) {
     const params: Record<string, string> = {
         page: (filters.page || 1).toString(),
         sort_by: filters.sort_by || 'popularity.desc',
-        'vote_count.gte': '5',
+        // ✨ FIX: Use the value passed in filters, or default to '5' if missing
+        'vote_count.gte': filters['vote_count.gte'] || '5',
     };
 
     if (filters.region) params.region = filters.region;
@@ -467,6 +469,7 @@ export async function getMovieDetails(movieId: number): Promise<RichCinematicDet
             title: data.title,
             original_title: data.original_title,
             media_type: 'movie',
+            adult: data.adult,
             overview: data.overview,
             poster_path: data.poster_path,
             backdrop_path: data.backdrop_path,
@@ -559,6 +562,7 @@ export async function getSeriesDetails(seriesId: number): Promise<RichCinematicD
             title: data.name,
             original_title: data.original_name,
             media_type: 'tv',
+            adult: data.adult,
             overview: data.overview,
             poster_path: data.poster_path,
             backdrop_path: data.backdrop_path,
@@ -649,6 +653,7 @@ export async function getPersonDetails(personId: number): Promise<PersonDetails>
         return {
             id: data.id,
             name: data.name,
+            adult: data.adult,
             biography: data.biography,
             birthday: data.birthday,
             deathday: data.deathday,
@@ -692,6 +697,7 @@ export async function cacheMovie(movieId: number) {
     await supabaseAdmin.from('movies').upsert({
         tmdb_id: details.id,
         title: details.title,
+        adult: details.adult,
         poster_url: details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : null,
         backdrop_url: details.backdrop_path ? `https://image.tmdb.org/t/p/original${details.backdrop_path}` : null,
         release_date: details.release_date,
@@ -699,13 +705,10 @@ export async function cacheMovie(movieId: number) {
         overview: details.overview,
         genres: details.genres, // stored as jsonb
         cast: details.cast,     // stored as jsonb
-
-        // ✨ Deep Data Fields
         runtime: details.runtime,
         budget: details.budget,
         revenue: details.revenue,
         original_language: details.original_language,
-        // Store full objects (with logos) in JSONB, not just names
         production_companies: details.production_companies,
         crew: details.crew
     }, { onConflict: 'tmdb_id' });
@@ -729,6 +732,7 @@ export async function cacheSeries(seriesId: number) {
     // 3. Upsert
     await supabaseAdmin.from('series').upsert({
         tmdb_id: details.id,
+        adult: details.adult,
         title: details.title,
         poster_url: details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : null,
         backdrop_url: details.backdrop_path ? `https://image.tmdb.org/t/p/original${details.backdrop_path}` : null,
@@ -738,15 +742,11 @@ export async function cacheSeries(seriesId: number) {
         overview: details.overview,
         genres: details.genres,
         cast: details.cast,
-
-        // ✨ Deep Data Fields
         status: details.status,
         original_language: details.original_language,
-        // Store full objects in JSONB
         networks: details.networks,
         production_companies: details.production_companies,
         crew: details.crew,
-        // Dates
         last_air_date: details.last_episode_to_air?.air_date || null,
         next_episode_date: details.next_episode_to_air?.air_date || null
     }, { onConflict: 'tmdb_id' });
@@ -774,6 +774,7 @@ export async function cachePerson(personId: number) {
     await supabaseAdmin.from('people').upsert({
         tmdb_id: details.id,
         name: details.name,
+        adult: details.adult,
         biography: details.biography,
         birthday: details.birthday || null,
         deathday: details.deathday || null,
@@ -781,7 +782,6 @@ export async function cachePerson(personId: number) {
         profile_path: details.profile_path,
         known_for_department: details.known_for_department,
         gender: details.gender,
-        // ✨ Deep Data Field
         also_known_as: details.also_known_as, // stored as jsonb array
 
         updated_at: new Date().toISOString(),
