@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
     PlusIcon,
@@ -9,10 +9,9 @@ import {
 } from '@heroicons/react/24/outline';
 import { motion, AnimatePresence } from 'framer-motion';
 import TimelineEntryCard from './TimelineEntryCard';
-import { TimelineEntry } from "@/lib/definitions";
 import { useTimeline } from '@/hooks/api/use-timeline';
-// ✨ Import your Skeleton
 import { TimelineSkeletonList } from '@/app/ui/skeletons';
+import { createClient } from '@/utils/supabase/client'; // 🛡️ IMPORT
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -30,10 +29,20 @@ export default function TimelineDisplay({
                                         }: {
     username: string;
     isOwnProfile: boolean;
-    // We removed 'initialEntries' because we want the client to fetch it for speed
 }) {
-    // 1. USE THE HOOK
     const { data: timelineEntries, isLoading } = useTimeline(username);
+    const [isSFW, setIsSFW] = useState(true); // Default to Safe
+
+    // ✨ FETCH PREFERENCE ON MOUNT (Source of Truth via Session)
+    useEffect(() => {
+        const fetchPreference = async () => {
+            const supabase = createClient();
+            const { data: { user } } = await supabase.auth.getUser();
+            const pref = user?.user_metadata?.content_preference || 'sfw';
+            setIsSFW(pref === 'sfw');
+        };
+        fetchPreference();
+    }, []);
 
     const entries = timelineEntries || [];
     const INITIAL_ITEMS = 10;
@@ -69,11 +78,9 @@ export default function TimelineDisplay({
                 )}
             </div>
 
-            {/* --- LOADING STATE (The "Snappy" Fix) --- */}
             {isLoading ? (
                 <TimelineSkeletonList />
             ) : entries.length > 0 ? (
-                // --- DATA CONTENT ---
                 <div className="flex flex-col items-center">
                     <div className="w-full max-w-4xl">
                         <motion.div variants={containerVariants} initial="hidden" animate="visible">
@@ -85,6 +92,7 @@ export default function TimelineDisplay({
                                         index={index}
                                         isOwnProfile={isOwnProfile}
                                         username={username}
+                                        isSFW={isSFW} // ✨ PASS THE PREFERENCE
                                     />
                                 ))}
                             </AnimatePresence>
@@ -109,7 +117,6 @@ export default function TimelineDisplay({
                     </div>
                 </div>
             ) : (
-                /* --- EMPTY STATE --- */
                 <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl bg-zinc-50/50 dark:bg-zinc-900/20">
                     <div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-4 text-zinc-400">
                         <ArchiveBoxXMarkIcon className="w-8 h-8" strokeWidth={1.5} />

@@ -170,6 +170,7 @@ export interface Movie {
     director?: string;
     poster_url: string | null;
     backdrop_url?: string | null;
+    adult: boolean;
 
     // ✨ NEW: Deep Data Cache
     runtime?: number;
@@ -187,6 +188,7 @@ export interface Series {
     poster_url: string | null;
     backdrop_url?: string | null;
     number_of_seasons?: number;
+    adult: boolean;
 
     // ✨ NEW: Deep Data Cache
     status?: string;

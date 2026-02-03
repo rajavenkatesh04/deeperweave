@@ -1,8 +1,11 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useProfileHome } from '@/hooks/api/use-profile-home';
 import ProfileItemCard, { UnifiedProfileItem } from './ProfileItemCard';
-import Link from 'next/link';
+import ContentGuard from '@/app/ui/shared/ContentGuard'; // 🛡️ IMPORT
+import { createClient } from '@/utils/supabase/client'; // 🛡️ IMPORT
 import { MdOutlineLeaderboard, MdAdd, MdOutlineSentimentDissatisfied } from 'react-icons/md';
 import { PodiumSkeleton } from "@/app/ui/skeletons";
 
@@ -14,6 +17,20 @@ export default function ProfileSectionDisplay({
     isOwnProfile: boolean;
 }) {
     const { data: sections, isLoading } = useProfileHome(username);
+    const [isSFW, setIsSFW] = useState(true); // Default to Safe
+
+    // ✨ OPTIMIZED: Fetch Preference from Metadata (No DB Call)
+    useEffect(() => {
+        const fetchPreference = async () => {
+            const supabase = createClient();
+            const { data: { user } } = await supabase.auth.getUser();
+
+            // Since you fixed the sync trigger, this is now accurate!
+            const pref = user?.user_metadata?.content_preference || 'sfw';
+            setIsSFW(pref === 'sfw');
+        };
+        fetchPreference();
+    }, []);
 
     if (isLoading) {
         return (
@@ -84,17 +101,24 @@ export default function ProfileSectionDisplay({
                     {/* --- GRID --- */}
                     <div className="grid grid-cols-3 gap-2.5 md:gap-8 lg:gap-10 justify-items-center">
                         {section.items.map((itemRow: any) => {
-                            // 1. Normalize the data
+                            // 1. Normalize (includes adult flag now)
                             const uiItem = normalizeItem(itemRow);
                             if (!uiItem) return null;
 
                             return (
-                                <div key={itemRow.id} className="w-full">
-                                    {/* 2. Pass to Card */}
-                                    <ProfileItemCard
-                                        item={uiItem}
-                                        rank={itemRow.rank}
-                                    />
+                                <div key={itemRow.id} className="w-full relative group/card">
+                                    {/* 2. 🛡️ CONTENT GUARD */}
+                                    <ContentGuard isAdult={uiItem.adult} isSFW={isSFW}>
+                                        <ProfileItemCard
+                                            item={uiItem}
+                                            rank={itemRow.rank}
+                                        />
+                                    </ContentGuard>
+
+                                    {/* Explicit Indicator */}
+                                    {uiItem.adult && (
+                                        <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-600 shadow-sm pointer-events-none z-20 opacity-50" />
+                                    )}
                                 </div>
                             );
                         })}
@@ -105,27 +129,24 @@ export default function ProfileSectionDisplay({
     );
 }
 
-// ... (Imports and Component remain the same) ...
+// ✨ EXTENDED INTERFACE (Local extension if needed)
+interface ExtendedUnifiedProfileItem extends UnifiedProfileItem {
+    adult: boolean;
+}
 
-// ✨ ROBUST FIX: Handle Arrays, Missing Data, and ID Extraction
-function normalizeItem(itemRow: any): UnifiedProfileItem | null {
+// ✨ NORMALIZER WITH ADULT EXTRACTION
+function normalizeItem(itemRow: any): ExtendedUnifiedProfileItem | null {
     const type = itemRow.item_type;
 
-    // 1. Extract Joined Data
-    // Supabase might return an object OR an array of 1 object. We handle both.
+    // Extract Joined Data (Handle Array or Object)
     const rawData = itemRow.movie || itemRow.series || itemRow.person;
     const data = Array.isArray(rawData) ? rawData[0] : rawData;
 
-    // 2. Safety Check: If the linked movie/person was deleted, data might be null
     if (!data) return null;
 
     return {
-        id: itemRow.id, // Keep Database ID for keys
-
-        // 3. ✨ EXTRACT TMDB ID
-        // Since we fetched (*), this column is guaranteed to exist if the record exists.
+        id: itemRow.id,
         tmdbId: data.tmdb_id,
-
         title: data.title || data.name,
         image_url: (data.poster_url || data.profile_path)
             ? `https://image.tmdb.org/t/p/w500${data.poster_url || data.profile_path}`
@@ -134,5 +155,7 @@ function normalizeItem(itemRow: any): UnifiedProfileItem | null {
             ? data.known_for_department
             : data.release_date ? new Date(data.release_date).getFullYear().toString() : '',
         type: type,
+        // ✨ EXTRACT ADULT FLAG
+        adult: data.adult === true
     };
 }

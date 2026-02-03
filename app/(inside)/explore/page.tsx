@@ -18,7 +18,7 @@ export default async function ExplorePage() {
     ]);
 
     return (
-        <main className="min-h-screen md:ml-14 bg-white dark:bg-black text-black dark:text-white">
+        <main className="min-h-screen md:ml-14 bg-white dark:bg-black text-black dark:text-white pb-20 ">
 
             {/* 1. HERO: House of Deeperweave (Editorial) */}
             {/* Hardcoded or Fetched "Special Lists" */}
