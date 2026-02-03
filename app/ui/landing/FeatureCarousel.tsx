@@ -2,7 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from "framer-motion";
-import { WatchHistoryMockup, AnalyticsMockup, BlogMockup, ListsMockup } from './FeatureMockups';
+import {
+    WatchHistoryMockup,
+    AnalyticsMockup,
+    BlogMockup,
+    ListsMockup,
+    SafetyMockup,
+    PodiumMockup,
+    DiscoveryMockup
+} from './FeatureMockups';
 import { geistSans } from "@/app/ui/fonts";
 import clsx from 'clsx';
 
@@ -38,6 +46,30 @@ const features = [
         description: "Rank, annotate, and share collections with the world.",
         component: <ListsMockup />,
         color: "from-pink-500/20 to-rose-500/20"
+    },
+    {
+        id: 'safety',
+        label: "Safety",
+        title: "Content Guard.",
+        description: "Browse safely with SFW Mode. Explicit posters and backdrops are blurred automatically.",
+        component: <SafetyMockup />,
+        color: "from-zinc-500/20 to-slate-500/20"
+    },
+    {
+        id: 'podium',
+        label: "Identity",
+        title: "The Podium.",
+        description: "Define your taste. Rank your top 3 movies, shows, or characters in custom sections.",
+        component: <PodiumMockup />,
+        color: "from-amber-500/20 to-yellow-500/20"
+    },
+    {
+        id: 'discovery',
+        label: "Explore",
+        title: "Smart Discovery.",
+        description: "Localized trending feeds. See what's hitting big in Bollywood, Anime, or K-Drama.",
+        component: <DiscoveryMockup />,
+        color: "from-cyan-500/20 to-blue-500/20"
     }
 ];
 
