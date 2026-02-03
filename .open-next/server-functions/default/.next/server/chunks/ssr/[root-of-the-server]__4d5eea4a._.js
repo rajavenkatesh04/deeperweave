@@ -1,3 +1,0 @@
-module.exports=[93695,(a,b,c)=>{b.exports=a.x("next/dist/shared/lib/no-fallback-error.external.js",()=>require("next/dist/shared/lib/no-fallback-error.external.js"))},81209,a=>{a.n(a.i(62225))},9094,a=>{a.n(a.i(59310))},70864,a=>{a.n(a.i(33290))},65897,a=>{a.n(a.i(42095))},45538,a=>{a.n(a.i(63588))},2894,a=>{a.n(a.i(66188))},88018,a=>{a.n(a.i(71924))},5585,a=>{a.n(a.i(19413))},18901,a=>{a.n(a.i(40031))},33158,a=>{a.n(a.i(96562))},21140,a=>{a.n(a.i(93256))},10003,a=>{"use strict";a.i(16162);var b=a.i(25161);async function c({params:a}){let{username:c}=await a;(0,b.redirect)(`/profile/${c}/home`)}a.s(["default",()=>c,"metadata",0,{title:"{`username`}",description:"View their profile"}])}];
-
-//# sourceMappingURL=%5Broot-of-the-server%5D__4d5eea4a._.js.map

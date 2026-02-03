@@ -1,3 +1,0 @@
-module.exports=[62068,(a,b,c)=>{"use strict";Object.defineProperty(c,"__esModule",{value:!0});var d={callServer:function(){return f.callServer},createServerReference:function(){return h.createServerReference},findSourceMapURL:function(){return g.findSourceMapURL}};for(var e in d)Object.defineProperty(c,e,{enumerable:!0,get:d[e]});let f=a.r(29404),g=a.r(21170),h=a.r(60466)}];
-
-//# sourceMappingURL=f0cc2_dist_build_webpack_loaders_next-flight-loader_action-client-wrapper_b00578cd.js.map
