@@ -272,3 +272,24 @@ export async function signInWithGoogle() {
         redirect(data.url);
     }
 }
+
+
+export async function getCachedSessionUser() {
+    const supabase = await createClient();
+    // This only reads the cookie. 0ms DB time.
+    const { data: { user }, error } = await supabase.auth.getUser();
+
+    if (error || !user) {
+        return null;
+    }
+
+    // Return just enough info for the sidebar/nav
+    return {
+        id: user.id,
+        email: user.email,
+        // Ensure your auth sync trigger puts these in metadata!
+        username: user.user_metadata.username || 'User',
+        profile_pic_url: user.user_metadata.profile_pic_url || null,
+        content_preference: user.user_metadata.content_preference || 'sfw',
+    };
+}

@@ -2,7 +2,7 @@ import { type TimelineEntryWithUser } from "@/lib/definitions";
 
 // Define base URL for local assets
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL
-    ? process.env.NEXT_PUBLIC_SITE_URL
+    ? process.env["NEXT_PUBLIC_BASE_URL"]
     : 'http://localhost:3000';
 
 // --- Helpers ---
